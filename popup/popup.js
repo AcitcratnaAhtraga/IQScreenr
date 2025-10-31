@@ -4,21 +4,18 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize defaults if not set
-  chrome.storage.sync.get(['showIQBadge', 'showBreakdown', 'minIQ', 'maxIQ'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'minIQ', 'maxIQ'], (result) => {
     // Set defaults if this is first run
-    if (result.showIQBadge === undefined && result.showBreakdown === undefined &&
-        result.minIQ === undefined && result.maxIQ === undefined) {
+    if (result.showIQBadge === undefined && result.minIQ === undefined && result.maxIQ === undefined) {
       chrome.storage.sync.set({
         showIQBadge: true,
-        showBreakdown: false,
         minIQ: 60,
         maxIQ: 145
       });
-      result = { showIQBadge: true, showBreakdown: false, minIQ: 60, maxIQ: 145 };
+      result = { showIQBadge: true, minIQ: 60, maxIQ: 145 };
     }
     // Set checkbox states
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
-    document.getElementById('showBreakdown').checked = result.showBreakdown === true;
 
     // Set range values
     const minIQ = result.minIQ || 60;
@@ -33,10 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle checkbox changes
   document.getElementById('showIQBadge').addEventListener('change', (e) => {
     chrome.storage.sync.set({ showIQBadge: e.target.checked });
-  });
-
-  document.getElementById('showBreakdown').addEventListener('change', (e) => {
-    chrome.storage.sync.set({ showBreakdown: e.target.checked });
   });
 
   // Handle range changes
@@ -80,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm('Reset all settings to defaults?')) {
       const defaults = {
         showIQBadge: true,
-        showBreakdown: false,
         minIQ: 60,
         maxIQ: 145
       };
@@ -88,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.sync.set(defaults, () => {
         // Update UI
         document.getElementById('showIQBadge').checked = defaults.showIQBadge;
-        document.getElementById('showBreakdown').checked = defaults.showBreakdown;
         document.getElementById('minIQ').value = defaults.minIQ;
         document.getElementById('maxIQ').value = defaults.maxIQ;
         document.getElementById('minIQValue').textContent = defaults.minIQ;

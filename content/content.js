@@ -12,19 +12,15 @@
   const processedTweets = new Set();
   const settings = {
     showIQBadge: true,
-    showBreakdown: true,
     minIQ: 60,
     maxIQ: 145
   };
 
   // Load settings from storage
-  chrome.storage.sync.get(['showIQBadge', 'showBreakdown', 'minIQ', 'maxIQ'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'minIQ', 'maxIQ'], (result) => {
     Object.assign(settings, result);
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
-    }
-    if (result.showBreakdown !== undefined) {
-      settings.showBreakdown = result.showBreakdown;
     }
     if (result.minIQ !== undefined) {
       settings.minIQ = result.minIQ;
@@ -39,9 +35,6 @@
     if (areaName === 'sync') {
       if (changes.showIQBadge) {
         settings.showIQBadge = changes.showIQBadge.newValue;
-      }
-      if (changes.showBreakdown) {
-        settings.showBreakdown = changes.showBreakdown.newValue;
       }
       if (changes.minIQ) {
         settings.minIQ = changes.minIQ.newValue;
@@ -212,7 +205,7 @@
   /**
    * Create IQ badge element
    */
-  function createIQBadge(iq, breakdown = null) {
+  function createIQBadge(iq) {
     const badge = document.createElement('span');
     badge.className = 'iq-badge';
     badge.setAttribute('data-iq-score', iq);
@@ -229,72 +222,6 @@
     // Re-apply background color after innerHTML in case it got reset
     badge.style.setProperty('background-color', iqColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
-
-    if (settings.showBreakdown) {
-      const breakdownEl = document.createElement('div');
-      breakdownEl.className = 'iq-breakdown';
-      breakdownEl.setAttribute('style', 'background-color: #1f2937 !important; z-index: 2147483647 !important;');
-
-      let breakdownHTML = `
-        <div class="iq-breakdown-section">
-          <div class="iq-breakdown-label">Vocabulary</div>
-          <div class="iq-breakdown-value">${breakdown?.vocabulary || 'N/A'}</div>
-        </div>
-        <div class="iq-breakdown-section">
-          <div class="iq-breakdown-label">Word Length</div>
-          <div class="iq-breakdown-value">${breakdown?.wordLength || 'N/A'}</div>
-        </div>
-        <div class="iq-breakdown-section">
-          <div class="iq-breakdown-label">Syllables</div>
-          <div class="iq-breakdown-value">${breakdown?.syllables || 'N/A'}</div>
-        </div>
-        <div class="iq-breakdown-section">
-          <div class="iq-breakdown-label">Sentence Structure</div>
-          <div class="iq-breakdown-value">${breakdown?.sentenceStructure || 'N/A'}</div>
-        </div>
-        <div class="iq-breakdown-section">
-          <div class="iq-breakdown-label">Readability</div>
-          <div class="iq-breakdown-value">${breakdown?.readability || 'N/A'}</div>
-        </div>
-        <div class="iq-breakdown-section">
-          <div class="iq-breakdown-label">Syntax Complexity</div>
-          <div class="iq-breakdown-value">${breakdown?.syntax || 'N/A'}</div>
-        </div>
-        <div class="iq-breakdown-section">
-          <div class="iq-breakdown-label">Overall Complexity</div>
-          <div class="iq-breakdown-value">${breakdown?.complexity || 'N/A'}</div>
-        </div>
-      `;
-
-      breakdownEl.innerHTML = breakdownHTML;
-      badge.appendChild(breakdownEl);
-
-      // Smart positioning - check if we need to flip to left side
-      badge.addEventListener('mouseenter', function() {
-        const badgeRect = badge.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const tooltipWidth = 300;
-
-        // Only apply positioning if there's not enough space on right
-        if (badgeRect.right + tooltipWidth + 10 > viewportWidth) {
-          // Not enough space on right, need to flip to left
-          breakdownEl.style.left = 'auto';
-          breakdownEl.style.right = '100%';
-          breakdownEl.style.marginLeft = '0';
-          breakdownEl.style.marginRight = '10px';
-          breakdownEl.classList.remove('iq-breakdown-right');
-          breakdownEl.classList.add('iq-breakdown-left');
-        } else {
-          // Default: show on right
-          breakdownEl.style.left = '';
-          breakdownEl.style.right = '';
-          breakdownEl.style.marginLeft = '';
-          breakdownEl.style.marginRight = '';
-          breakdownEl.classList.remove('iq-breakdown-left');
-          breakdownEl.classList.add('iq-breakdown-right');
-        }
-      });
-    }
 
     return badge;
   }
@@ -324,12 +251,9 @@
     // Calculate IQ
     const iq = iqCalculator.calculateIQ(tweetText);
 
-    // Calculate breakdown if needed
-    const breakdown = settings.showBreakdown ? iqCalculator.calculateBreakdown(tweetText) : null;
-
     // Create and inject badge
     if (settings.showIQBadge) {
-      const badge = createIQBadge(iq, breakdown);
+      const badge = createIQBadge(iq);
 
       // Find the engagement bar (comments, retweets, likes, views, bookmarks)
       const engagementBar = tweetElement.querySelector('[role="group"]');

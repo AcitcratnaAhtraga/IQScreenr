@@ -95,16 +95,18 @@
   pointer-events: auto;
 }
 
-/* Arrow pointing to badge */
+/* Arrow pointing to badge - default position on right side */
 .iq-breakdown::before {
   content: '';
   position: absolute;
   right: 0;
-  top: 0%;
-  left: 0;
-  transform: translateX(-100%) translateY(-50%);
+  top: 50%;
+  transform: translateX(100%) translateY(-50%);
   border: 8px solid transparent;
   border-left-color: #1f2937;
+  border-right-color: transparent;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
 }
 
 /* Arrow on right side pointing left */
