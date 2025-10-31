@@ -1,0 +1,142 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                   TEXT-TO-IQ ESTIMATOR - QUICK START                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📦 INSTALLATION
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Install dependencies:
+   pip install -r requirements.txt
+
+2. Download spaCy model:
+   python -m spacy download en_core_web_sm
+
+3. Verify installation:
+   python examples/quick_start.py
+
+
+🚀 BASIC USAGE
+═══════════════════════════════════════════════════════════════════════════════
+
+from src.pipeline import TextToIQUnderEstimator
+
+# Initialize
+estimator = TextToIQUnderEstimator(
+    config_file='config/config.yaml',
+    mode='prose'
+)
+
+# Estimate IQ
+result = estimator.estimate("Your text here...")
+print(f"IQ Estimate: {result['iq_estimate']:.1f}")
+
+
+🔧 COMMAND LINE USAGE
+═══════════════════════════════════════════════════════════════════════════════
+
+# Run examples
+python examples/quick_start.py
+
+# Run tests
+pytest tests/
+
+# Start API server (if implemented)
+python server.py
+
+
+📁 PROJECT STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+text-to-iq-estimator/
+├── src/pipeline.py           # Main entry point
+├── src/features/             # Feature extractors
+├── src/models/               # Ensemble models
+├── config/config.yaml        # Configuration
+├── examples/                 # Usage examples
+├── tests/                    # Unit tests
+└── README.md                 # Full documentation
+
+
+📚 METHODOLOGIES IMPLEMENTED
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ CWR Baseline (Hendrix & Yampolskiy, 2017)
+✓ Stylometry Features (Abramov, 2018)
+✓ Embedding Ensemble (Wolfram, 2025)
+✓ WASI-II Vocabulary Scorer (Nnamoko et al., 2024)
+
+
+🔗 INTEGRATION WITH IQGUESSR
+═══════════════════════════════════════════════════════════════════════════════
+
+See INTEGRATION_GUIDE.md for detailed steps.
+
+Quick summary:
+1. Start API server: python server.py
+2. Call API from Chrome extension background.js
+3. Display results in popup.html
+
+
+⚠️  IMPORTANT NOTES
+═══════════════════════════════════════════════════════════════════════════════
+
+• This is for RESEARCH/SCREENING only, NOT clinical diagnosis
+• Always report confidence intervals with estimates
+• Current implementation uses CWR baseline (needs training data)
+• See DEPLOYMENT.md for production considerations
+
+
+📖 DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════════
+
+• README.md              - Full overview and methodology
+• DEPLOYMENT.md          - Deployment and production guide
+• INTEGRATION_GUIDE.md   - IQGuessr integration steps
+• PROJECT_SUMMARY.md     - What was built and next steps
+
+
+🆘 TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+Problem: spaCy model not found
+Solution: python -m spacy download en_core_web_sm
+
+Problem: Import errors
+Solution: pip install -r requirements.txt && python setup.py install
+
+Problem: Slow processing
+Solution: Disable optional features in config/config.yaml
+
+
+📊 STATISTICS
+═══════════════════════════════════════════════════════════════════════════════
+
+• Total lines of code: ~2,658
+• Number of modules: 9 core + 12 supporting
+• Test coverage: Basic unit tests included
+• Configuration options: ~50 parameters
+
+
+🎯 NEXT STEPS
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Collect labeled training data with IQ scores
+2. Train ensemble models on your data
+3. Calibrate for your specific use case
+4. Integrate with IQGuessr extension
+5. Monitor for bias and fairness
+
+
+📧 SUPPORT
+═══════════════════════════════════════════════════════════════════════════════
+
+• Check existing documentation first
+• Review examples/quick_start.py
+• Run tests to verify installation
+• See PROJECT_SUMMARY.md for current status
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  Version: 0.1.0 | Status: Core Complete, Ready for Training                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+

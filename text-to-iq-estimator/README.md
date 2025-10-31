@@ -6,6 +6,7 @@ A comprehensive system for estimating verbal/fluid IQ from text input using mult
 2. **Stylometry Bundle** (Abramov, 2018): Rich linguistic feature extraction (lexical richness, POS, syntax, readability)
 3. **Embedding Ensemble** (Wolfram, 2025): Modern ML approach with stacked ensemble models
 4. **WASI-II Vocabulary Scorer** (Nnamoko et al., 2024): Automated vocabulary subtest scoring
+5. **AoA Vocabulary Sophistication** (Brysbaert & Biemiller, 2017): Age of Acquisition features from 43,991 word norms
 
 ## Project Structure
 
@@ -27,7 +28,8 @@ text-to-iq-estimator/
 │   │   ├── cwr.py          # Collegiate Word Ratio baseline
 │   │   ├── stylometry.py   # Linguistic feature extraction
 │   │   ├── embeddings.py   # Dense embedding features
-│   │   └── vocab_scorer.py # WASI-II Vocabulary scorer
+│   │   ├── vocab_scorer.py # WASI-II Vocabulary scorer
+│   │   └── aoa_features.py # AoA vocabulary sophistication
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── ensemble.py     # SuperLearner ensemble
