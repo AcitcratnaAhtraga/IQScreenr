@@ -68,6 +68,7 @@
   top: 50%;
   left: 100%;
   transform: translateY(-50%);
+  margin-left: 10px;
   background-color: #1f2937 !important;
   background: #1f2937 !important;
   color: #f9fafb !important;
@@ -76,7 +77,6 @@
   font-size: 11px;
   min-width: 280px;
   max-width: 350px;
-  margin-left: 8px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease;
@@ -95,40 +95,38 @@
   pointer-events: auto;
 }
 
-/* Tooltip appearing to the right of badge */
+/* Arrow pointing to badge */
 .iq-breakdown::before {
   content: '';
   position: absolute;
-  top: 50%;
+  right: 0;
+  top: 0%;
   left: 0;
   transform: translateX(-100%) translateY(-50%);
   border: 8px solid transparent;
-  border-right-color: #1f2937;
+  border-left-color: #1f2937;
 }
 
-/* Tooltip appearing below badge (for badges at bottom of screen) */
-.iq-breakdown.iq-breakdown-below {
-  top: auto;
-  bottom: 100%;
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-.iq-breakdown.iq-breakdown-below::before {
-  top: 100%;
-  bottom: auto;
-  border: 8px solid transparent;
-  border-top-color: #1f2937;
+/* Arrow on right side pointing left */
+.iq-breakdown.iq-breakdown-right::before {
+  right: 0;
+  top: 50%;
+  transform: translateX(100%) translateY(-50%);
+  border-left-color: #1f2937;
+  border-right-color: transparent;
+  border-top-color: transparent;
   border-bottom-color: transparent;
 }
 
-/* Tooltip appearing to the left of badge */
+/* Arrow on left side pointing right */
 .iq-breakdown.iq-breakdown-left::before {
-  left: auto;
-  right: 0;
-  transform: translateX(100%) translateY(-50%);
-  border-right-color: transparent;
-  border-left-color: #1f2937;
+  left: 0;
+  top: 50%;
+  transform: translateX(-100%) translateY(-50%);
+  border-right-color: #1f2937;
+  border-left-color: transparent;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
 }
 
 .iq-breakdown-title {

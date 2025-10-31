@@ -236,7 +236,6 @@
       breakdownEl.setAttribute('style', 'background-color: #1f2937 !important; z-index: 2147483647 !important;');
 
       let breakdownHTML = `
-        <div class="iq-breakdown-title">📊 Detailed Linguistic Analysis</div>
         <div class="iq-breakdown-section">
           <div class="iq-breakdown-label">Vocabulary</div>
           <div class="iq-breakdown-value">${breakdown?.vocabulary || 'N/A'}</div>
@@ -265,55 +264,35 @@
           <div class="iq-breakdown-label">Overall Complexity</div>
           <div class="iq-breakdown-value">${breakdown?.complexity || 'N/A'}</div>
         </div>
-        <div class="iq-breakdown-footer">
-          <span class="iq-breakdown-stats">${breakdown?.totalWords || 0} words • ${breakdown?.totalSentences || 0} sentences</span>
-        </div>
       `;
 
       breakdownEl.innerHTML = breakdownHTML;
       badge.appendChild(breakdownEl);
 
-      // Smart positioning and visibility control
+      // Smart positioning - check if we need to flip to left side
       badge.addEventListener('mouseenter', function() {
-        const rect = badge.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
+        const badgeRect = badge.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
-        const spaceBelow = viewportHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        const spaceLeft = rect.left;
-        const spaceRight = viewportWidth - rect.right;
+        const tooltipWidth = 300;
 
-        // Reset positioning for tooltip on the right
-        breakdownEl.style.top = '';
-        breakdownEl.style.bottom = '';
-        breakdownEl.style.left = '';
-        breakdownEl.style.right = '';
-        breakdownEl.style.transform = 'translateY(-50%)';
-        breakdownEl.classList.remove('iq-breakdown-below');
-
-        // Check if tooltip would be cut off on the right
-        if (spaceRight < 280) {
-          // Not enough space on right, show on left instead
-          breakdownEl.classList.add('iq-breakdown-left');
+        // Only apply positioning if there's not enough space on right
+        if (badgeRect.right + tooltipWidth + 10 > viewportWidth) {
+          // Not enough space on right, need to flip to left
           breakdownEl.style.left = 'auto';
           breakdownEl.style.right = '100%';
           breakdownEl.style.marginLeft = '0';
-          breakdownEl.style.marginRight = '8px';
+          breakdownEl.style.marginRight = '10px';
+          breakdownEl.classList.remove('iq-breakdown-right');
+          breakdownEl.classList.add('iq-breakdown-left');
         } else {
-          // Show on right (default)
+          // Default: show on right
+          breakdownEl.style.left = '';
+          breakdownEl.style.right = '';
+          breakdownEl.style.marginLeft = '';
+          breakdownEl.style.marginRight = '';
           breakdownEl.classList.remove('iq-breakdown-left');
-          breakdownEl.style.left = '100%';
-          breakdownEl.style.right = 'auto';
-          breakdownEl.style.marginLeft = '8px';
-          breakdownEl.style.marginRight = '0';
+          breakdownEl.classList.add('iq-breakdown-right');
         }
-
-        // Ensure breakdown is visible
-        breakdownEl.style.opacity = '1';
-      });
-
-      badge.addEventListener('mouseleave', function() {
-        breakdownEl.style.opacity = '0';
       });
     }
 
