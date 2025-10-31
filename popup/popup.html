@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tweet Verbal IQ Analyzer Settings</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🧠 Tweet Verbal IQ Analyzer</h1>
+      <p class="subtitle">Analyze verbal IQ of tweets in real-time</p>
+    </div>
+
+    <div class="settings-section">
+      <div class="setting-item">
+        <label class="switch-label">
+          <input type="checkbox" id="showIQBadge" checked>
+          <span class="switch-text">Show IQ Badge</span>
+        </label>
+        <p class="setting-desc">Display IQ scores next to tweets</p>
+      </div>
+
+      <div class="setting-item">
+        <label class="switch-label">
+          <input type="checkbox" id="showBreakdown" checked>
+          <span class="switch-text">Show Linguistic Breakdown</span>
+        </label>
+        <p class="setting-desc">Show detailed analysis on hover</p>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h2>Scoring Scale</h2>
+      <div class="setting-item">
+        <label for="minIQ" class="range-label">Minimum IQ: <span id="minIQValue">60</span></label>
+        <input type="range" id="minIQ" min="50" max="90" value="60" step="5">
+        <p class="setting-desc">Lowest score in the scale</p>
+      </div>
+
+      <div class="setting-item">
+        <label for="maxIQ" class="range-label">Maximum IQ: <span id="maxIQValue">145</span></label>
+        <input type="range" id="maxIQ" min="120" max="160" value="145" step="5">
+        <p class="setting-desc">Highest score in the scale</p>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h2>How It Works</h2>
+      <div class="info-content">
+        <p>The IQ score is calculated based on:</p>
+        <ul>
+          <li><strong>Word Length:</strong> Average length of words used</li>
+          <li><strong>Vocabulary Diversity:</strong> Ratio of unique words</li>
+          <li><strong>Sentence Complexity:</strong> Length and variance of sentences</li>
+          <li><strong>Syllable Complexity:</strong> Average syllables per word</li>
+          <li><strong>Readability Index:</strong> Text complexity score</li>
+          <li><strong>Syntax Structure:</strong> Use of complex punctuation and clauses</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="color-legend">
+      <h2>Color Coding</h2>
+      <div class="legend-items">
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #d32f2f;"></span>
+          <span>60-70: Very Simple</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #f57c00;"></span>
+          <span>70-85: Simple</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #fbc02d;"></span>
+          <span>85-95: Below Average</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #fdd835;"></span>
+          <span>95-105: Average</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #c5e1a5;"></span>
+          <span>105-115: Above Average</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #81c784;"></span>
+          <span>115-125: High</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #66bb6a;"></span>
+          <span>125-135: Very High</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #4caf50;"></span>
+          <span>135-145: Superior</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color" style="background-color: #2e7d32;"></span>
+          <span>145+: Exceptional</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button id="resetSettings" class="btn-secondary">Reset to Defaults</button>
+      <p class="version">Version 1.0.0</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+

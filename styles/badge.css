@@ -1,0 +1,227 @@
+/**
+ * Badge Styling for IQ Scores
+ */
+
+.iq-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  margin: 0;
+  margin-right: 4px;
+  vertical-align: middle;
+  cursor: help;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 3px 6px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+  position: relative;
+  z-index: 10;
+  line-height: 1;
+  width: fit-content;
+  min-width: 28px;
+}
+
+.iq-badge:hover {
+  transform: scale(1.05);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.15),
+    0 0 0 2px rgba(0, 0, 0, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.iq-icon {
+  font-size: 14px;
+  display: inline-block;
+  line-height: 1;
+}
+
+.iq-label {
+  font-size: 7px;
+  font-weight: 700;
+  display: block;
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+
+.iq-score {
+  font-size: 12px;
+  font-weight: 700;
+  display: block;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* Breakdown tooltip */
+.iq-breakdown {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  background-color: #1f2937 !important;
+  background: #1f2937 !important;
+  color: #f9fafb !important;
+  padding: 12px 16px;
+  border-radius: 0;
+  font-size: 11px;
+  min-width: 280px;
+  max-width: 350px;
+  margin-left: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 2147483647 !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.2),
+    0 0 0 2px rgba(0, 0, 0, 0.5),
+    0 8px 24px rgba(0, 0, 0, 0.9) !important;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.iq-badge:hover .iq-breakdown {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Tooltip appearing to the right of badge */
+.iq-breakdown::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateX(-100%) translateY(-50%);
+  border: 8px solid transparent;
+  border-right-color: #1f2937;
+}
+
+/* Tooltip appearing below badge (for badges at bottom of screen) */
+.iq-breakdown.iq-breakdown-below {
+  top: auto;
+  bottom: 100%;
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.iq-breakdown.iq-breakdown-below::before {
+  top: 100%;
+  bottom: auto;
+  border: 8px solid transparent;
+  border-top-color: #1f2937;
+  border-bottom-color: transparent;
+}
+
+/* Tooltip appearing to the left of badge */
+.iq-breakdown.iq-breakdown-left::before {
+  left: auto;
+  right: 0;
+  transform: translateX(100%) translateY(-50%);
+  border-right-color: transparent;
+  border-left-color: #1f2937;
+}
+
+.iq-breakdown-title {
+  font-weight: 700 !important;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #374151 !important;
+  color: #ffffff !important;
+  font-size: 12px;
+  text-align: center;
+}
+
+.iq-breakdown-section {
+  margin: 6px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.iq-breakdown-label {
+  font-weight: 600 !important;
+  color: #9ca3af !important;
+  flex-shrink: 0;
+  min-width: 100px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.iq-breakdown-value {
+  color: #f9fafb !important;
+  text-align: right;
+  flex: 1;
+  font-size: 11px;
+  font-weight: 500 !important;
+}
+
+.iq-breakdown-footer {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #374151 !important;
+  text-align: center;
+}
+
+.iq-breakdown-stats {
+  color: #6b7280 !important;
+  font-size: 10px;
+  font-weight: 500 !important;
+}
+
+/* Ensure badge doesn't interfere with Twitter's layout */
+article[data-iq-analyzed] {
+  position: relative;
+}
+
+/* Adjust for dark mode compatibility */
+@media (prefers-color-scheme: dark) {
+  .iq-badge {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .iq-badge {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .iq-icon {
+    font-size: 12px;
+  }
+
+  .iq-breakdown {
+    min-width: 160px;
+    font-size: 10px;
+  }
+}
+
+/* Animation for newly added badges */
+@keyframes badgeAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.iq-badge {
+  animation: badgeAppear 0.3s ease;
+}
+
