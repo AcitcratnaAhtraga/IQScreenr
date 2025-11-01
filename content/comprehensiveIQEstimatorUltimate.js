@@ -20,6 +20,21 @@ class ComprehensiveIQEstimatorUltimate {
       grammatical_precision: 0.20
     };
 
+    // Twitter-specific weights (for texts <= 300 characters)
+    // Vocabulary becomes MORE important in constrained spaces
+    this.twitterWeights = {
+      vocabulary_sophistication: 0.45,  // Increased from 0.35 - word choice efficiency matters more
+      lexical_diversity: 0.25,           // Same - TTR still important
+      sentence_complexity: 0.15,          // Reduced from 0.20 - constrained length limits complexity
+      grammatical_precision: 0.15          // Reduced from 0.20 - syntax less important when space-constrained
+    };
+
+    // Twitter-specific sentence complexity baseline
+    // In tweets, people write shorter sentences due to 280-char limit
+    // High-IQ people (IQ 100) typically use ~8-9 words/sentence in tweets vs 11 in essays
+    this.twitterSentenceBaseline = 8.5;  // Lowered from 11.0 for essay-length texts
+    this.essaySentenceBaseline = 11.0;    // Original baseline for longer texts
+
     // AoA dictionary
     this.aoaDictionary = null;
     this.aoaDictionaryKeys = null; // Cached keys for faster fuzzy matching
@@ -485,16 +500,19 @@ class ComprehensiveIQEstimatorUltimate {
       };
     }
 
+    // Detect if this is a tweet-length text (Twitter 280-char limit + buffer)
+    const isTweetLength = text.length <= 300;
+
     // Extract features with real dependency parsing if available
     const features = await this._extractFeatures(text);
-    const dimensions = this._computeDimensions(features);
+    const dimensions = this._computeDimensions(features, isTweetLength);
 
     // Apply hybrid calibration
     if (this.hybridCalibration.enabled) {
       this._applyHybridCalibration(dimensions, features);
     }
 
-    let iq_estimate = this._combineDimensions(dimensions, features);
+    let iq_estimate = this._combineDimensions(dimensions, features, isTweetLength);
 
     // Final calibration pass - adjust based on cross-dimensional signals
     iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
@@ -509,13 +527,16 @@ class ComprehensiveIQEstimatorUltimate {
       is_valid: true,
       error: null,
       word_count: words.length,
+      is_twitter_calibrated: isTweetLength,  // Flag indicating Twitter-specific calibration was used
+      text_length: text.length,
       improvements_used: {
         aoa_dictionary: this.aoaDictionaryLoaded,
         enhanced_dependency_approximation: true,
         hybrid_calibration: this.hybridCalibration.enabled,
         improved_normalization: true,
         advanced_word_detection: true,
-        final_calibration: true
+        final_calibration: true,
+        twitter_calibration: isTweetLength
       }
     };
   }
@@ -547,14 +568,17 @@ class ComprehensiveIQEstimatorUltimate {
       };
     }
 
+    // Detect if this is a tweet-length text (Twitter 280-char limit + buffer)
+    const isTweetLength = text.length <= 300;
+
     const features = this._extractFeaturesSync(text);
-    const dimensions = this._computeDimensions(features);
+    const dimensions = this._computeDimensions(features, isTweetLength);
 
     if (this.hybridCalibration.enabled) {
       this._applyHybridCalibration(dimensions, features);
     }
 
-    let iq_estimate = this._combineDimensions(dimensions, features);
+    let iq_estimate = this._combineDimensions(dimensions, features, isTweetLength);
     iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
 
     const confidence = this._computeConfidence(dimensions, features, words.length, text);
@@ -567,13 +591,16 @@ class ComprehensiveIQEstimatorUltimate {
       is_valid: true,
       error: null,
       word_count: words.length,
+      is_twitter_calibrated: isTweetLength,  // Flag indicating Twitter-specific calibration was used
+      text_length: text.length,
       improvements_used: {
         aoa_dictionary: this.aoaDictionaryLoaded,
         enhanced_dependency_approximation: true,
         hybrid_calibration: this.hybridCalibration.enabled,
         improved_normalization: true,
         advanced_word_detection: true,
-        final_calibration: true
+        final_calibration: true,
+        twitter_calibration: isTweetLength
       }
     };
   }
@@ -842,20 +869,22 @@ class ComprehensiveIQEstimatorUltimate {
 
   /**
    * Compute dimension scores
+   * @param {boolean} isTweetLength - If true, apply Twitter-specific adjustments
    */
-  _computeDimensions(features) {
+  _computeDimensions(features, isTweetLength = false) {
     return {
-      vocabulary_sophistication: this._vocabularyIQ(features),
+      vocabulary_sophistication: this._vocabularyIQ(features, isTweetLength),
       lexical_diversity: this._diversityIQ(features),
-      sentence_complexity: this._sentenceComplexityIQ(features),
+      sentence_complexity: this._sentenceComplexityIQ(features, isTweetLength),
       grammatical_precision: this._grammarIQ(features)
     };
   }
 
   /**
    * Vocabulary Sophistication IQ - improved with proper pct_advanced
+   * Twitter adjustment: Vocabulary choice becomes MORE critical in constrained spaces
    */
-  _vocabularyIQ(features) {
+  _vocabularyIQ(features, isTweetLength = false) {
     const meanAoa = features.mean_aoa || 3.91;
 
     // Use pct_advanced from AoA dictionary if available, otherwise fallback
@@ -871,10 +900,15 @@ class ComprehensiveIQEstimatorUltimate {
 
     // Add boost for advanced words (trained: +1.0 per %)
     // But scale based on match rate for accuracy
+    // For tweets, word efficiency matters MORE - add slight boost
     const matchRate = features.aoa_match_rate || 0;
-    const advancedBoost = this.aoaDictionaryLoaded && matchRate > 50
+    let advancedBoost = this.aoaDictionaryLoaded && matchRate > 50
       ? (pctAdvanced / 100) * 1.0  // Full boost with good dictionary coverage
       : (pctAdvanced / 100) * 0.8;  // Reduced boost with approximation
+    // Twitter adjustment: 20% boost for word efficiency in constrained space
+    if (isTweetLength) {
+      advancedBoost *= 1.2;
+    }
     baseIQ += advancedBoost;
 
     // Remove hard cap at 130 - allow higher scores for very sophisticated vocabulary
@@ -935,14 +969,17 @@ class ComprehensiveIQEstimatorUltimate {
   /**
    * Sentence Complexity IQ - enhanced with variance, readability, and lexical overlap
    * FIXED: Detects casual run-on sentences with parentheticals to prevent inflation
+   * Twitter adjustment: Lower baseline for tweet-length texts due to 280-char constraint
    */
-  _sentenceComplexityIQ(features) {
+  _sentenceComplexityIQ(features, isTweetLength = false) {
     const avgWords = features.avg_words_per_sentence || 10;
     const sentenceCount = features.sentence_count || 1;
     const wordCount = features.word_count || (features.tokens?.length || 0);
     const originalText = features.original_text || '';
 
-    let iq = 60 + (avgWords - 11.0) * 6.0;
+    // Use Twitter-adjusted baseline for tweet-length texts
+    const baseline = isTweetLength ? this.twitterSentenceBaseline : this.essaySentenceBaseline;
+    let iq = 60 + (avgWords - baseline) * 6.0;
 
     // Detect casual run-on sentences with parentheticals
     // This pattern indicates casual Twitter style, not sophisticated writing
@@ -1102,12 +1139,15 @@ class ComprehensiveIQEstimatorUltimate {
    * Combine dimensions
    * FIXED: Applies length-based penalty for very short texts
    */
-  _combineDimensions(dimensions, features = null) {
+  _combineDimensions(dimensions, features = null, isTweetLength = false) {
     let totalWeight = 0;
     let weightedSum = 0;
 
+    // Use Twitter-specific weights for tweet-length texts
+    const weights = isTweetLength ? this.twitterWeights : this.dimensionWeights;
+
     for (const [dim, iq] of Object.entries(dimensions)) {
-      const weight = this.dimensionWeights[dim] || 0;
+      const weight = weights[dim] || 0;
       weightedSum += iq * weight;
       totalWeight += weight;
     }

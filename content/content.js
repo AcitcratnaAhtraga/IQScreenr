@@ -1062,13 +1062,24 @@
     );
     console.log(`Confidence: ${result.confidence?.toFixed(1) || 'N/A'}%`);
     console.log(`Method: ${result.dimension_scores ? 'Knowledge-Based (4 Dimensions)' : 'Unknown'}`);
+    if (result.is_twitter_calibrated !== undefined) {
+      const calibrationType = result.is_twitter_calibrated ? 'Twitter (≤300 chars)' : 'Essay/Long Text';
+      console.log(`%cCalibration: ${calibrationType}`, `color: ${result.is_twitter_calibrated ? '#FF9800' : '#2196F3'}; font-weight: bold;`);
+      console.log(`Text Length: ${result.text_length || text.length} characters`);
+    }
     console.groupEnd();
 
     // Dimension Breakdown
     if (result.dimension_scores) {
       console.group('%c📊 Dimension Breakdown (Weighted Combination)', 'color: #2196F3; font-weight: bold;');
 
-      const weights = {
+      // Use Twitter weights if Twitter calibration was applied
+      const weights = result.is_twitter_calibrated ? {
+        vocabulary_sophistication: 0.45,  // Increased for tweets - word choice efficiency matters more
+        lexical_diversity: 0.25,
+        sentence_complexity: 0.15,       // Reduced for tweets - constrained by 280 chars
+        grammatical_precision: 0.15      // Reduced for tweets - syntax less important when space-constrained
+      } : {
         vocabulary_sophistication: 0.35,
         lexical_diversity: 0.25,
         sentence_complexity: 0.20,
@@ -1154,7 +1165,9 @@
       console.log(`  Lexical Overlap: ${features.lexical_overlap.toFixed(3)}`);
       console.log(`    → Lower overlap = more varied writing = higher complexity`);
     }
-    console.log(`  Trained Mapping: IQ = 60 + (avg_words - 11.0) × 6.0 (+ variance & readability boosts)`);
+    const sentenceBaseline = result.is_twitter_calibrated ? 8.5 : 11.0;
+    const calibrationNote = result.is_twitter_calibrated ? ' (Twitter-adjusted baseline)' : ' (+ variance & readability boosts)';
+    console.log(`  Trained Mapping: IQ = 60 + (avg_words - ${sentenceBaseline}) × 6.0${calibrationNote}`);
 
     // Grammatical Precision Features
     console.log(`%c⚙️ Grammatical Precision Features:`, 'font-weight: bold; color: #FF5722;');
