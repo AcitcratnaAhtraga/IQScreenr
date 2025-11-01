@@ -11,15 +11,17 @@ from typing import Dict, List, Optional, Any
 import numpy as np
 
 from .preprocessing import TextPreprocessor
-from .features import (
+from .methodologies import (
     CWRFeatureExtractor,
     StylometryFeatureExtractor,
     EmbeddingFeatureExtractor,
     WASIVocabScorer,
     AoAFeatureExtractor
 )
-from .models import EnsembleModel
-from .models.calibration import IQCalibrator
+from .estimators import EnsembleModel
+from .estimators.calibration import IQCalibrator
+from .estimators.rule_based_ensemble import RuleBasedEnsemble
+from .estimators.knowledge_based_iq import KnowledgeBasedIQEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,7 @@ class TextToIQUnderEstimator:
             mode: Processing mode ("prose" or "vocab")
         """
         self.mode = mode
+        self.config_file = config_file
         self.config = self._load_config(config_file) if config_file else {}
 
         # Initialize components
@@ -51,6 +54,8 @@ class TextToIQUnderEstimator:
         self.feature_extractors = self._init_feature_extractors()
         self.model = None
         self.calibrator = None
+        self.rule_based_ensemble = RuleBasedEnsemble()  # Simple rule-based combining
+        self.knowledge_based_estimator = KnowledgeBasedIQEstimator()  # Research-based calibration
 
         logger.info(f"Initialized TextToIQUnderEstimator in {mode} mode")
 
@@ -79,6 +84,13 @@ class TextToIQUnderEstimator:
             language=proc_config.get('language', 'en'),
         )
 
+    def _resolve_path(self, path: str) -> str:
+        """Resolve relative path relative to config file location."""
+        if not path or not self.config_file:
+            return path
+        config_dir = Path(self.config_file).parent
+        return str(config_dir / path)
+
     def _init_feature_extractors(self) -> Dict[str, Any]:
         """Initialize feature extractors."""
         extractors = {}
@@ -88,7 +100,7 @@ class TextToIQUnderEstimator:
         if features_config.get('cwr', {}).get('enabled', True):
             cwr_config = features_config.get('cwr', {})
             extractors['cwr'] = CWRFeatureExtractor(
-                lexicon_file=cwr_config.get('lexicon_file'),
+                lexicon_file=self._resolve_path(cwr_config.get('lexicon_file')),
                 background_corpus_mean=cwr_config.get('background_corpus_mean', 0.15),
                 background_corpus_std=cwr_config.get('background_corpus_std', 0.05),
                 use_lemmatization=cwr_config.get('use_lemmatization', True),
@@ -136,7 +148,7 @@ class TextToIQUnderEstimator:
         if features_config.get('aoa', {}).get('enabled', True):
             aoa_config = features_config.get('aoa', {})
             extractors['aoa'] = AoAFeatureExtractor(
-                aoa_file=aoa_config.get('aoa_file'),
+                aoa_file=self._resolve_path(aoa_config.get('aoa_file')),
                 use_lemmatization=aoa_config.get('use_lemmatization', False),
                 use_stemming=aoa_config.get('use_stemming', False),
             )
@@ -191,15 +203,32 @@ class TextToIQUnderEstimator:
         if 'cwr' in all_features and 'cwr_baseline' in all_features['cwr']:
             cwr_baseline = all_features['cwr']['cwr_baseline'].get('iq_estimate', 100.0)
 
-        # For now, use CWR baseline as main estimate
-        # In production, would use trained ensemble model
-        iq_estimate = cwr_baseline if cwr_baseline else 100.0
+        # Use knowledge-based estimator (research-calibrated, no training needed)
+        kb_result = self.knowledge_based_estimator.estimate(all_features)
+
+        # Also get simple ensemble result for comparison
+        ensemble_result = self.rule_based_ensemble.combine(all_features)
+
+        # Use knowledge-based estimate as primary (better calibrated)
+        iq_estimate = kb_result['iq_estimate']
+        using_ensemble = True
 
         result = {
             'iq_estimate': iq_estimate,
             'is_valid': True,
             'cwr_baseline': cwr_baseline,
+            'using_ensemble': using_ensemble,
+            'confidence': kb_result['confidence'],
+            'dimension_scores': kb_result.get('dimension_scores', {}),
         }
+
+        # Add simple ensemble details for comparison
+        if ensemble_result['num_methods'] > 1:
+            result['simple_ensemble_confidence'] = ensemble_result['confidence']
+            result['simple_estimates_by_method'] = ensemble_result['estimates_by_method']
+
+        # Add dimension breakdown
+        result['dimension_breakdown'] = kb_result.get('dimension_scores', {})
 
         if return_details:
             result['preprocessing'] = preprocessed['metadata']

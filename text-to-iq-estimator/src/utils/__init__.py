@@ -1,9 +1,18 @@
 """
-Utility modules for I/O and logging.
+Utility modules for the text-to-iq-estimator package.
 """
 
-from .io import load_data, save_data
-from .logging import setup_logging
+from .load_test_samples import (
+    load_graded_samples,
+    get_samples_by_iq,
+    get_samples_by_topic,
+    get_sample_statistics
+)
 
-__all__ = ["load_data", "save_data", "setup_logging"]
+__all__ = [
+    'load_graded_samples',
+    'get_samples_by_iq',
+    'get_samples_by_topic',
+    'get_sample_statistics'
+]
 

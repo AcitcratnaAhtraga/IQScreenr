@@ -90,7 +90,7 @@ class StylometryFeatureExtractor:
 
         # Try to load spaCy model
         self.nlp = None
-        if SPACY_AVAILABLE and self.compute_pos_ratios:
+        if SPACY_AVAILABLE and (self.compute_pos_ratios or self.compute_dependency_depth):
             try:
                 self.nlp = spacy.load("en_core_web_sm")
                 logger.info("Loaded spaCy model for POS/syntax features")
@@ -244,6 +244,45 @@ class StylometryFeatureExtractor:
             logger.warning(f"Error computing POS ratios: {e}")
             return {}
 
+    def _compute_dependency_depth(self, text: str) -> Dict[str, float]:
+        """Compute dependency depth and clause density."""
+        if not self.nlp:
+            return {}
+
+        try:
+            doc = self.nlp(text)
+
+            # Compute average dependency depth per sentence
+            depths = []
+            for sent in doc.sents:
+                # For each token, compute its depth from root
+                sent_depths = []
+                for token in sent:
+                    if token.dep_ != 'ROOT':
+                        depth = 0
+                        ancestor = token
+                        while ancestor.dep_ != 'ROOT':
+                            ancestor = ancestor.head
+                            depth += 1
+                        sent_depths.append(depth)
+
+                if sent_depths:
+                    avg_depth = statistics.mean(sent_depths)
+                    depths.append(avg_depth)
+
+            result = {}
+            if depths:
+                result['avg_dependency_depth'] = statistics.mean(depths)
+                result['max_dependency_depth'] = max(depths)
+            else:
+                result['avg_dependency_depth'] = 0.0
+                result['max_dependency_depth'] = 0.0
+
+            return result
+        except Exception as e:
+            logger.warning(f"Error computing dependency depth: {e}")
+            return {}
+
     def _compute_readability(self, text: str) -> Dict[str, float]:
         """Compute readability indices."""
         if not TEXTSTAT_AVAILABLE:
@@ -251,7 +290,7 @@ class StylometryFeatureExtractor:
 
         try:
             return {
-                "flesch_kincaid": textstat.flesch_kincaid(text),
+                "flesch_kincaid": textstat.flesch_kincaid_grade(text),
                 "smog": textstat.smog_index(text),
                 "ari": textstat.automated_readability_index(text),
                 "lix": textstat.lix(text),
@@ -339,6 +378,10 @@ class StylometryFeatureExtractor:
         if self.compute_pos_ratios:
             pos_features = self._compute_pos_ratios(text)
             features.update(pos_features)
+
+        if self.compute_dependency_depth:
+            dep_features = self._compute_dependency_depth(text)
+            features.update(dep_features)
 
         # Readability
         if self.compute_readability:

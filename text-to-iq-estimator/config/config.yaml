@@ -2,7 +2,7 @@
 
 # Processing settings
 processing:
-  min_length_tokens: 200
+  min_length_tokens: 30  # Reduced for testing with short samples
   min_length_vocab: 15
   language: "en"
 
@@ -15,8 +15,8 @@ processing:
 # Feature extraction settings
 features:
   cwr:
-    enabled: true
-    lexicon_file: "config/academic_lexicon.txt"
+    enabled: false  # Disabled: academic lexicon contained common words, skewing results
+    lexicon_file: "academic_lexicon.txt"
     background_corpus_mean: 0.15  # Calibrate from your corpus
     background_corpus_std: 0.05
     use_lemmatization: true
@@ -62,15 +62,15 @@ features:
     device: "cpu"  # "cuda" if GPU available
 
   vocab_scorer:
-    enabled: true
+    enabled: false  # Requires word embeddings model - disabled for now
     embedding_model: "word2vec"  # "word2vec", "fasttext", or "glove"
     word2vec_model_file: "data/models/word2vec.bin"
     cosine_threshold_1pt: 0.3
     cosine_threshold_2pt: 0.5
 
   aoa:
-    enabled: false  # Set to true and provide absolute path or proper relative path
-    aoa_file: null  # Provide path to AoA Excel file here
+    enabled: true  # Set to true and provide absolute path or proper relative path
+    aoa_file: "../IQresearch/Master file with all values for test based AoA measures.xlsx"  # Provide path to AoA Excel file here
     use_lemmatization: false
     use_stemming: false
 

@@ -1,5 +1,4 @@
-"""
-Collegiate Word Ratio (CWR) baseline feature extractor.
+"""Collegiate Word Ratio (CWR) baseline feature extractor.
 
 Implements the methodology from Hendrix & Yampolskiy, 2017:
 - Compute CWR over academic lexicon
@@ -116,13 +115,10 @@ class CWRFeatureExtractor:
         collegiate_count = 0
         collegiate_words = []
 
-        # Count collegiate words
+        # Count collegiate words (EXACT match only - research method)
         for token in tokens:
             normalized = self._normalize_word(token)
-            if normalized in self.lexicon or any(
-                normalized.startswith(col_word) or col_word.startswith(normalized)
-                for col_word in self.lexicon
-            ):
+            if normalized in self.lexicon:
                 collegiate_count += 1
                 collegiate_words.append(token)
 
@@ -177,25 +173,3 @@ class CWRFeatureExtractor:
             "num_collegiate_words",
             "total_words",
         ]
-
-
-if __name__ == "__main__":
-    # Example usage
-    extractor = CWRFeatureExtractor(
-        lexicon_file="config/academic_lexicon.txt",
-        background_corpus_mean=0.15,
-        background_corpus_std=0.05,
-    )
-
-    test_text = """
-    The empirical investigation demonstrates a significant correlation between
-    sophisticated vocabulary acquisition and cognitive aptitude assessments.
-    """
-
-    result = extractor.extract_features(test_text)
-    print("\nCWR Features:")
-    print(f"CWR: {result['cwr_baseline']['cwr']:.4f}")
-    print(f"Z-score: {result['cwr_baseline']['z_score']:.2f}")
-    print(f"IQ Estimate: {result['cwr_baseline']['iq_estimate']:.1f}")
-    print(f"Collegiate words: {result['cwr_baseline']['num_collegiate_words']}")
-
