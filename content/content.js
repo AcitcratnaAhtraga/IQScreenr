@@ -955,20 +955,29 @@
    */
   function createInvalidBadge() {
     const badge = document.createElement('span');
-    badge.className = 'iq-badge iq-badge-invalid';
+    badge.className = 'iq-badge iq-badge-invalid iq-badge-flip';
     badge.setAttribute('data-iq-invalid', 'true');
 
     // Use gray color for invalid tweets
     badge.style.setProperty('background-color', '#9e9e9e', 'important');
     badge.style.setProperty('color', '#000000', 'important');
-    badge.style.setProperty('cursor', 'not-allowed', 'important');
+    badge.style.setProperty('cursor', 'help', 'important');
     badge.style.setProperty('display', 'inline-flex', 'important');
     badge.style.setProperty('visibility', 'visible', 'important');
     badge.style.setProperty('opacity', '1', 'important');
 
+    // Create flip structure: front shows "IQ X", back shows "NO text"
     badge.innerHTML = `
-      <span class="iq-label">IQ</span>
-      <span class="iq-score">✕</span>
+      <div class="iq-badge-inner">
+        <div class="iq-badge-front">
+          <span class="iq-label">IQ</span>
+          <span class="iq-score">✕</span>
+        </div>
+        <div class="iq-badge-back">
+          <span class="iq-label">NO</span>
+          <span class="iq-score">text</span>
+        </div>
+      </div>
     `;
 
     return badge;
