@@ -18,7 +18,7 @@
         "https://*.x.com/*"
       ],
       "js": [
-        "content/iqCalculator.js",
+        "content/comprehensiveIQEstimator.js",
         "content/content.js"
       ],
       "css": [

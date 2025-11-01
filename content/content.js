@@ -5,8 +5,8 @@
 (function() {
   'use strict';
 
-  // Initialize IQ Calculator
-  const iqCalculator = new IQCalculator();
+  // Initialize Comprehensive IQ Estimator (fully client-side, no server needed)
+  const iqEstimator = new ComprehensiveIQEstimator();
 
   // State management
   const processedTweets = new Set();
@@ -248,31 +248,44 @@
       return; // Skip tweets that are too short
     }
 
-    // Calculate IQ
-    const iq = iqCalculator.calculateIQ(tweetText);
+    // Mark as processing to avoid duplicate calculations
+    tweetElement.setAttribute('data-iq-processing', 'true');
 
-    // Create and inject badge
-    if (settings.showIQBadge) {
-      const badge = createIQBadge(iq);
+    try {
+      // Calculate IQ using the comprehensive client-side estimator
+      const result = iqEstimator.estimate(tweetText);
 
-      // Find the engagement bar (comments, retweets, likes, views, bookmarks)
-      const engagementBar = tweetElement.querySelector('[role="group"]');
+      // Only show badge if estimation was successful
+      if (result.is_valid && result.iq_estimate !== null && settings.showIQBadge) {
+        const iq = Math.round(result.iq_estimate);
 
-      if (engagementBar) {
-        // Insert badge as the first item, before the comment icon
-        const firstChild = engagementBar.firstElementChild;
-        if (firstChild) {
-          engagementBar.insertBefore(badge, firstChild);
+        // Create and inject badge
+        const badge = createIQBadge(iq);
+
+        // Find the engagement bar (comments, retweets, likes, views, bookmarks)
+        const engagementBar = tweetElement.querySelector('[role="group"]');
+
+        if (engagementBar) {
+          // Insert badge as the first item, before the comment icon
+          const firstChild = engagementBar.firstElementChild;
+          if (firstChild) {
+            engagementBar.insertBefore(badge, firstChild);
+          } else {
+            engagementBar.appendChild(badge);
+          }
         } else {
-          engagementBar.appendChild(badge);
+          // Fallback: append to the end of the tweet article
+          tweetElement.appendChild(badge);
         }
-      } else {
-        // Fallback: append to the end of the tweet article
-        tweetElement.appendChild(badge);
-      }
 
-      processedTweets.add(tweetElement);
-      tweetElement.setAttribute('data-iq-analyzed', 'true');
+        processedTweets.add(tweetElement);
+        tweetElement.setAttribute('data-iq-analyzed', 'true');
+      }
+    } catch (error) {
+      console.error('Error processing tweet:', error);
+    } finally {
+      // Remove processing flag even if there was an error
+      tweetElement.removeAttribute('data-iq-processing');
     }
   }
 
@@ -299,7 +312,7 @@
     }
 
     tweets.forEach(tweet => {
-      if (tweet && !tweet.hasAttribute('data-iq-analyzed')) {
+      if (tweet && !tweet.hasAttribute('data-iq-analyzed') && !tweet.hasAttribute('data-iq-processing')) {
         processTweet(tweet);
       }
     });
