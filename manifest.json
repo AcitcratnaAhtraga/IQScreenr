@@ -22,8 +22,16 @@
         "https://*.x.com/*"
       ],
       "js": [
-        "content/spacyDependencyParser.js",
-        "content/comprehensiveIQEstimatorUltimate.js",
+        "content/core/dependencyParser.js",
+        "content/core/iqEstimator.js",
+        "content/utils/cache.js",
+        "content/utils/domHelpers.js",
+        "content/utils/textExtraction.js",
+        "content/utils/tweetDetection.js",
+        "content/features/settings.js",
+        "content/features/badge.js",
+        "content/features/tweetProcessor.js",
+        "content/features/realtime.js",
         "content/content.js"
       ],
       "css": [
