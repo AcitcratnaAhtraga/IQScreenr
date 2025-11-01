@@ -494,7 +494,7 @@ class ComprehensiveIQEstimatorUltimate {
       this._applyHybridCalibration(dimensions, features);
     }
 
-    let iq_estimate = this._combineDimensions(dimensions);
+    let iq_estimate = this._combineDimensions(dimensions, features);
 
     // Final calibration pass - adjust based on cross-dimensional signals
     iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
@@ -554,7 +554,7 @@ class ComprehensiveIQEstimatorUltimate {
       this._applyHybridCalibration(dimensions, features);
     }
 
-    let iq_estimate = this._combineDimensions(dimensions);
+    let iq_estimate = this._combineDimensions(dimensions, features);
     iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
 
     const confidence = this._computeConfidence(dimensions, features, words.length, text);
@@ -739,6 +739,9 @@ class ComprehensiveIQEstimatorUltimate {
     return {
       tokens: tokens,
       sentences: sentences,
+      word_count: tokens.length, // Add word count for length-based adjustments
+      sentence_count: sentences.length,
+      original_text: normalizedText, // Add original text for casual structure detection
       avg_words_per_sentence: tokens.length / Math.max(1, sentences.length),
       sentence_variance: sentenceVariance,
       ttr: this._computeTTR(tokens),
@@ -811,6 +814,9 @@ class ComprehensiveIQEstimatorUltimate {
     return {
       tokens: tokens,
       sentences: sentences,
+      word_count: tokens.length, // Add word count for length-based adjustments
+      sentence_count: sentences.length,
+      original_text: normalizedText, // Add original text for casual structure detection
       avg_words_per_sentence: tokens.length / Math.max(1, sentences.length),
       sentence_variance: sentenceVariance,
       ttr: this._computeTTR(tokens),
@@ -878,15 +884,33 @@ class ComprehensiveIQEstimatorUltimate {
 
   /**
    * Lexical Diversity IQ - enhanced with MTLD and Yule's K
+   * FIXED: Applies length-based normalization to prevent inflation for short texts
    */
   _diversityIQ(features) {
     const ttr = features.ttr || 0.5;
-    let iq = 70 + (ttr - 0.659) * 170;
+    const wordCount = features.word_count || (features.tokens?.length || 0);
+
+    // Length-adjusted TTR: For short texts, high TTR is expected, not sophisticated
+    let adjustedTTR = ttr;
+    if (wordCount < 100) {
+      // Scale TTR down for short texts to prevent inflation
+      // At 50 words, TTR is scaled by ~0.7; at 25 words, ~0.5
+      const lengthFactor = Math.max(0.5, wordCount / 100);
+      adjustedTTR = 0.659 + (ttr - 0.659) * lengthFactor;
+    }
+
+    let iq = 70 + (adjustedTTR - 0.659) * 170;
 
     // Boost for MTLD (higher = more diverse vocabulary usage)
+    // But reduce boost for very short texts where MTLD equals text length
     const mtld = features.mtld || 0;
     if (mtld > 20) {
-      iq += Math.min(5, (mtld - 20) * 0.2); // Small boost for high MTLD
+      let mtldBoost = (mtld - 20) * 0.2;
+      // Penalize MTLD boost if it's close to word count (indicates short text artifact)
+      if (wordCount < 50 && mtld >= wordCount * 0.8) {
+        mtldBoost *= 0.3; // Reduce boost by 70% for short-text artifacts
+      }
+      iq += Math.min(5, mtldBoost);
     }
 
     // Adjust for Yule's K (lower = more diverse, higher = repetitive)
@@ -899,38 +923,72 @@ class ComprehensiveIQEstimatorUltimate {
       iq -= Math.min(5, (yulesK - 200) * 0.02);
     }
 
+    // Cap for very short texts: don't allow diversity > 110 for texts < 50 words
+    if (wordCount < 50) {
+      iq = Math.min(110, iq);
+    }
+
     // Allow higher diversity scores for very sophisticated texts
     return Math.max(50, Math.min(145, iq));
   }
 
   /**
    * Sentence Complexity IQ - enhanced with variance, readability, and lexical overlap
+   * FIXED: Detects casual run-on sentences with parentheticals to prevent inflation
    */
   _sentenceComplexityIQ(features) {
     const avgWords = features.avg_words_per_sentence || 10;
+    const sentenceCount = features.sentence_count || 1;
+    const wordCount = features.word_count || (features.tokens?.length || 0);
+    const originalText = features.original_text || '';
+
     let iq = 60 + (avgWords - 11.0) * 6.0;
 
+    // Detect casual run-on sentences with parentheticals
+    // This pattern indicates casual Twitter style, not sophisticated writing
+    const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
+    const parentheticalRatio = sentenceCount > 0 ? parentheticalCount / sentenceCount : 0;
+
+    // If single sentence with many parentheticals, it's likely casual run-on
+    if (sentenceCount === 1 && parentheticalRatio >= 0.5 && avgWords > 30) {
+      // Reduce IQ by up to 40% for casual run-ons
+      const reductionFactor = Math.min(0.4, parentheticalRatio * 0.8);
+      iq *= (1 - reductionFactor);
+    }
+
     // Boost for sentence variance (variety indicates sophistication)
+    // Only apply if we have multiple sentences (variance is meaningful)
     const variance = features.sentence_variance || 0;
-    if (variance > 5 && avgWords > 12) {
+    if (variance > 5 && avgWords > 12 && sentenceCount > 1) {
       iq += Math.min(8, variance * 0.6);
     }
 
     // Readability boost (higher grade level = more complex writing)
+    // But reduce boost for single long sentences (readability inflated by length)
     const readability = features.readability || {};
     if (readability.flesch_kincaid) {
-      // Higher F-K grade level = higher IQ (but with diminishing returns)
       const fkGrade = readability.flesch_kincaid;
       if (fkGrade > 12) {
-        iq += Math.min(5, (fkGrade - 12) * 0.5);
+        let readabilityBoost = (fkGrade - 12) * 0.5;
+        // Reduce boost for single-sentence texts (readability inflated by length)
+        if (sentenceCount === 1 && wordCount < 60) {
+          readabilityBoost *= 0.5; // Reduce boost by 50%
+        }
+        iq += Math.min(5, readabilityBoost);
       }
     }
 
     // Lower lexical overlap = more varied writing = higher complexity
+    // Only apply for multi-sentence texts
     const lexicalOverlap = features.lexical_overlap || 0;
-    if (lexicalOverlap < 0.2 && avgWords > 15) {
+    if (lexicalOverlap < 0.2 && avgWords > 15 && sentenceCount > 1) {
       // Very low overlap with long sentences = sophisticated writing
       iq += Math.min(4, (0.2 - lexicalOverlap) * 20);
+    }
+
+    // Cap for very short texts: don't allow complexity > 110 for texts < 50 words
+    if (wordCount < 50) {
+      iq = Math.min(110, iq);
     }
 
     return Math.max(50, Math.min(145, iq));
@@ -938,8 +996,13 @@ class ComprehensiveIQEstimatorUltimate {
 
   /**
    * Grammatical Precision IQ - enhanced with punctuation entropy and connectives
+   * FIXED: Reduces punctuation boost for parenthetical-heavy casual texts
    */
   _grammarIQ(features) {
+    const wordCount = features.word_count || (features.tokens?.length || 0);
+    const originalText = features.original_text || '';
+    const sentenceCount = features.sentence_count || 1;
+
     // Use enhanced dependency depth approximation
     const depDepth = features.avg_dependency_depth ||
       (this.depDepthCalibration.intercept +
@@ -948,10 +1011,20 @@ class ComprehensiveIQEstimatorUltimate {
 
     let iq = 53 + (depDepth - 1.795) * 80;
 
+    // Detect parenthetical-heavy casual writing
+    const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
+    const parentheticalRatio = wordCount > 0 ? parentheticalCount / wordCount : 0;
+
     // Boost for punctuation entropy (more varied punctuation = more sophisticated)
+    // But reduce boost if text is heavily parenthetical (casual style)
     const punctEntropy = features.punctuation_entropy || 0;
     if (punctEntropy > 2.0) {
-      iq += Math.min(4, (punctEntropy - 2.0) * 1.0);
+      let entropyBoost = (punctEntropy - 2.0) * 1.0;
+      // Reduce boost for parenthetical-heavy texts (casual, not sophisticated)
+      if (parentheticalRatio > 0.05) {
+        entropyBoost *= (1 - parentheticalRatio * 10); // Reduce based on ratio
+      }
+      iq += Math.min(4, Math.max(0, entropyBoost));
     }
 
     // Boost for connective density (better logical flow = higher IQ)
@@ -959,6 +1032,11 @@ class ComprehensiveIQEstimatorUltimate {
     if (connectiveDensity > 0.08 && connectiveDensity < 0.20) {
       // Optimal connective density (too much = repetitive)
       iq += Math.min(3, (connectiveDensity - 0.08) * 25);
+    }
+
+    // Cap for very short texts: don't allow grammar > 110 for texts < 50 words
+    if (wordCount < 50) {
+      iq = Math.min(110, iq);
     }
 
     return Math.max(50, Math.min(145, iq));
@@ -1022,8 +1100,9 @@ class ComprehensiveIQEstimatorUltimate {
 
   /**
    * Combine dimensions
+   * FIXED: Applies length-based penalty for very short texts
    */
-  _combineDimensions(dimensions) {
+  _combineDimensions(dimensions, features = null) {
     let totalWeight = 0;
     let weightedSum = 0;
 
@@ -1037,12 +1116,26 @@ class ComprehensiveIQEstimatorUltimate {
       return 100.0;
     }
 
-    const finalIQ = weightedSum / totalWeight;
+    let finalIQ = weightedSum / totalWeight;
+
+    // Apply length-based penalty for very short texts
+    if (features) {
+      const wordCount = features.word_count || (features.tokens?.length || 0);
+      if (wordCount < 50) {
+        // Penalty: -0.5 IQ per word below 50
+        // At 25 words: -12.5 IQ penalty
+        // At 46 words (the problematic tweet): -2 IQ penalty
+        const penalty = Math.max(0, (50 - wordCount) * 0.5);
+        finalIQ -= penalty;
+      }
+    }
+
     return Math.max(50, Math.min(150, finalIQ));
   }
 
   /**
    * Compute confidence
+   * FIXED: Better penalizes short texts and inflated metrics
    */
   _computeConfidence(dimensions, features, wordCount, originalText) {
     let baseConfidence = 0;
@@ -1057,6 +1150,13 @@ class ComprehensiveIQEstimatorUltimate {
       baseConfidence = 30 + (wordCount - 10) * 2;
     } else {
       baseConfidence = 20 + (wordCount - 5) * 2;
+    }
+
+    // Additional penalty for very short texts (< 50 words)
+    // Metrics become unreliable, reduce confidence by up to 40%
+    if (wordCount < 50) {
+      const shortTextPenalty = (50 - wordCount) * 0.8; // Up to 32 points penalty at 10 words
+      baseConfidence = Math.max(10, baseConfidence - shortTextPenalty);
     }
 
     // Boost confidence if using real AoA dictionary with good coverage
@@ -1076,7 +1176,7 @@ class ComprehensiveIQEstimatorUltimate {
       agreementScore = Math.max(40, 100 - stdDev * 5);
     }
 
-    const sentenceCount = features.sentences?.length || 1;
+    const sentenceCount = features.sentences?.length || features.sentence_count || 1;
     const avgWordsPerSentence = features.avg_words_per_sentence || 0;
     let qualityPenalty = 0;
 
@@ -1086,8 +1186,17 @@ class ComprehensiveIQEstimatorUltimate {
       qualityPenalty = 5;
     }
 
-    if (sentenceCount === 1 && wordCount < 15) {
-      qualityPenalty += 10;
+    // Enhanced penalty for single-sentence casual run-ons
+    if (sentenceCount === 1) {
+      if (wordCount < 15) {
+        qualityPenalty += 10;
+      } else if (wordCount < 50) {
+        // Check for parenthetical-heavy casual style
+        const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
+        if (parentheticalCount >= 2 && wordCount > 30) {
+          qualityPenalty += 8; // Penalize casual run-ons
+        }
+      }
     }
 
     const agreementWeight = wordCount >= 20 ? 0.3 : 0.2;

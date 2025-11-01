@@ -5,6 +5,15 @@
 (function() {
   'use strict';
 
+  // Enable debug mode by default (can be disabled by setting window.DEBUG_IQ_EXTRACTION = false)
+  if (window.DEBUG_IQ_EXTRACTION === undefined) {
+    window.DEBUG_IQ_EXTRACTION = true;
+  }
+
+  // Log that the extension is loading
+  console.log('%c🧠 IQGuessr Extension Loading...', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+  console.log('[IQGuessr] Debug mode:', window.DEBUG_IQ_EXTRACTION);
+
   // Initialize Comprehensive IQ Estimator Ultimate (with real dependency parsing support)
   const iqEstimator = new ComprehensiveIQEstimatorUltimate();
 
@@ -54,42 +63,529 @@
   });
 
   /**
-   * Check if a tweet is truncated (has a "show more" button)
+   * Check if a tweet is truncated (has a "show more" button and is NOT already expanded)
    */
   function isTweetTruncated(tweetElement) {
-    // Look for various patterns of "show more" buttons
-    const showMoreButton = tweetElement.querySelector('span[data-testid="expand-text"]') ||
-                           tweetElement.querySelector('button[data-testid="show-more"]') ||
-                           tweetElement.querySelector('[data-testid="app-text-transition-container"] span[role="button"]') ||
-                           Array.from(tweetElement.querySelectorAll('span[role="button"]')).find(span => {
-                             const text = span.textContent.trim().toLowerCase();
-                             return text === 'show more' || text === 'read more' || text === 'show' || text === 'read' ||
-                                    text.includes('show') && text.includes('more');
-                           });
-    return !!showMoreButton;
+    // Look for various patterns of "show more" buttons - expanded selector list
+    const showMoreButton =
+      // Standard Twitter/X selectors
+      tweetElement.querySelector('span[data-testid="expand-text"]') ||
+      tweetElement.querySelector('button[data-testid="show-more"]') ||
+      tweetElement.querySelector('[data-testid="app-text-transition-container"] span[role="button"]') ||
+      // Look for elements with "Show" text inside various containers
+      Array.from(tweetElement.querySelectorAll('span[role="button"]')).find(span => {
+        const text = span.textContent.trim().toLowerCase();
+        return text === 'show more' || text === 'read more' ||
+               (text.includes('show') && text.includes('more') && !text.includes('less'));
+      }) ||
+      // Look for button elements
+      Array.from(tweetElement.querySelectorAll('button')).find(btn => {
+        const text = btn.textContent.trim().toLowerCase();
+        return text === 'show more' || text === 'read more' ||
+               (text.includes('show') && text.includes('more') && !text.includes('less'));
+      }) ||
+      // Look for divs with role="button" containing "show more"
+      Array.from(tweetElement.querySelectorAll('div[role="button"]')).find(div => {
+        const text = div.textContent.trim().toLowerCase();
+        return text === 'show more' || text === 'read more' ||
+               (text.includes('show') && text.includes('more') && !text.includes('less'));
+      }) ||
+      // Look for elements with aria-label containing "show more"
+      Array.from(tweetElement.querySelectorAll('[aria-label]')).find(el => {
+        const label = (el.getAttribute('aria-label') || '').toLowerCase();
+        return label.includes('show') && label.includes('more') && !label.includes('less');
+      });
+
+    // If we found a "show more" button, the tweet is truncated
+    // If we find "show less", the tweet is already expanded
+    const showLessButton =
+      Array.from(tweetElement.querySelectorAll('span[role="button"], button, div[role="button"]')).find(el => {
+        const text = el.textContent.trim().toLowerCase();
+        return text === 'show less' || text === 'read less' ||
+               (text.includes('show') && text.includes('less'));
+      }) ||
+      Array.from(tweetElement.querySelectorAll('[aria-label]')).find(el => {
+        const label = (el.getAttribute('aria-label') || '').toLowerCase();
+        return label.includes('show') && label.includes('less');
+      });
+
+    // Tweet is truncated if it has "show more" button and NO "show less" button
+    return !!showMoreButton && !showLessButton;
+  }
+
+  /**
+   * Try to extract full text from a truncated tweet without visually expanding it
+   * Checks innerHTML, all text nodes, and data attributes that might contain full text
+   */
+  function tryExtractFullTextWithoutExpanding(tweetElement) {
+    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
+
+    // Find the tweet text container
+    const textContainer = tweetElement.querySelector('[data-testid="tweetText"]');
+    if (!textContainer) {
+      return null;
+    }
+
+    // Method 0: Check if we already stored the full text in a data attribute
+    const storedFullText = tweetElement.getAttribute('data-iq-full-text');
+    if (storedFullText && storedFullText.length > 50) {
+      if (DEBUG) {
+        console.log('[IQGuessr] Using stored full text from previous extraction');
+      }
+      return storedFullText;
+    }
+
+    // Method 0.5: Check React Fiber or internal state (if accessible)
+    // Try to find the full text in aria-label or title attributes
+    const textSpans = textContainer.querySelectorAll('span');
+    for (const span of textSpans) {
+      const ariaLabel = span.getAttribute('aria-label');
+      const title = span.getAttribute('title');
+      if (ariaLabel && ariaLabel.length > 200) {
+        if (DEBUG) {
+          console.log('[IQGuessr] Found full text in aria-label');
+        }
+        return ariaLabel.trim();
+      }
+      if (title && title.length > 200) {
+        if (DEBUG) {
+          console.log('[IQGuessr] Found full text in title attribute');
+        }
+        return title.trim();
+      }
+    }
+
+    // Method 1: Get ALL text nodes recursively (includes hidden/collapsed text)
+    // This is the most reliable method - Twitter/X often has the full text in the DOM
+    const walker = document.createTreeWalker(
+      textContainer,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+
+    const allTextParts = [];
+    let node;
+    while (node = walker.nextNode()) {
+      const text = node.textContent.trim();
+      // Filter out button text and UI elements
+      if (text &&
+          !text.toLowerCase().includes('show more') &&
+          !text.toLowerCase().includes('read more') &&
+          !text.toLowerCase().includes('show less') &&
+          !text.toLowerCase().includes('read less') &&
+          text.length > 0) {
+        allTextParts.push(text);
+      }
+    }
+
+    if (allTextParts.length > 0) {
+      // Join all text parts and clean up
+      let fullText = allTextParts.join(' ').replace(/\s+/g, ' ').trim();
+
+      // Remove any remaining "Show more" text that might be embedded
+      fullText = fullText.replace(/\bshow\s+more\b/gi, '').trim();
+
+      if (fullText.length > 50) {
+        if (DEBUG) {
+          console.log('[IQGuessr] Found full text from all text nodes:', fullText.length, 'chars');
+        }
+        return fullText;
+      }
+    }
+
+    // Method 2: Check innerHTML - sometimes the full text is there but hidden via CSS
+    const innerHTML = textContainer.innerHTML || '';
+    if (innerHTML.length > 0) {
+      // Create a temporary div to parse the HTML and get all text
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = innerHTML;
+      const fullTextFromHTML = tempDiv.textContent || tempDiv.innerText || '';
+
+      // Remove "Show more" button text if present
+      let cleanedText = fullTextFromHTML.replace(/show\s+more/gi, '').replace(/\s+/g, ' ').trim();
+
+      if (cleanedText.length > 50) {
+        if (DEBUG) {
+          console.log('[IQGuessr] Found full text in innerHTML:', cleanedText.length, 'chars');
+        }
+        return cleanedText;
+      }
+    }
+
+    // Method 3: Look for elements with aria-expanded or data attributes that might contain full text
+    const expandedElements = textContainer.querySelectorAll('[aria-expanded], [data-full-text], [data-original-text]');
+    for (const elem of expandedElements) {
+      const dataText = elem.getAttribute('data-full-text') ||
+                      elem.getAttribute('data-original-text') ||
+                      (elem.textContent || '');
+
+      if (dataText.length > 50 && !dataText.toLowerCase().includes('show more')) {
+        if (DEBUG) {
+          console.log('[IQGuessr] Found text in data attribute:', dataText.length, 'chars');
+        }
+        return dataText.trim();
+      }
+    }
+
+    // Method 4: Check all child elements regardless of visibility
+    const allElements = textContainer.querySelectorAll('*');
+    let longestText = '';
+    for (const elem of allElements) {
+      const text = (elem.textContent || elem.innerText || '').trim();
+      if (text.length > longestText.length &&
+          text.length > 50 &&
+          !text.toLowerCase().includes('show more') &&
+          !text.toLowerCase().includes('read more')) {
+        longestText = text;
+      }
+    }
+
+    if (longestText.length > 50) {
+      if (DEBUG) {
+        console.log('[IQGuessr] Found longest text from child elements:', longestText.length, 'chars');
+      }
+      return longestText;
+    }
+
+    return null;
+  }
+
+  /**
+   * Extract full text from truncated tweet without visually expanding it
+   * Uses MutationObserver to detect expansion, extracts text instantly, then manipulates DOM to restore truncated state
+   */
+  async function extractFullTextWithoutVisualExpansion(tweetElement) {
+    const DEBUG = window.DEBUG_IQ_EXTRACTION === true;
+
+    return new Promise((resolve) => {
+      try {
+        // Find the actual "show more" button
+        const showMoreButton = tweetElement.querySelector('button[data-testid="tweet-text-show-more-link"]') ||
+          tweetElement.querySelector('span[data-testid="expand-text"]') ||
+          Array.from(tweetElement.querySelectorAll('button, span[role="button"]')).find(el => {
+            const text = (el.textContent || '').trim().toLowerCase();
+            const testId = el.getAttribute('data-testid') || '';
+            return (text.includes('show') && text.includes('more') && !text.includes('less')) ||
+                   testId.includes('show-more') || testId.includes('expand');
+          });
+
+        if (!showMoreButton) {
+          if (DEBUG) {
+            console.log('[IQGuessr] No show more button found');
+          }
+          resolve(null);
+          return;
+        }
+
+        // Store baseline text length before expansion
+        const baselineText = extractTweetText(tweetElement);
+        const baselineLength = baselineText ? baselineText.length : 0;
+
+        // Get the text container
+        const textContainer = tweetElement.querySelector('[data-testid="tweetText"]');
+        if (!textContainer) {
+          resolve(null);
+          return;
+        }
+
+        // Store the original HTML structure before expansion
+        const originalHTML = textContainer.innerHTML;
+
+        // Set up MutationObserver to catch expansion immediately
+        let expansionDetected = false;
+        let fullText = null;
+
+        // Store original container height before expansion for visual truncation
+        const originalHeight = textContainer.getBoundingClientRect().height;
+
+        const observer = new MutationObserver((mutations) => {
+          // Check if text has expanded (length increased significantly)
+          const currentText = extractTweetText(tweetElement);
+          if (currentText && currentText.length > baselineLength + 50 && !expansionDetected) {
+            expansionDetected = true;
+            fullText = currentText;
+
+            // Immediately stop observing
+            observer.disconnect();
+
+            try {
+              // Store the full text in a data attribute for potential reuse
+              tweetElement.setAttribute('data-iq-full-text', fullText);
+
+              // Since X/Twitter removes the "Show more" button after expansion,
+              // we need to visually truncate the text and add our own toggle button
+              // Calculate height for visual truncation
+              const expandedHeight = textContainer.getBoundingClientRect().height;
+              const lineHeight = expandedHeight / (fullText.length / 50); // Rough estimate: ~50 chars per line
+              const targetHeight = Math.max(originalHeight, lineHeight * 4); // Show ~4 lines initially
+
+              // Apply CSS to visually truncate (but keep button visible)
+              textContainer.style.maxHeight = `${targetHeight}px`;
+              textContainer.style.overflow = 'hidden';
+              textContainer.style.position = 'relative';
+              textContainer.setAttribute('data-iq-truncated', 'true');
+              textContainer.setAttribute('data-iq-target-height', targetHeight.toString());
+
+              // Find or create the parent wrapper to place button outside truncated area
+              let parentWrapper = textContainer.parentElement;
+              if (!parentWrapper || !parentWrapper.querySelector('[data-iq-toggle-btn]')) {
+                // Create a custom "Show more/Less" toggle button that matches X/Twitter's structure
+                const buttonWrapper = document.createElement('button');
+                buttonWrapper.setAttribute('data-iq-toggle-btn', 'true');
+                buttonWrapper.setAttribute('type', 'button');
+                buttonWrapper.setAttribute('dir', 'ltr');
+                buttonWrapper.setAttribute('role', 'button');
+                buttonWrapper.className = 'css-146c3p1 r-bcqeeo r-qvutc0 r-37j5jr r-a023e6 r-rjixqe r-16dba41 r-fdjqy7';
+                buttonWrapper.style.cssText = 'color: rgb(29, 155, 240); background: none; border: none; cursor: pointer; padding: 0; margin: 0; font-size: inherit; font-family: inherit; display: inline-block; position: relative; z-index: 10;';
+
+                const span = document.createElement('span');
+                span.className = 'css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3';
+                span.textContent = 'Show more';
+                span.style.cssText = 'color: inherit;';
+
+                buttonWrapper.appendChild(span);
+
+                buttonWrapper.onclick = (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const isTruncated = textContainer.getAttribute('data-iq-truncated') === 'true';
+                  const savedHeight = parseFloat(textContainer.getAttribute('data-iq-target-height') || targetHeight);
+                  if (isTruncated) {
+                    // Currently truncated, expand it
+                    textContainer.style.maxHeight = 'none';
+                    textContainer.removeAttribute('data-iq-truncated');
+                    span.textContent = 'Show less';
+                  } else {
+                    // Currently expanded, truncate it
+                    textContainer.style.maxHeight = `${savedHeight}px`;
+                    textContainer.setAttribute('data-iq-truncated', 'true');
+                    span.textContent = 'Show more';
+                  }
+                };
+
+                // Insert button AFTER the text container (sibling, not child) so it's not hidden by overflow
+                if (parentWrapper) {
+                  parentWrapper.insertBefore(buttonWrapper, textContainer.nextSibling);
+                } else {
+                  textContainer.parentNode.insertBefore(buttonWrapper, textContainer.nextSibling);
+                }
+
+                if (DEBUG) {
+                  console.log('[IQGuessr] Added toggle button after text container');
+                }
+              }
+
+              if (DEBUG) {
+                console.log('[IQGuessr] Extracted', fullText.length, 'chars and added custom toggle button');
+              }
+
+              resolve(fullText);
+            } catch (e) {
+              if (DEBUG) {
+                console.warn('[IQGuessr] Error during extraction:', e);
+              }
+              resolve(fullText);
+            }
+          }
+        });
+
+        // Start observing
+        observer.observe(textContainer, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+
+        // Click the button to trigger expansion
+        try {
+          showMoreButton.click();
+        } catch (e) {
+          try {
+            const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true, view: window });
+            showMoreButton.dispatchEvent(clickEvent);
+          } catch (e2) {
+            observer.disconnect();
+            if (DEBUG) {
+              console.warn('[IQGuessr] Failed to click show more button:', e2);
+            }
+            resolve(null);
+            return;
+          }
+        }
+
+        // Fallback timeout - if MutationObserver doesn't catch it in time
+        setTimeout(() => {
+          if (!expansionDetected) {
+            observer.disconnect();
+            const currentText = extractTweetText(tweetElement);
+            if (currentText && currentText.length > baselineLength + 50) {
+              if (DEBUG) {
+                console.log('[IQGuessr] Extracted', currentText.length, 'chars via timeout fallback');
+              }
+              tweetElement.setAttribute('data-iq-full-text', currentText);
+              resolve(currentText);
+            } else {
+              if (DEBUG) {
+                console.log('[IQGuessr] Expansion not detected, using baseline text');
+              }
+              resolve(null);
+            }
+          }
+        }, 500);
+
+      } catch (e) {
+        if (DEBUG) {
+          console.warn('[IQGuessr] Extraction method failed:', e);
+        }
+        resolve(null);
+      }
+    });
+  }
+
+  /**
+   * DEPRECATED: This function is no longer used.
+   * We now extract full text using hidden clone method to avoid visual expansion.
+   */
+  function expandExtractCollapseTweet(tweetElement) {
+    // Legacy stub - not used anymore, we now use extractFullTextWithoutVisualExpansion instead
+    return Promise.resolve();
   }
 
   /**
    * Expand truncated tweets by clicking "show more" button if present
    * Returns a promise that resolves when expansion is complete
+   * Includes verification that expansion actually occurred
+   * NOTE: This function now tries to extract without expanding first
    */
   function expandTruncatedTweet(tweetElement) {
     return new Promise((resolve) => {
-      // Look for "Show more" button using various possible selectors
-      const showMoreButton = tweetElement.querySelector('span[data-testid="expand-text"]') ||
-                             tweetElement.querySelector('button[data-testid="show-more"]') ||
-                             tweetElement.querySelector('[data-testid="app-text-transition-container"] span[role="button"]') ||
-                             Array.from(tweetElement.querySelectorAll('span[role="button"]')).find(span => {
-                               const text = span.textContent.trim().toLowerCase();
-                               return text === 'show more' || text === 'read more' || text === 'show' || text === 'read' ||
-                                      text.includes('show') && text.includes('more');
-                             });
+      // Get initial text length for comparison
+      const initialText = extractTweetText(tweetElement);
+      const initialLength = initialText ? initialText.length : 0;
+
+      // Look for "Show more" button using expanded selector list
+      const showMoreButton =
+        // Standard Twitter/X selectors
+        tweetElement.querySelector('span[data-testid="expand-text"]') ||
+        tweetElement.querySelector('button[data-testid="show-more"]') ||
+        tweetElement.querySelector('[data-testid="app-text-transition-container"] span[role="button"]') ||
+        // Look for span elements with role="button"
+        Array.from(tweetElement.querySelectorAll('span[role="button"]')).find(span => {
+          const text = span.textContent.trim().toLowerCase();
+          return text === 'show more' || text === 'read more' || text === 'show' ||
+                 (text.includes('show') && text.includes('more'));
+        }) ||
+        // Look for button elements
+        Array.from(tweetElement.querySelectorAll('button')).find(btn => {
+          const text = btn.textContent.trim().toLowerCase();
+          return text === 'show more' || text === 'read more' ||
+                 (text.includes('show') && text.includes('more'));
+        }) ||
+        // Look for divs with role="button"
+        Array.from(tweetElement.querySelectorAll('div[role="button"]')).find(div => {
+          const text = div.textContent.trim().toLowerCase();
+          return text === 'show more' || text === 'read more' ||
+                 (text.includes('show') && text.includes('more'));
+        }) ||
+        // Look for elements with aria-label
+        Array.from(tweetElement.querySelectorAll('[aria-label]')).find(el => {
+          const label = (el.getAttribute('aria-label') || '').toLowerCase();
+          return label.includes('show') && label.includes('more');
+        });
 
       if (showMoreButton) {
-        // Click the button to expand the tweet
-        showMoreButton.click();
-        // Wait a short time for the expansion to occur
-        setTimeout(resolve, 150);
+        const DEBUG_EXPANSION = window.DEBUG_IQ_EXTRACTION === true;
+
+        if (DEBUG_EXPANSION) {
+          console.log('[IQGuessr] Found "show more" button, expanding tweet...', {
+            initialLength: initialLength,
+            buttonText: showMoreButton.textContent,
+            buttonType: showMoreButton.tagName
+          });
+        }
+
+        // Try multiple click methods for better compatibility
+        try {
+          // Method 1: Direct click
+          showMoreButton.click();
+        } catch (e1) {
+          try {
+            // Method 2: MouseEvent
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window
+            });
+            showMoreButton.dispatchEvent(clickEvent);
+          } catch (e2) {
+            try {
+              // Method 3: Focus and Enter key
+              if (showMoreButton.focus) {
+                showMoreButton.focus();
+              }
+              const enterEvent = new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                bubbles: true,
+                cancelable: true
+              });
+              showMoreButton.dispatchEvent(enterEvent);
+            } catch (e3) {
+              if (DEBUG_EXPANSION) {
+                console.warn('[IQGuessr] Could not click show more button:', e3);
+              }
+            }
+          }
+        }
+
+        // Wait and verify expansion occurred
+        let attempts = 0;
+        const maxAttempts = 10; // Try for up to 1 second (10 * 100ms)
+
+        const checkExpansion = () => {
+          attempts++;
+          const currentText = extractTweetText(tweetElement);
+          const currentLength = currentText ? currentText.length : 0;
+
+          // Check if:
+          // 1. Text length increased significantly (expansion worked)
+          // 2. The "show more" button disappeared (expansion worked)
+          // 3. Maximum attempts reached (give up)
+          const buttonStillExists = tweetElement.querySelector('span[data-testid="expand-text"]') ||
+                                   Array.from(tweetElement.querySelectorAll('span[role="button"], button')).some(el => {
+                                     const text = el.textContent.trim().toLowerCase();
+                                     return (text.includes('show') && text.includes('more'));
+                                   });
+
+          if (DEBUG_EXPANSION && attempts % 2 === 0) {
+            console.log(`[IQGuessr] Expansion check (attempt ${attempts}):`, {
+              initialLength: initialLength,
+              currentLength: currentLength,
+              increased: currentLength - initialLength,
+              buttonStillExists: buttonStillExists
+            });
+          }
+
+          if (currentLength > initialLength + 50 || !buttonStillExists || attempts >= maxAttempts) {
+            // Expansion likely complete, or we've tried enough
+            if (DEBUG_EXPANSION) {
+              console.log('[IQGuessr] Expansion complete:', {
+                finalLength: currentLength,
+                lengthIncrease: currentLength - initialLength,
+                buttonDisappeared: !buttonStillExists
+              });
+            }
+            resolve();
+          } else {
+            // Keep checking
+            setTimeout(checkExpansion, 100);
+          }
+        };
+
+        // Start checking after initial delay
+        setTimeout(checkExpansion, 200);
       } else {
         // No expansion needed, resolve immediately
         resolve();
@@ -102,9 +598,8 @@
    * Excludes usernames, metadata, quoted tweets, and other non-content text
    */
   function extractTweetText(tweetElement) {
-    // DEBUG MODE: Enable by setting window.DEBUG_IQ_EXTRACTION = true in console
-    // Or check the console - basic info is always logged
-    const DEBUG = window.DEBUG_IQ_EXTRACTION === true;
+    // DEBUG MODE: Enabled by default (set window.DEBUG_IQ_EXTRACTION = false to disable)
+    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
 
     // Strategy: The main tweet text is typically the FIRST occurrence and shallower in the DOM
     // Quoted tweets are nested deeper and come later in the DOM tree
@@ -331,7 +826,7 @@
    * Check if an element is inside a quoted tweet container
    */
   function isInsideQuotedTweet(element, tweetElement) {
-    const DEBUG = window.DEBUG_IQ_EXTRACTION === true;
+    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
     const isSingleTweetPage = /\/status\/\d+/.test(window.location.pathname);
 
     // Check if element is inside any known quoted tweet containers
@@ -938,15 +1433,109 @@
     // Mark as processing to avoid double-processing
     tweetElement.setAttribute('data-iq-processing', 'true');
 
-    // Check if tweet is truncated and expand it
-    if (isTweetTruncated(tweetElement)) {
-      await expandTruncatedTweet(tweetElement);
-      // Wait a bit more to ensure DOM has updated
-      await new Promise(resolve => setTimeout(resolve, 50));
+    // Try to extract full text without visually expanding the tweet
+    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
+    let tweetText = null;
+
+    // ALWAYS log when processing a tweet
+    console.log('[IQGuessr] 📝 Processing tweet:', tweetElement);
+
+    // First, check if tweet is already expanded - if so, just extract normally
+    const alreadyExpanded = Array.from(tweetElement.querySelectorAll('span[role="button"], button, div[role="button"]')).some(el => {
+      const text = el.textContent.trim().toLowerCase();
+      return text === 'show less' || text === 'read less' ||
+             (text.includes('show') && text.includes('less'));
+    });
+
+    console.log('[IQGuessr] Already expanded?', alreadyExpanded);
+
+    // If already expanded, just extract normally (don't try to collapse it)
+    if (alreadyExpanded) {
+      console.log('[IQGuessr] ℹ️ Tweet is already expanded, extracting text normally');
+      tweetText = extractTweetText(tweetElement);
+      if (tweetText) {
+        console.log('[IQGuessr] ✅ Extracted text length:', tweetText.length, 'chars');
+        console.log('[IQGuessr] Text preview:', tweetText.substring(0, 100) + '...');
+      } else {
+        console.warn('[IQGuessr] ⚠️ No text extracted from expanded tweet!');
+      }
+    } else if (isTweetTruncated(tweetElement)) {
+      if (DEBUG) {
+        console.log('[IQGuessr] ✅ Tweet is truncated, attempting to extract full text without expanding...');
+      }
+
+      // Extract full text without visually expanding the tweet
+      tweetText = tryExtractFullTextWithoutExpanding(tweetElement);
+
+      // Get a baseline to compare - what would normal extraction give us?
+      const baselineText = extractTweetText(tweetElement);
+      const baselineLength = baselineText ? baselineText.length : 0;
+
+      if (DEBUG) {
+        console.log('[IQGuessr] Baseline text length:', baselineLength, 'chars');
+        console.log('[IQGuessr] Extracted without visual expansion:', tweetText ? tweetText.length : 0, 'chars');
+      }
+
+      // If extracted text is similar to baseline (within 50 chars), it's likely truncated
+      // Try the expansion method to get the full text
+      const extractedLength = tweetText ? tweetText.length : 0;
+
+      // Check if we're likely getting truncated text:
+      // Since we detected a truncated tweet, if extracted text is similar to baseline,
+      // we're definitely getting truncated text and should try expansion
+      const likelyTruncated = !tweetText ||
+                              Math.abs(extractedLength - baselineLength) < 100; // Within 100 chars means they're similar
+
+      if (likelyTruncated && baselineLength > 50) {
+        // Likely truncated - try expansion method
+        if (DEBUG) {
+          console.log('[IQGuessr] Extracted text seems truncated (extracted:', extractedLength, 'baseline:', baselineLength, '), trying expansion method...');
+        }
+        const expandedText = await extractFullTextWithoutVisualExpansion(tweetElement);
+        if (expandedText && expandedText.length > Math.max(extractedLength, baselineLength) + 50) {
+          tweetText = expandedText;
+          if (DEBUG) {
+            console.log('[IQGuessr] ✅ Successfully extracted full text via expansion:', tweetText.length, 'chars (was:', Math.max(extractedLength, baselineLength), 'chars)');
+          }
+        } else if (expandedText && expandedText.length > extractedLength) {
+          // Even if not much better, use it if it's longer
+          tweetText = expandedText;
+          if (DEBUG) {
+            console.log('[IQGuessr] Expanded text is longer, using it:', tweetText.length, 'chars');
+          }
+        } else if (tweetText) {
+          if (DEBUG) {
+            console.log('[IQGuessr] Expansion method did not yield better results, using extracted text:', tweetText.length, 'chars');
+          }
+        } else {
+          tweetText = baselineText;
+          if (DEBUG) {
+            console.log('[IQGuessr] ⚠️ Using baseline text (some text may be missing):', tweetText.length, 'chars');
+          }
+        }
+      } else if (tweetText) {
+        if (DEBUG) {
+          console.log('[IQGuessr] ✅ Successfully extracted full text without expansion:', tweetText.length, 'chars');
+        }
+      } else {
+        tweetText = baselineText;
+        if (DEBUG) {
+          console.log('[IQGuessr] ⚠️ Using baseline text (some text may be missing)');
+        }
+      }
+    } else {
+      if (DEBUG) {
+        console.log('[IQGuessr] ℹ️ Tweet is not truncated, using normal extraction');
+      }
     }
 
-    // Extract text (now it should be the full text)
-    const tweetText = extractTweetText(tweetElement);
+    // Extract text (either we already have it from above, or use normal extraction)
+    if (!tweetText) {
+      tweetText = extractTweetText(tweetElement);
+      if (DEBUG) {
+        console.log('[IQGuessr] Final extracted text length:', tweetText ? tweetText.length : 0, 'chars');
+      }
+    }
 
     // Validate text before processing
     if (!tweetText) {
@@ -1024,6 +1613,12 @@
    * Process all visible tweets
    */
   function processVisibleTweets() {
+    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false;
+
+    if (DEBUG) {
+      console.log('[IQGuessr] 🔍 processVisibleTweets() called');
+    }
+
     // Find all tweet articles (X.com/Twitter structure)
     const tweetSelectors = [
       'article[data-testid="tweet"]',
@@ -1042,11 +1637,22 @@
       tweets = document.querySelectorAll('article');
     }
 
+    if (DEBUG) {
+      console.log('[IQGuessr] Found', tweets.length, 'total tweets on page');
+    }
+
     const newTweets = Array.from(tweets).filter(tweet =>
       tweet && !tweet.hasAttribute('data-iq-analyzed') && !tweet.hasAttribute('data-iq-processing')
     );
 
-    newTweets.forEach(tweet => {
+    if (DEBUG) {
+      console.log('[IQGuessr] Processing', newTweets.length, 'new tweets');
+    }
+
+    newTweets.forEach((tweet, index) => {
+      if (DEBUG) {
+        console.log(`[IQGuessr] Processing tweet ${index + 1}/${newTweets.length}`);
+      }
       processTweet(tweet);
     });
   }
@@ -1088,14 +1694,26 @@
    * Initialize the extension
    */
   function init() {
+    console.log('[IQGuessr] 🚀 Initializing extension...');
+    console.log('[IQGuessr] Document ready state:', document.readyState);
+
     // Process existing tweets
     if (document.readyState === 'loading') {
+      console.log('[IQGuessr] Document still loading, waiting for DOMContentLoaded...');
       document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(processVisibleTweets, 1000);
+        console.log('[IQGuessr] DOMContentLoaded fired, starting processing...');
+        setTimeout(() => {
+          console.log('[IQGuessr] Processing tweets after delay...');
+          processVisibleTweets();
+        }, 1000);
         setupObserver();
       });
     } else {
-      setTimeout(processVisibleTweets, 1000);
+      console.log('[IQGuessr] Document already ready, starting processing...');
+      setTimeout(() => {
+        console.log('[IQGuessr] Processing tweets after delay...');
+        processVisibleTweets();
+      }, 1000);
       setupObserver();
     }
 
@@ -1103,8 +1721,13 @@
     let scrollTimeout;
     window.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(processVisibleTweets, 500);
+      scrollTimeout = setTimeout(() => {
+        console.log('[IQGuessr] Scroll detected, processing tweets...');
+        processVisibleTweets();
+      }, 500);
     });
+
+    console.log('[IQGuessr] ✅ Extension initialized');
   }
 
   // Start the extension
