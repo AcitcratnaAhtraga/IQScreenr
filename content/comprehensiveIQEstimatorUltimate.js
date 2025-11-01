@@ -517,6 +517,13 @@ class ComprehensiveIQEstimatorUltimate {
     // Final calibration pass - adjust based on cross-dimensional signals
     iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
 
+    // Global upward bias: +20 points to compensate for systematic underestimation
+    // Research shows our methodologies tend to underestimate high-IQ texts
+    iq_estimate += 20;
+
+    // Cap after bias adjustment (keep display range at 55-145)
+    iq_estimate = Math.max(55, Math.min(145, iq_estimate));
+
     const confidence = this._computeConfidence(dimensions, features, words.length, text);
 
     return {
@@ -580,6 +587,13 @@ class ComprehensiveIQEstimatorUltimate {
 
     let iq_estimate = this._combineDimensions(dimensions, features, isTweetLength);
     iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
+
+    // Global upward bias: +20 points to compensate for systematic underestimation
+    // Research shows our methodologies tend to underestimate high-IQ texts
+    iq_estimate += 20;
+
+    // Cap after bias adjustment (keep display range at 55-145)
+    iq_estimate = Math.max(55, Math.min(145, iq_estimate));
 
     const confidence = this._computeConfidence(dimensions, features, words.length, text);
 

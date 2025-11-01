@@ -871,8 +871,8 @@
    * Get IQ color based on score (desaturated for elegant appearance)
    */
   function getIQColor(iq) {
-    // Gradient from 60 (red) to 145+ (green)
-    // 60-85: red to orange
+    // Gradient from 55 (red) to 145+ (green)
+    // 55-85: red to orange
     // 85-105: orange to yellow
     // 105-125: yellow to light green
     // 125-145+: light green to green
@@ -976,17 +976,22 @@
 
   /**
    * Create loading badge while IQ is being calculated
-   * Uses the lowest IQ color (dark red) with a rotating spinner
+   * Uses a darker red than the lowest IQ color with a rotating spinner
    */
   function createLoadingBadge() {
     const badge = document.createElement('span');
     badge.className = 'iq-badge iq-badge-loading';
     badge.setAttribute('data-iq-loading', 'true');
 
-    // Use the lowest IQ color (< 70) which is dark red #d32f2f
+    // Use a darker red than the lowest IQ color (#d32f2f)
+    // Darker shade: #b71c1c (one shade darker)
+    const darkerRed = '#b71c1c';
+    const rgb = hexToRgb(darkerRed);
     // Apply desaturation like getIQColor does for consistency
-    const lowestIQColor = getIQColor(60);
-    badge.style.setProperty('background-color', lowestIQColor, 'important');
+    const desat = desaturateColor(rgb, 0.5);
+    const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+
+    badge.style.setProperty('background-color', loadingColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
     badge.style.setProperty('cursor', 'wait', 'important');
     badge.style.setProperty('display', 'inline-flex', 'important');
@@ -1040,6 +1045,238 @@
     if (window.__IQ_DEBUG__) {
       console.log(`[IQ Badge Debug] ${message}`, data || '');
     }
+  }
+
+  /**
+   * Animate count-up from 0 to final IQ, then pulse animation
+   * Uses ease-out for fast start, slow end
+   * @param {HTMLElement} badge - The badge element
+   * @param {number} finalIQ - The final IQ score
+   * @param {string} iqColor - The final background color
+   */
+  function animateCountUp(badge, finalIQ, iqColor) {
+    // Check if animation already started or completed
+    if (badge.hasAttribute('data-iq-animating') || badge.hasAttribute('data-iq-animated')) {
+      return;
+    }
+
+    // Get the loading color (darker red) for color interpolation
+    const darkerRed = '#b71c1c';
+    const rgb = hexToRgb(darkerRed);
+    const desat = desaturateColor(rgb, 0.5);
+    const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+
+    // Parse final color for interpolation
+    const finalColorRgb = parseColor(iqColor);
+
+    function startAnimation() {
+      // Check again to avoid double-start
+      if (badge.hasAttribute('data-iq-animating') || badge.hasAttribute('data-iq-animated')) {
+        return;
+      }
+
+      // Mark as animating
+      badge.setAttribute('data-iq-animating', 'true');
+
+      // Replace spinner with score element for counting
+      const scoreContainer = badge.querySelector('.iq-score');
+
+      if (!scoreContainer) {
+        // Fallback if score element doesn't exist
+        badge.innerHTML = `
+          <span class="iq-label">IQ</span>
+          <span class="iq-score">${finalIQ}</span>
+        `;
+        badge.classList.remove('iq-badge-loading');
+        badge.removeAttribute('data-iq-animating');
+        badge.setAttribute('data-iq-animated', 'true');
+        return;
+      }
+
+      // Remove spinner, start counting from 0
+      scoreContainer.innerHTML = '0';
+      const scoreElement = scoreContainer;
+
+      // Remove loading class and spinner
+      badge.classList.remove('iq-badge-loading');
+      const spinner = badge.querySelector('.iq-loading-spinner');
+      if (spinner) {
+        spinner.remove();
+      }
+
+      const duration = 1200; // Total animation duration in ms
+      const startTime = performance.now(); // Use performance.now() for better precision
+      let lastDisplayedIQ = -1;
+      let animationFrameId = null;
+      let lastUpdateTime = startTime;
+
+      function updateNumber() {
+        const now = performance.now();
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Ease-out cubic function: fast start, slow end
+        // f(t) = 1 - (1 - t)^3
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+        let currentIQ = Math.floor(easedProgress * finalIQ);
+
+        // Force update if we haven't updated in a while (prevents stalling)
+        const timeSinceLastUpdate = now - lastUpdateTime;
+        const shouldForceUpdate = timeSinceLastUpdate > 50; // Force update every 50ms minimum
+
+        // Always update if IQ changed OR if we need to force update OR if we're near the end
+        if (currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95) {
+          // If we're stuck at the same number, force at least some progress
+          if (currentIQ === lastDisplayedIQ && progress < 0.99) {
+            // Use linear progress as fallback to ensure movement
+            const linearProgress = Math.floor((progress * 0.9 + 0.1) * finalIQ);
+            if (linearProgress > currentIQ) {
+              currentIQ = linearProgress;
+            }
+          }
+
+          // Clamp to final IQ
+          if (currentIQ > finalIQ) {
+            currentIQ = finalIQ;
+          }
+
+          // Only update if it actually changed or we're forcing it
+          if (currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95) {
+            scoreElement.textContent = currentIQ;
+            lastDisplayedIQ = currentIQ;
+            lastUpdateTime = now;
+          }
+
+          // Always update color smoothly (this helps with visual smoothness)
+          const currentColor = interpolateRgbColor(
+            parseColor(loadingColor),
+            finalColorRgb,
+            easedProgress
+          );
+          badge.style.setProperty('background-color', currentColor, 'important');
+        }
+
+        if (progress < 1) {
+          // Continue animation - always schedule next frame
+          animationFrameId = requestAnimationFrame(updateNumber);
+        } else {
+          // Animation complete - ensure final number and color are shown
+          scoreElement.textContent = finalIQ;
+          badge.style.setProperty('background-color', iqColor, 'important');
+
+          // Cancel any pending animation frame
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+          }
+
+          // Mark as animated
+          badge.removeAttribute('data-iq-animating');
+          badge.setAttribute('data-iq-animated', 'true');
+
+          // Small delay before pulse animation to ensure final number is visible
+          setTimeout(() => {
+            // Trigger pulse animation with color transition
+            triggerPulseAnimation(badge, iqColor);
+          }, 200);
+        }
+      }
+
+      // Start animation immediately
+      updateNumber();
+    }
+
+    // Use IntersectionObserver to trigger animation when badge becomes visible
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          // Badge is now visible - start animation
+          observer.disconnect();
+          startAnimation();
+        }
+      });
+    }, {
+      threshold: 0.01, // Trigger when badge is visible (even 1%)
+      rootMargin: '50px' // Start a bit before it's fully visible
+    });
+
+    // Start observing the badge
+    observer.observe(badge);
+
+    // Also check if already visible (might be in viewport already)
+    const rect = badge.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight + 50 && rect.bottom > -50;
+    if (isVisible) {
+      // Already visible, start animation immediately
+      observer.disconnect();
+      startAnimation();
+    }
+  }
+
+  /**
+   * Parse color string to RGB object
+   */
+  function parseColor(colorStr) {
+    if (colorStr.startsWith('rgb')) {
+      const match = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (match) {
+        return { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) };
+      }
+    } else if (colorStr.startsWith('#')) {
+      return hexToRgb(colorStr);
+    }
+    return { r: 0, g: 0, b: 0 };
+  }
+
+  /**
+   * Interpolate between two RGB colors
+   */
+  function interpolateRgbColor(color1, color2, t) {
+    const r = Math.round(color1.r + (color2.r - color1.r) * t);
+    const g = Math.round(color1.g + (color2.g - color1.g) * t);
+    const b = Math.round(color1.b + (color2.b - color1.b) * t);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+
+  /**
+   * Trigger pulse animation with color transition (black -> white -> black)
+   * @param {HTMLElement} badge - The badge element
+   * @param {string} iqColor - The final background color
+   */
+  function triggerPulseAnimation(badge, iqColor) {
+    const scoreElement = badge.querySelector('.iq-score');
+    if (!scoreElement) return;
+
+    // Add pulse animation class
+    badge.classList.add('iq-badge-pulse');
+
+    // Color transition: black -> white -> black
+    const startTime = Date.now();
+    const duration = 300;
+
+    function updateColor() {
+      const elapsed = Date.now() - startTime;
+
+      if (elapsed < duration) {
+        // Phase 1 (0-150ms): black to white
+        if (elapsed < 150) {
+          const t = elapsed / 150;
+          const value = Math.floor(0 + (255 - 0) * t);
+          scoreElement.style.color = `rgb(${value}, ${value}, ${value})`;
+        } else {
+          // Phase 2 (150-300ms): white to black
+          const t = (elapsed - 150) / 150;
+          const value = Math.floor(255 + (0 - 255) * t);
+          scoreElement.style.color = `rgb(${value}, ${value}, ${value})`;
+        }
+        requestAnimationFrame(updateColor);
+      } else {
+        // Animation complete - reset to black
+        scoreElement.style.color = '#000000';
+        badge.classList.remove('iq-badge-pulse');
+      }
+    }
+
+    updateColor();
   }
 
   /**
@@ -1298,16 +1535,8 @@
    * Process a single tweet
    */
   async function processTweet(tweetElement) {
-    debugLog('=== START processTweet ===', { element: tweetElement });
-
     // Skip if already processed (including invalid badges)
     if (tweetElement.hasAttribute('data-iq-analyzed')) {
-      const existingBadge = tweetElement.querySelector('.iq-badge');
-      if (existingBadge && existingBadge.hasAttribute('data-iq-invalid')) {
-        debugLog('SKIP: Already marked as invalid');
-      } else {
-        debugLog('SKIP: Already analyzed');
-      }
       return;
     }
 
@@ -1316,24 +1545,19 @@
     if (existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
         !existingBadge.classList.contains('iq-badge-loading') &&
         !existingBadge.hasAttribute('data-iq-invalid')) {
-      debugLog('SKIP: Badge already exists and finalized', { badge: existingBadge });
       tweetElement.setAttribute('data-iq-analyzed', 'true');
       return;
     }
 
     // Mark as processing to avoid double-processing
     tweetElement.setAttribute('data-iq-processing', 'true');
-    debugLog('Marked as processing');
 
     // STEP 1: Quick synchronous text extraction for early validation
     let tweetText = null;
-    debugLog('Extracting text (quick sync)...');
     tweetText = extractTweetText(tweetElement);
-    debugLog('Quick text extracted', { text: tweetText, length: tweetText?.length });
 
     // STEP 2: Early validation - if invalid, show X badge immediately
     if (!tweetText) {
-      debugLog('INVALID: No text extracted');
       if (settings.showIQBadge) {
         // Remove any loading badge and show X badge
         const existingBadge = tweetElement.querySelector('.iq-badge');
@@ -1359,7 +1583,6 @@
             tweetElement.insertBefore(invalidBadge, tweetElement.firstChild);
           }
         }
-        debugLog('INVALID badge inserted (no text)');
       }
       tweetElement.setAttribute('data-iq-analyzed', 'true');
       tweetElement.removeAttribute('data-iq-processing');
@@ -1367,15 +1590,12 @@
     }
 
     const validation = validateTweetText(tweetText);
-    debugLog('Validation result', validation);
     if (!validation.isValid) {
-      debugLog('INVALID: Validation failed', { reason: validation.reason });
       if (settings.showIQBadge) {
         // Remove any loading badge and show X badge
         const existingBadge = tweetElement.querySelector('.iq-badge');
         if (existingBadge) {
           existingBadge.remove();
-          debugLog('Removed existing badge before showing invalid badge');
         }
         const invalidBadge = createInvalidBadge();
         const engagementBar = tweetElement.querySelector('[role="group"]');
@@ -1396,7 +1616,6 @@
             tweetElement.insertBefore(invalidBadge, tweetElement.firstChild);
           }
         }
-        debugLog('INVALID badge inserted', { reason: validation.reason });
       }
       tweetElement.setAttribute('data-iq-analyzed', 'true');
       tweetElement.removeAttribute('data-iq-processing');
@@ -1404,18 +1623,14 @@
     }
 
     // STEP 3: Text is valid - ensure loading badge exists and persists
-    debugLog('VALID: Text is valid, ensuring loading badge exists');
     let loadingBadge = null;
     if (settings.showIQBadge) {
       // Check for existing loading badge
       loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                      tweetElement.querySelector('.iq-badge-loading');
 
-      debugLog('Loading badge check', { exists: !!loadingBadge, badge: loadingBadge });
-
       // If no loading badge exists, create one now
       if (!loadingBadge) {
-        debugLog('Creating new loading badge');
         loadingBadge = createLoadingBadge();
 
         // Try to find engagement bar
@@ -1427,7 +1642,6 @@
           } else {
             engagementBar.appendChild(loadingBadge);
           }
-          debugLog('Loading badge inserted into engagement bar');
         } else {
           // Fallback: attach to tweet element
           const tweetContent = tweetElement.querySelector('div[data-testid="tweetText"]') ||
@@ -1438,7 +1652,6 @@
           } else {
             tweetElement.insertBefore(loadingBadge, tweetElement.firstChild);
           }
-          debugLog('Loading badge inserted into tweet (fallback)');
         }
       }
 
@@ -1446,7 +1659,6 @@
       if (loadingBadge && loadingBadge.parentElement) {
         const engagementBar = tweetElement.querySelector('[role="group"]');
         if (engagementBar && !engagementBar.contains(loadingBadge)) {
-          debugLog('Moving badge to engagement bar');
           // Move badge to engagement bar if it exists
           const firstChild = engagementBar.firstElementChild;
           if (firstChild) {
@@ -1456,20 +1668,14 @@
           }
         }
       }
-      debugLog('Loading badge ensured', { badge: loadingBadge, parent: loadingBadge?.parentElement });
     }
 
     // STEP 4: Now do async full text extraction for better accuracy
-    debugLog('Starting async text extraction...');
 
     // VERIFY loading badge is still visible before async operations
     if (settings.showIQBadge && loadingBadge) {
       if (!loadingBadge.parentElement) {
-        debugLog('ERROR: Loading badge lost from DOM during async extraction prep!', {
-          badge: loadingBadge,
-          inDOM: false
-        });
-        // Recreate it
+        // Recreate it if lost
         loadingBadge = createLoadingBadge();
         const engagementBar = tweetElement.querySelector('[role="group"]');
         if (engagementBar) {
@@ -1480,14 +1686,6 @@
             engagementBar.appendChild(loadingBadge);
           }
         }
-        debugLog('Recreated loading badge after it was lost');
-      } else {
-        debugLog('Loading badge verified before async extraction', {
-          exists: true,
-          inDOM: true,
-          parent: loadingBadge.parentElement,
-          visible: loadingBadge.offsetParent !== null
-        });
       }
     }
 
@@ -1498,14 +1696,10 @@
              (text.includes('show') && text.includes('less'));
     });
 
-    debugLog('Async extraction check', { alreadyExpanded: alreadyExpanded, isTruncated: isTweetTruncated(tweetElement) });
-
     // If already expanded, just extract normally (don't try to collapse it)
     if (alreadyExpanded) {
       tweetText = extractTweetText(tweetElement);
-      debugLog('Tweet already expanded, using normal extraction', { textLength: tweetText?.length });
     } else if (isTweetTruncated(tweetElement)) {
-      debugLog('Tweet is truncated, attempting full extraction...');
 
       // Extract full text without visually expanding the tweet
       tweetText = tryExtractFullTextWithoutExpanding(tweetElement);
@@ -1526,11 +1720,9 @@
 
       if (likelyTruncated && baselineLength > 50) {
         // Likely truncated - try expansion method
-        debugLog('Attempting full text expansion (async)...');
 
         // VERIFY badge before async expansion
         if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
-          debugLog('WARNING: Badge lost before async expansion, recreating...');
           loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                          tweetElement.querySelector('.iq-badge-loading');
           if (!loadingBadge) {
@@ -1551,7 +1743,6 @@
 
         // VERIFY badge after async expansion
         if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
-          debugLog('ERROR: Badge lost after async expansion!', { badge: loadingBadge });
           loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                          tweetElement.querySelector('.iq-badge-loading');
           if (!loadingBadge) {
@@ -1565,15 +1756,8 @@
                 engagementBar.appendChild(loadingBadge);
               }
             }
-            debugLog('Recreated badge after async expansion');
           }
         }
-
-        debugLog('Full text expansion complete', {
-          expandedLength: expandedText?.length,
-          extractedLength: extractedLength,
-          baselineLength: baselineLength
-        });
 
         if (expandedText && expandedText.length > Math.max(extractedLength, baselineLength) + 50) {
           tweetText = expandedText;
@@ -1588,23 +1772,16 @@
       } else if (!tweetText) {
         tweetText = baselineText;
       }
-
-      debugLog('Async extraction completed', { finalTextLength: tweetText?.length });
-    } else {
-      debugLog('Tweet not truncated, using existing text', { textLength: tweetText?.length });
     }
 
     // Continue with async extraction (already validated above, but get better text)
     // This is for truncated tweets - we already have a valid quick extract
 
     try {
-      debugLog('Starting IQ estimation...', { textLength: tweetText.length });
-
       // VERIFY loading badge still exists before async operation
       if (settings.showIQBadge) {
         // Re-check loading badge in case it was removed
         if (!loadingBadge || !loadingBadge.parentElement) {
-          debugLog('WARNING: Loading badge missing before IQ estimation, recreating...');
           loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                          tweetElement.querySelector('.iq-badge-loading');
           if (!loadingBadge) {
@@ -1618,48 +1795,38 @@
                 engagementBar.appendChild(loadingBadge);
               }
             }
-            debugLog('Recreated loading badge before IQ estimation');
           }
         }
-        debugLog('Loading badge verified before IQ estimation', {
-          exists: !!loadingBadge,
-          inDOM: !!loadingBadge?.parentElement,
-          parent: loadingBadge?.parentElement
-        });
       }
 
       // Calculate IQ using the comprehensive client-side estimator (async with real dependency parsing)
       const result = await iqEstimator.estimate(tweetText);
-      debugLog('IQ estimation complete', {
-        isValid: result.is_valid,
-        iqEstimate: result.iq_estimate,
-        result: result
-      });
 
       // Only show badge if estimation was successful
       if (result.is_valid && result.iq_estimate !== null && settings.showIQBadge) {
         const iq = Math.round(result.iq_estimate);
-        debugLog('IQ calculated', { iq: iq });
 
-        // If we have a loading badge, transition it to the final badge
+        // If we have a loading badge, transition it to the final badge with count-up animation
         if (loadingBadge && loadingBadge.parentElement) {
-          debugLog('Transitioning loading badge to final IQ badge', { iq: iq });
+
           // Get the final IQ color
           const iqColor = getIQColor(iq);
 
-          // Update the loading badge to show final IQ score
+          // Update badge attributes (keep loading spinner until animation starts)
           loadingBadge.removeAttribute('data-iq-loading');
           loadingBadge.setAttribute('data-iq-score', iq);
-          loadingBadge.classList.remove('iq-badge-loading');
-          loadingBadge.style.setProperty('background-color', iqColor, 'important');
-          loadingBadge.style.setProperty('color', '#000000', 'important');
+          // Don't change background color yet - let animation interpolate it
           loadingBadge.style.setProperty('cursor', 'help', 'important');
 
-          // Replace spinner with actual IQ score
-          loadingBadge.innerHTML = `
-            <span class="iq-label">IQ</span>
-            <span class="iq-score">${iq}</span>
-          `;
+          // Store animation data on badge
+          loadingBadge._animationData = {
+            finalIQ: iq,
+            iqColor: iqColor
+          };
+
+          // Start count-up animation from 0 to final IQ (will trigger when visible)
+          // Animation will remove spinner and interpolate colors
+          animateCountUp(loadingBadge, iq, iqColor);
 
           // Store debug data on the badge element for hover access
           loadingBadge._debugData = {
@@ -1677,14 +1844,39 @@
           processedTweets.add(tweetElement);
           tweetElement.setAttribute('data-iq-analyzed', 'true');
           tweetElement.removeAttribute('data-iq-processing');
-          debugLog('Badge transitioned successfully', { iq: iq });
         } else {
-          debugLog('WARNING: Loading badge missing, creating new badge', {
-            loadingBadge: loadingBadge,
-            hasParent: loadingBadge?.parentElement
-          });
           // Fallback: create new badge if loading badge doesn't exist
           const badge = createIQBadge(iq, result, tweetText);
+
+          // Store animation data and prepare for animation
+          const iqColor = getIQColor(iq);
+          badge._animationData = {
+            finalIQ: iq,
+            iqColor: iqColor
+          };
+
+          // Store current IQ in a data attribute temporarily
+          badge.setAttribute('data-final-iq', iq);
+
+          // Don't change the badge yet - animation will handle it when visible
+          // The badge already has the final IQ from createIQBadge, so we need to
+          // set it to show 0 and keep loading state until animation starts
+
+          // Replace final IQ with 0 temporarily, animation will count up
+          const scoreElement = badge.querySelector('.iq-score');
+          if (scoreElement) {
+            scoreElement.textContent = '0';
+          }
+
+          // Set initial loading color (darker red)
+          const darkerRed = '#b71c1c';
+          const rgb = hexToRgb(darkerRed);
+          const desat = desaturateColor(rgb, 0.5);
+          const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+          badge.style.setProperty('background-color', loadingColor, 'important');
+
+          // Start count-up animation (will trigger when visible)
+          animateCountUp(badge, iq, iqColor);
 
           // Find the engagement bar (comments, retweets, likes, views, bookmarks)
           const engagementBar = tweetElement.querySelector('[role="group"]');
@@ -1706,29 +1898,21 @@
           tweetElement.removeAttribute('data-iq-processing');
         }
       } else {
-        debugLog('IQ estimation failed or invalid', {
-          isValid: result.is_valid,
-          iqEstimate: result.iq_estimate
-        });
         // Remove loading badge if estimation failed
         if (loadingBadge) {
           loadingBadge.remove();
-          debugLog('Removed loading badge (estimation failed)');
         }
         tweetElement.removeAttribute('data-iq-processing');
       }
     } catch (error) {
       console.error('Error processing tweet:', error);
-      debugLog('ERROR in processTweet', { error: error.message, stack: error.stack });
       // Remove loading badge on error
       if (loadingBadge) {
         loadingBadge.remove();
-        debugLog('Removed loading badge (error)');
       }
     } finally {
       // Remove processing flag even if there was an error
       tweetElement.removeAttribute('data-iq-processing');
-      debugLog('=== END processTweet ===');
     }
   }
 
@@ -1766,7 +1950,6 @@
         setTimeout(() => {
           if (!tweet.querySelector('.iq-badge')) {
             addLoadingBadgeToTweet(tweet);
-            debugLog('Added loading badge to tweet', { tweet: tweet });
           }
         }, 0);
       });
