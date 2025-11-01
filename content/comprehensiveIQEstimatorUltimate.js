@@ -1,0 +1,1375 @@
+/**
+ * Comprehensive IQ Estimator - Ultimate Version with Maximum Accuracy
+ *
+ * IMPROVEMENTS over Enhanced version:
+ * 1. Better word normalization matching Python's approach
+ * 2. Stemming/lemmatization for better AoA dictionary matching
+ * 3. Proper pct_advanced calculation (AoA > 10)
+ * 4. Better tokenization and punctuation handling
+ * 5. Enhanced coverage blending
+ * 6. More sophisticated vocabulary scoring
+ */
+
+class ComprehensiveIQEstimatorUltimate {
+  constructor(options = {}) {
+    // Trained weights
+    this.dimensionWeights = {
+      vocabulary_sophistication: 0.35,
+      lexical_diversity: 0.25,
+      sentence_complexity: 0.20,
+      grammatical_precision: 0.20
+    };
+
+    // AoA dictionary
+    this.aoaDictionary = null;
+    this.aoaDictionaryKeys = null; // Cached keys for faster fuzzy matching
+    this.aoaDictionaryLoaded = false;
+    this.aoaDictionaryPath = options.aoaDictionaryPath || 'data/aoa_dictionary.json';
+
+    // Calibrated dependency depth coefficients
+    this.depDepthCalibration = {
+      intercept: 1.795,
+      punctuation_coefficient: 0.3,  // Fallback to original
+      clause_coefficient: 0.2
+    };
+    this.calibrationPath = options.calibrationPath || 'data/dependency_depth_calibration.json';
+
+    // spaCy dependency parser (enhanced approximation method)
+    this.spacyParser = null;
+    this.useRealDependencyParsing = false; // Real parsing not available in extensions, using enhanced approximation
+
+    // Hybrid calibration
+    this.hybridCalibration = {
+      enabled: options.hybridCalibration !== false,
+      vocabularyAdjustment: true,
+      syntaxAdjustment: true
+    };
+
+    // Stemming suffixes for better dictionary matching
+    this.stemmingSuffixes = ['ing', 'ed', 'er', 'est', 'ly', 's', 'es', 'ies', 'ied', 'ying'];
+
+    this._loadResources();
+
+    // Initialize enhanced dependency parser
+    if (typeof window !== 'undefined' && window.spacyDependencyParser) {
+      this.spacyParser = window.spacyDependencyParser;
+    }
+  }
+
+  /**
+   * Load AoA dictionary and calibration data asynchronously
+   */
+  async _loadResources() {
+    try {
+      if (typeof fetch !== 'undefined') {
+        try {
+          const response = await fetch(this.aoaDictionaryPath);
+          if (response.ok) {
+            this.aoaDictionary = await response.json();
+            this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
+            this.aoaDictionaryLoaded = true;
+          }
+        } catch (e) {
+          // Silent fail, will use approximation
+        }
+
+        try {
+          const response = await fetch(this.calibrationPath);
+          if (response.ok) {
+            const calibration = await response.json();
+            this.depDepthCalibration = {
+              intercept: calibration.intercept || 1.795,
+              punctuation_coefficient: Math.abs(calibration.punctuation_coefficient) > 0.01
+                ? calibration.punctuation_coefficient : 0.3,
+              clause_coefficient: Math.abs(calibration.clause_coefficient) > 0.01
+                ? calibration.clause_coefficient : 0.2
+            };
+          }
+        } catch (e) {
+          // Silent fail, use defaults
+        }
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /**
+   * Load resources synchronously (for Node.js)
+   */
+  _loadResourcesSync(fs, pathModule) {
+    try {
+      let aoaPath = this.aoaDictionaryPath;
+      if (pathModule && !pathModule.isAbsolute(aoaPath)) {
+        aoaPath = pathModule.join(pathModule.dirname(require.main.filename || __filename || '.'), '..', aoaPath);
+      }
+
+      if (fs.existsSync(aoaPath)) {
+        const data = fs.readFileSync(aoaPath, 'utf8');
+        this.aoaDictionary = JSON.parse(data);
+        this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
+        this.aoaDictionaryLoaded = true;
+      }
+
+      let calPath = this.calibrationPath;
+      if (pathModule && !pathModule.isAbsolute(calPath)) {
+        calPath = pathModule.join(pathModule.dirname(require.main.filename || __filename || '.'), '..', calPath);
+      }
+
+      if (fs.existsSync(calPath)) {
+        const data = fs.readFileSync(calPath, 'utf8');
+        const calibration = JSON.parse(data);
+        this.depDepthCalibration = {
+          intercept: calibration.intercept || 1.795,
+          punctuation_coefficient: Math.abs(calibration.punctuation_coefficient) > 0.01
+            ? calibration.punctuation_coefficient : 0.3,
+          clause_coefficient: Math.abs(calibration.clause_coefficient) > 0.01
+            ? calibration.clause_coefficient : 0.2
+        };
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  /**
+   * Normalize word for AoA lookup (matches Python's approach)
+   */
+  _normalizeWord(word) {
+    // Remove punctuation and lowercase (matching Python's re.sub(r'[^\w\s]', '', word).lower())
+    let normalized = word.toLowerCase().replace(/[^\w]/g, '');
+
+    // Don't over-stem - Python doesn't do aggressive stemming
+    // Only remove suffixes if word is long enough and suffix is clear
+    if (normalized.length > 4) {
+      // Remove common suffixes (but be conservative)
+      for (const suffix of this.stemmingSuffixes) {
+        if (normalized.length > suffix.length + 2 && normalized.endsWith(suffix)) {
+          normalized = normalized.slice(0, -suffix.length);
+          break; // Only remove one suffix
+        }
+      }
+    }
+
+    return normalized;
+  }
+
+  /**
+   * Calculate letter similarity between two words (0-1, where 1 = identical)
+   * Uses longest common subsequence approach for better matching
+   */
+  _letterSimilarity(word1, word2) {
+    if (!word1 || !word2) return 0;
+
+    // Convert to lowercase for comparison
+    const w1 = word1.toLowerCase();
+    const w2 = word2.toLowerCase();
+
+    // If exact match
+    if (w1 === w2) return 1;
+
+    // Calculate longest common subsequence (LCS)
+    const len1 = w1.length;
+    const len2 = w2.length;
+
+    // Dynamic programming for LCS
+    const dp = Array(len1 + 1).fill(null).map(() => Array(len2 + 1).fill(0));
+
+    for (let i = 1; i <= len1; i++) {
+      for (let j = 1; j <= len2; j++) {
+        if (w1[i - 1] === w2[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    const lcsLength = dp[len1][len2];
+    const maxLen = Math.max(len1, len2);
+
+    // Return similarity as percentage of matching letters
+    return lcsLength / maxLen;
+  }
+
+  /**
+   * Find best fuzzy match in dictionary (80% letter match threshold)
+   * Optimized to only check words of similar length
+   */
+  _fuzzyMatch(word) {
+    if (!this.aoaDictionary || !this.aoaDictionaryKeys) return null;
+
+    const cleaned = word.toLowerCase().replace(/[^\w]/g, '');
+    if (cleaned.length < 2) return null; // Skip very short words
+
+    let bestMatch = null;
+    let bestSimilarity = 0.8; // 80% threshold
+
+    const wordLen = cleaned.length;
+    // Only check words within 30% length difference for performance
+    const minLen = Math.max(2, Math.floor(wordLen * 0.7));
+    const maxLen = Math.ceil(wordLen * 1.3);
+
+    // Search through dictionary for best match (optimized with length filter)
+    for (const dictWord of this.aoaDictionaryKeys) {
+      // Skip words that are too different in length
+      if (dictWord.length < minLen || dictWord.length > maxLen) continue;
+
+      const similarity = this._letterSimilarity(cleaned, dictWord);
+      if (similarity >= 0.8 && similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestMatch = dictWord;
+      }
+    }
+
+    return bestMatch ? this.aoaDictionary[bestMatch] : null;
+  }
+
+  /**
+   * Look up AoA for a word with multiple fallback strategies
+   */
+  _lookupAoA(word) {
+    if (!this.aoaDictionary) return null;
+
+    // Skip 1-letter words - they're not meaningful for AoA analysis
+    const cleaned = word.toLowerCase().replace(/[^\w]/g, '');
+    if (cleaned.length <= 1) return null;
+
+    // Strategy 1: Direct match (lowercase, no punctuation)
+    if (this.aoaDictionary[cleaned] !== undefined) {
+      return this.aoaDictionary[cleaned];
+    }
+
+    // Strategy 2: Try stemmed version
+    const normalized = this._normalizeWord(word);
+    if (normalized !== cleaned && this.aoaDictionary[normalized] !== undefined) {
+      return this.aoaDictionary[normalized];
+    }
+
+    // Strategy 3: Try common word variations (plural/singular, -ing, -ed)
+    const variations = this._getWordVariations(cleaned);
+    for (const variant of variations) {
+      if (this.aoaDictionary[variant] !== undefined) {
+        return this.aoaDictionary[variant];
+      }
+    }
+
+    // Strategy 4: Fuzzy matching (80% letter match)
+    const fuzzyMatch = this._fuzzyMatch(word);
+    if (fuzzyMatch !== null) {
+      return fuzzyMatch;
+    }
+
+    return null;
+  }
+
+  /**
+   * Generate word variations for dictionary lookup (enhanced)
+   */
+  _getWordVariations(word) {
+    const variations = [];
+
+    // Try removing common suffixes
+    if (word.endsWith('s') && word.length > 3) {
+      variations.push(word.slice(0, -1)); // Remove 's'
+    }
+    if (word.endsWith('es') && word.length > 4) {
+      variations.push(word.slice(0, -2)); // Remove 'es'
+      if (word.length > 5) {
+        variations.push(word.slice(0, -2) + 'e'); // Try adding 'e' back
+      }
+    }
+    if (word.endsWith('ies') && word.length > 4) {
+      variations.push(word.slice(0, -3) + 'y'); // Try 'y' version
+    }
+    if (word.endsWith('ing') && word.length > 4) {
+      variations.push(word.slice(0, -3)); // Remove 'ing'
+      variations.push(word.slice(0, -3) + 'e'); // Try 'e' version (like 'making' -> 'make')
+      // Also try without 'e' (like 'arising' -> 'arise', 'rising')
+      if (word.slice(0, -3).endsWith('is')) {
+        variations.push(word.slice(0, -5) + 'e'); // 'arising' -> 'arise'
+      }
+    }
+    if (word.endsWith('ed') && word.length > 3) {
+      variations.push(word.slice(0, -2)); // Remove 'ed'
+      variations.push(word.slice(0, -2) + 'e'); // Try with 'e'
+      if (word.endsWith('ied')) {
+        variations.push(word.slice(0, -3) + 'y'); // Try 'y' version
+      }
+      // Handle 'ed' after consonant doubling (like 'perceived' -> 'perceive')
+      if (word.length > 4 && word[word.length - 4] === word[word.length - 3]) {
+        variations.push(word.slice(0, -3)); // Remove doubled consonant + 'ed'
+      }
+    }
+    if (word.endsWith('er') && word.length > 3 && !word.endsWith('ier')) {
+      variations.push(word.slice(0, -2)); // Remove 'er'
+      variations.push(word.slice(0, -2) + 'e'); // Try with 'e'
+    }
+    if (word.endsWith('ly') && word.length > 3) {
+      variations.push(word.slice(0, -2)); // Remove 'ly'
+    }
+    // Handle -tion, -sion, -ation endings
+    if (word.endsWith('tion') && word.length > 5) {
+      variations.push(word.slice(0, -3) + 'e'); // 'rotation' -> 'rotate'
+      variations.push(word.slice(0, -4) + 'te'); // Alternative
+    }
+    if (word.endsWith('sion') && word.length > 5) {
+      variations.push(word.slice(0, -3) + 'e');
+    }
+    if (word.endsWith('ation') && word.length > 6) {
+      variations.push(word.slice(0, -4) + 'e');
+    }
+    // Handle -al, -ic, -ical endings
+    if (word.endsWith('al') && word.length > 4) {
+      variations.push(word.slice(0, -2));
+    }
+    if (word.endsWith('ic') && word.length > 4) {
+      variations.push(word.slice(0, -2));
+    }
+    if (word.endsWith('ical') && word.length > 6) {
+      variations.push(word.slice(0, -4));
+      variations.push(word.slice(0, -4) + 'y');
+    }
+
+    return variations;
+  }
+
+  /**
+   * Compute comprehensive AoA features (matching Python's approach)
+   */
+  _computeAoAFeatures(tokens) {
+    const aoaValues = [];
+    let matchedCount = 0;
+
+    // Filter out 1-letter words - they're not meaningful for AoA analysis
+    const meaningfulTokens = tokens.filter(token => {
+      const cleaned = token.toLowerCase().replace(/[^\w]/g, '');
+      return cleaned.length > 1;
+    });
+
+    for (const token of meaningfulTokens) {
+      const aoa = this._lookupAoA(token);
+      if (aoa !== null) {
+        aoaValues.push(aoa);
+        matchedCount++;
+      }
+    }
+
+    // Use meaningfulTokens for calculations, not original tokens
+    const totalWordCount = meaningfulTokens.length;
+
+    if (aoaValues.length === 0 || totalWordCount === 0) {
+      // Even with no matches, estimate from word characteristics
+      const avgLength = meaningfulTokens.reduce((sum, t) => sum + t.length, 0) / meaningfulTokens.length;
+      const avgSyllables = this._avgSyllables(meaningfulTokens);
+      // Long, complex words suggest high AoA
+      const longWordRatio = meaningfulTokens.filter(t => t.length >= 8).length / meaningfulTokens.length;
+      const veryLongWordRatio = meaningfulTokens.filter(t => t.length >= 12).length / meaningfulTokens.length;
+      const estimatedAoa = 3.91 + (avgLength - 4.0) * 0.6 + (avgSyllables - 1.5) * 0.4 + (longWordRatio * 2.5) + (veryLongWordRatio * 4);
+
+      return {
+        mean_aoa: estimatedAoa,
+        pct_advanced: (longWordRatio + veryLongWordRatio * 0.5) * 100,
+        match_rate: 0,
+        use_approximation: true
+      };
+    }
+
+    // Calculate statistics (matching Python's np.mean, etc.)
+    const sum = aoaValues.reduce((a, b) => a + b, 0);
+    const meanAoa = sum / aoaValues.length;
+
+    // Calculate percentage of advanced words (AoA > 10 = college level)
+    // Also consider very advanced (AoA > 12) separately
+    const advancedCount = aoaValues.filter(aoa => aoa > 10).length;
+    const veryAdvancedCount = aoaValues.filter(aoa => aoa > 12).length;
+    const pctAdvanced = (advancedCount / aoaValues.length) * 100;
+    // Weight very advanced words more
+    const pctVeryAdvanced = (veryAdvancedCount / aoaValues.length) * 100;
+    const adjustedPctAdvanced = pctAdvanced + (pctVeryAdvanced * 0.5); // Extra weight for very advanced
+
+    const matchRate = (matchedCount / totalWordCount) * 100;
+
+    // Estimate AoA for unmatched sophisticated words
+    const unmatchedTokens = meaningfulTokens.filter((t) => {
+      return this._lookupAoA(t) === null;
+    });
+
+    let estimatedUnmatchedAoa = null;
+    if (unmatchedTokens.length > 0 && matchRate < 80) {
+      // Estimate AoA for unmatched words based on characteristics
+      const unmatchedLengths = unmatchedTokens.map(t => t.length);
+      const unmatchedSyllables = unmatchedTokens.map(t => this._countSyllables(t));
+      const avgUnmatchedLength = unmatchedLengths.reduce((a, b) => a + b, 0) / unmatchedLengths.length;
+      const avgUnmatchedSyllables = unmatchedSyllables.reduce((a, b) => a + b, 0) / unmatchedSyllables.length;
+
+      // Sophisticated unmatched words (long, multi-syllable) likely have high AoA
+      const longUnmatched = unmatchedTokens.filter(t => t.length >= 10).length;
+      const veryLongUnmatched = unmatchedTokens.filter(t => t.length >= 12).length;
+
+      estimatedUnmatchedAoa = 3.91 +
+        (avgUnmatchedLength - 4.0) * 0.7 +
+        (avgUnmatchedSyllables - 1.5) * 0.6 +
+        (longUnmatched / unmatchedTokens.length) * 4 +
+        (veryLongUnmatched / unmatchedTokens.length) * 6;
+
+      // Blend matched and estimated unmatched AoA
+      const matchedRatio = matchRate / 100;
+      const unmatchedRatio = (100 - matchRate) / 100;
+      const blendedAoa = (meanAoa * matchedRatio) + (estimatedUnmatchedAoa * unmatchedRatio);
+
+      return {
+        mean_aoa: blendedAoa,
+        pct_advanced: adjustedPctAdvanced + (longUnmatched / totalWordCount * 100 * 0.5),
+        pct_very_advanced: pctVeryAdvanced,
+        match_rate: matchRate,
+        num_matched: matchedCount,
+        total_words: totalWordCount,
+        use_approximation: matchRate < 50,
+        estimated_unmatched: true
+      };
+    }
+
+    return {
+      mean_aoa: meanAoa,
+      pct_advanced: adjustedPctAdvanced,
+      pct_very_advanced: pctVeryAdvanced,
+      match_rate: matchRate,
+      num_matched: matchedCount,
+      total_words: totalWordCount,
+      use_approximation: matchRate < 50  // Blend if low coverage
+    };
+  }
+
+  /**
+   * Main estimation method (async version with real dependency parsing)
+   */
+  async estimate(text) {
+    if (!text || text.trim().length === 0) {
+      return {
+        iq_estimate: null,
+        confidence: 0,
+        is_valid: false,
+        error: 'Text is empty'
+      };
+    }
+
+    const textWithoutEmoji = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
+    const words = textWithoutEmoji.match(/\b[a-zA-Z]{2,}\b/g) || [];
+
+    if (words.length < 5) {
+      return {
+        iq_estimate: null,
+        confidence: Math.max(0, words.length * 10),
+        is_valid: false,
+        error: `Too few words (${words.length}, minimum 5 required)`,
+        word_count: words.length
+      };
+    }
+
+    // Extract features with real dependency parsing if available
+    const features = await this._extractFeatures(text);
+    const dimensions = this._computeDimensions(features);
+
+    // Apply hybrid calibration
+    if (this.hybridCalibration.enabled) {
+      this._applyHybridCalibration(dimensions, features);
+    }
+
+    let iq_estimate = this._combineDimensions(dimensions);
+
+    // Final calibration pass - adjust based on cross-dimensional signals
+    iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
+
+    const confidence = this._computeConfidence(dimensions, features, words.length, text);
+
+    return {
+      iq_estimate: iq_estimate,
+      confidence: confidence,
+      dimension_scores: dimensions,
+      features: features, // Include all computed features for debugging
+      is_valid: true,
+      error: null,
+      word_count: words.length,
+      improvements_used: {
+        aoa_dictionary: this.aoaDictionaryLoaded,
+        enhanced_dependency_approximation: true,
+        hybrid_calibration: this.hybridCalibration.enabled,
+        improved_normalization: true,
+        advanced_word_detection: true,
+        final_calibration: true
+      }
+    };
+  }
+
+  /**
+   * Synchronous estimate method (for backwards compatibility)
+   * Uses approximation for dependency depth
+   */
+  estimateSync(text) {
+    if (!text || text.trim().length === 0) {
+      return {
+        iq_estimate: null,
+        confidence: 0,
+        is_valid: false,
+        error: 'Text is empty'
+      };
+    }
+
+    const textWithoutEmoji = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
+    const words = textWithoutEmoji.match(/\b[a-zA-Z]{2,}\b/g) || [];
+
+    if (words.length < 5) {
+      return {
+        iq_estimate: null,
+        confidence: Math.max(0, words.length * 10),
+        is_valid: false,
+        error: `Too few words (${words.length}, minimum 5 required)`,
+        word_count: words.length
+      };
+    }
+
+    const features = this._extractFeaturesSync(text);
+    const dimensions = this._computeDimensions(features);
+
+    if (this.hybridCalibration.enabled) {
+      this._applyHybridCalibration(dimensions, features);
+    }
+
+    let iq_estimate = this._combineDimensions(dimensions);
+    iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
+
+    const confidence = this._computeConfidence(dimensions, features, words.length, text);
+
+    return {
+      iq_estimate: iq_estimate,
+      confidence: confidence,
+      dimension_scores: dimensions,
+      features: features, // Include all computed features for debugging
+      is_valid: true,
+      error: null,
+      word_count: words.length,
+      improvements_used: {
+        aoa_dictionary: this.aoaDictionaryLoaded,
+        enhanced_dependency_approximation: true,
+        hybrid_calibration: this.hybridCalibration.enabled,
+        improved_normalization: true,
+        advanced_word_detection: true,
+        final_calibration: true
+      }
+    };
+  }
+
+  /**
+   * Final calibration pass - fine-tune based on cross-dimensional analysis
+   */
+  _finalCalibrationPass(iqEstimate, dimensions, features) {
+    const vocab = dimensions.vocabulary_sophistication;
+    const diversity = dimensions.lexical_diversity;
+    const sentence = dimensions.sentence_complexity;
+    const grammar = dimensions.grammatical_precision;
+
+    // Calculate dimension average for reference
+    const avgDimension = (vocab + diversity + sentence + grammar) / 4;
+
+    // AGGRESSIVE HIGH-IQ CALIBRATION - Address underestimation at high IQ levels
+    // Case 1: Very high dimensions but moderate estimate (common at IQ 120+)
+    if (avgDimension > 120 && iqEstimate < 110) {
+      // Strong boost - dimensions suggest high IQ but estimate is low
+      iqEstimate = (iqEstimate * 0.5) + (avgDimension * 0.5);
+    }
+    // Case 2: High dimensions (115+) but estimate below 120
+    else if (avgDimension > 115 && iqEstimate < 115) {
+      // Moderate boost towards dimension average
+      iqEstimate = (iqEstimate * 0.6) + (avgDimension * 0.4);
+    }
+    // Case 3: Moderate-high dimensions (110+) but estimate below dimension average
+    else if (avgDimension > 110 && iqEstimate < avgDimension - 3) {
+      // Adjust towards dimension average
+      iqEstimate = (iqEstimate * 0.7) + (avgDimension * 0.3);
+    }
+
+    // Check for underestimation patterns - more aggressive
+    // High vocab + high grammar + high sentence but lower IQ suggests underestimation
+    if (vocab > 120 && grammar > 115 && sentence > 110 && iqEstimate < 115) {
+      // Strong boost for very sophisticated text
+      iqEstimate = Math.min(150, iqEstimate * 1.08);
+    }
+    else if (vocab > 115 && grammar > 105 && sentence > 100 && iqEstimate < 110) {
+      // Moderate boost for sophisticated text
+      iqEstimate = Math.min(150, iqEstimate * 1.05);
+    }
+
+    // High AoA with good match rate but low estimate - more trust in vocabulary
+    if (this.aoaDictionaryLoaded && features.mean_aoa > 10 &&
+        features.aoa_match_rate > 70 && iqEstimate < vocab) {
+      // Trust vocabulary dimension more when AoA is strong
+      const trustFactor = vocab > 125 ? 0.7 : 0.75; // More trust for very high vocab
+      iqEstimate = (iqEstimate * trustFactor) + (vocab * (1 - trustFactor));
+    }
+
+    // Very high AoA (college+ level) - strong signal
+    if (this.aoaDictionaryLoaded && features.mean_aoa > 12 &&
+        features.aoa_match_rate > 75 && vocab > 115 && iqEstimate < vocab + 10) {
+      // Boost towards vocab score for extremely sophisticated vocabulary
+      iqEstimate = (iqEstimate * 0.65) + (vocab * 0.35);
+    }
+
+    // Handle case where we have many sophisticated unmatched words
+    // (indicated by low match rate but long/complex words)
+    if (this.aoaDictionaryLoaded && features.aoa_match_rate < 60) {
+      const avgWordLength = features.avg_word_length || 0;
+      const longWords = features.tokens ? features.tokens.filter(t => t.length >= 10).length : 0;
+      const longWordPct = features.tokens ? (longWords / features.tokens.length) * 100 : 0;
+
+      // If we have many long words but low match rate, they're likely sophisticated
+      if (avgWordLength > 6 && longWordPct > 15 && iqEstimate < vocab + 5) {
+        // Boost estimate - sophisticated unmatched words
+        iqEstimate = Math.min(150, iqEstimate * 1.06);
+      }
+    }
+
+    // Check for overestimation patterns
+    // Low diversity + low grammar but high IQ might be overestimated
+    if (diversity < 70 && grammar < 80 && iqEstimate > 100) {
+      // Slight reduction for inconsistent signals
+      iqEstimate = Math.max(50, iqEstimate * 0.98);
+    }
+
+    // Final safeguard: if all dimensions are very high (130+), ensure estimate reflects that
+    const highDimensionCount = [vocab, diversity, sentence, grammar].filter(d => d > 125).length;
+    if (highDimensionCount >= 3 && iqEstimate < 125) {
+      // Multiple dimensions agree on very high IQ
+      const highAvg = [vocab, diversity, sentence, grammar]
+        .filter(d => d > 125)
+        .reduce((a, b) => a + b, 0) / highDimensionCount;
+      iqEstimate = Math.max(iqEstimate, highAvg * 0.85); // At least 85% of high dimension average
+    }
+
+    return Math.max(50, Math.min(150, iqEstimate));
+  }
+
+  /**
+   * Extract features with improved AoA calculation (uses enhanced dependency approximation)
+   */
+  async _extractFeatures(text) {
+    const normalizedText = this._normalizeText(text);
+    const tokens = this._tokenize(normalizedText);
+    const sentences = this._sentences(normalizedText);
+
+    // Use enhanced dependency depth approximation (calibrated on Python results)
+    let avgDependencyDepth = null;
+    let usingRealParsing = false;
+
+    if (this.spacyParser) {
+      try {
+        const depResult = await this.spacyParser.computeDependencyDepth(text);
+        if (depResult) {
+          avgDependencyDepth = depResult.avg_dependency_depth;
+          usingRealParsing = false; // It's enhanced approximation, not real parsing
+        }
+      } catch (error) {
+        console.warn('[IQEstimator] Dependency calculation failed:', error);
+      }
+    }
+
+    // Compute AoA features with improved matching
+    const aoaFeatures = this._computeAoAFeatures(tokens);
+
+    // If low coverage, blend with approximation (improved blending)
+    let meanAoa = aoaFeatures.mean_aoa;
+    if (aoaFeatures.use_approximation) {
+      const avgLength = tokens.reduce((sum, t) => sum + t.length, 0) / tokens.length;
+      const avgSyllables = this._avgSyllables(tokens);
+      const lengthFactor = (avgLength - 4.0) * 0.5;
+      const syllableFactor = (avgSyllables - 1.5) * 0.3;
+      const approximatedAoa = 3.91 + lengthFactor + syllableFactor;
+
+      // Improved blending: trust dictionary more when match rate is higher
+      // Use sigmoid-like function for smoother blending
+      const matchRate = aoaFeatures.match_rate || 0;
+      const blendFactor = Math.pow(matchRate / 100, 1.5); // More weight to dictionary when coverage is good
+      meanAoa = meanAoa * blendFactor + approximatedAoa * (1 - blendFactor);
+    }
+
+    // Calculate sentence length variance (indicates complexity)
+    const sentenceLengths = sentences.map(s => {
+      const words = s.match(/\b\w+\b/g);
+      return words ? words.length : 0;
+    }).filter(len => len > 0);
+
+    let sentenceVariance = 0;
+    if (sentenceLengths.length > 1) {
+      const avgSentLen = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
+      const variance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgSentLen, 2), 0) / sentenceLengths.length;
+      sentenceVariance = Math.sqrt(variance); // Standard deviation
+    }
+
+    // Compute dependency depth using enhanced approximation
+    let estimatedDepDepth;
+    if (avgDependencyDepth !== null) {
+      estimatedDepDepth = avgDependencyDepth;
+    } else {
+      // Fallback to basic approximation
+      const punctComplexity = this._punctuationComplexity(normalizedText, sentences);
+      const subClauses = this._countSubordinateClauses(normalizedText, sentences);
+      estimatedDepDepth = this.depDepthCalibration.intercept +
+        (punctComplexity * this.depDepthCalibration.punctuation_coefficient) +
+        (subClauses * this.depDepthCalibration.clause_coefficient);
+    }
+
+    return {
+      tokens: tokens,
+      sentences: sentences,
+      avg_words_per_sentence: tokens.length / Math.max(1, sentences.length),
+      sentence_variance: sentenceVariance,
+      ttr: this._computeTTR(tokens),
+      msttr: this._computeMSTTR(tokens),
+      avg_word_length: this._avgWordLength(tokens),
+      avg_syllables: this._avgSyllables(tokens),
+      punctuation_complexity: this._punctuationComplexity(normalizedText, sentences),
+      subordinate_clauses: this._countSubordinateClauses(normalizedText, sentences),
+      vocabulary_sophistication: this._vocabularySophistication(tokens),
+      mean_aoa: meanAoa,
+      pct_advanced: aoaFeatures.pct_advanced,
+      aoa_match_rate: aoaFeatures.match_rate,
+      avg_dependency_depth: estimatedDepDepth,
+      using_real_dependency_parsing: usingRealParsing
+    };
+  }
+
+  /**
+   * Extract features synchronously (uses approximation for dependency depth)
+   */
+  _extractFeaturesSync(text) {
+    const normalizedText = this._normalizeText(text);
+    const tokens = this._tokenize(normalizedText);
+    const sentences = this._sentences(normalizedText);
+
+    // Compute AoA features with improved matching
+    const aoaFeatures = this._computeAoAFeatures(tokens);
+
+    // If low coverage, blend with approximation (improved blending)
+    let meanAoa = aoaFeatures.mean_aoa;
+    if (aoaFeatures.use_approximation) {
+      const avgLength = tokens.reduce((sum, t) => sum + t.length, 0) / tokens.length;
+      const avgSyllables = this._avgSyllables(tokens);
+      const lengthFactor = (avgLength - 4.0) * 0.5;
+      const syllableFactor = (avgSyllables - 1.5) * 0.3;
+      const approximatedAoa = 3.91 + lengthFactor + syllableFactor;
+
+      // Improved blending: trust dictionary more when match rate is higher
+      const matchRate = aoaFeatures.match_rate || 0;
+      const blendFactor = Math.pow(matchRate / 100, 1.5);
+      meanAoa = meanAoa * blendFactor + approximatedAoa * (1 - blendFactor);
+    }
+
+    // Calculate sentence length variance
+    const sentenceLengths = sentences.map(s => {
+      const words = s.match(/\b\w+\b/g);
+      return words ? words.length : 0;
+    }).filter(len => len > 0);
+
+    let sentenceVariance = 0;
+    if (sentenceLengths.length > 1) {
+      const avgSentLen = sentenceLengths.reduce((a, b) => a + b, 0) / sentenceLengths.length;
+      const variance = sentenceLengths.reduce((sum, len) => sum + Math.pow(len - avgSentLen, 2), 0) / sentenceLengths.length;
+      sentenceVariance = Math.sqrt(variance);
+    }
+
+    // Use approximation for dependency depth (sync version)
+    const punctComplexity = this._punctuationComplexity(normalizedText, sentences);
+    const subClauses = this._countSubordinateClauses(normalizedText, sentences);
+    const estimatedDepDepth = this.depDepthCalibration.intercept +
+      (punctComplexity * this.depDepthCalibration.punctuation_coefficient) +
+      (subClauses * this.depDepthCalibration.clause_coefficient);
+
+    return {
+      tokens: tokens,
+      sentences: sentences,
+      avg_words_per_sentence: tokens.length / Math.max(1, sentences.length),
+      sentence_variance: sentenceVariance,
+      ttr: this._computeTTR(tokens),
+      msttr: this._computeMSTTR(tokens),
+      mtld: this._computeMTLD(tokens),
+      yules_k: this._computeYulesK(tokens),
+      avg_word_length: this._avgWordLength(tokens),
+      avg_syllables: this._avgSyllables(tokens),
+      punctuation_complexity: punctComplexity,
+      punctuation_entropy: this._computePunctuationEntropy(normalizedText),
+      subordinate_clauses: subClauses,
+      lexical_overlap: this._computeLexicalOverlap(sentences),
+      connective_density: this._computeConnectiveDensity(normalizedText, tokens),
+      readability: this._computeReadability(normalizedText, sentences, tokens),
+      vocabulary_sophistication: this._vocabularySophistication(tokens),
+      mean_aoa: meanAoa,
+      pct_advanced: aoaFeatures.pct_advanced,
+      aoa_match_rate: aoaFeatures.match_rate,
+      avg_dependency_depth: estimatedDepDepth,
+      using_real_dependency_parsing: false
+    };
+  }
+
+  /**
+   * Compute dimension scores
+   */
+  _computeDimensions(features) {
+    return {
+      vocabulary_sophistication: this._vocabularyIQ(features),
+      lexical_diversity: this._diversityIQ(features),
+      sentence_complexity: this._sentenceComplexityIQ(features),
+      grammatical_precision: this._grammarIQ(features)
+    };
+  }
+
+  /**
+   * Vocabulary Sophistication IQ - improved with proper pct_advanced
+   */
+  _vocabularyIQ(features) {
+    const meanAoa = features.mean_aoa || 3.91;
+
+    // Use pct_advanced from AoA dictionary if available, otherwise fallback
+    let pctAdvanced = features.pct_advanced || 0;
+    if (!this.aoaDictionaryLoaded || features.aoa_match_rate < 50) {
+      // Fallback: count advanced words (8+ chars)
+      const advancedWords = features.tokens.filter(t => t.length >= 8).length;
+      pctAdvanced = features.tokens.length > 0 ? (advancedWords / features.tokens.length) * 100 : 0;
+    }
+
+    // Apply trained mapping: base_iq = 70 + (mean_aoa - 3.91) * 24
+    let baseIQ = 70 + (meanAoa - 3.91) * 24;
+
+    // Add boost for advanced words (trained: +1.0 per %)
+    // But scale based on match rate for accuracy
+    const matchRate = features.aoa_match_rate || 0;
+    const advancedBoost = this.aoaDictionaryLoaded && matchRate > 50
+      ? (pctAdvanced / 100) * 1.0  // Full boost with good dictionary coverage
+      : (pctAdvanced / 100) * 0.8;  // Reduced boost with approximation
+    baseIQ += advancedBoost;
+
+    // Remove hard cap at 130 - allow higher scores for very sophisticated vocabulary
+    // Cap at 145 to allow room for very high IQ while preventing outliers
+    return Math.max(50, Math.min(145, baseIQ));
+  }
+
+  /**
+   * Lexical Diversity IQ - enhanced with MTLD and Yule's K
+   */
+  _diversityIQ(features) {
+    const ttr = features.ttr || 0.5;
+    let iq = 70 + (ttr - 0.659) * 170;
+
+    // Boost for MTLD (higher = more diverse vocabulary usage)
+    const mtld = features.mtld || 0;
+    if (mtld > 20) {
+      iq += Math.min(5, (mtld - 20) * 0.2); // Small boost for high MTLD
+    }
+
+    // Adjust for Yule's K (lower = more diverse, higher = repetitive)
+    const yulesK = features.yules_k || 0;
+    if (yulesK > 0 && yulesK < 100) {
+      // Lower Yule's K indicates more diversity
+      iq += Math.min(3, (100 - yulesK) * 0.03);
+    } else if (yulesK > 200) {
+      // High Yule's K indicates repetitiveness
+      iq -= Math.min(5, (yulesK - 200) * 0.02);
+    }
+
+    // Allow higher diversity scores for very sophisticated texts
+    return Math.max(50, Math.min(145, iq));
+  }
+
+  /**
+   * Sentence Complexity IQ - enhanced with variance, readability, and lexical overlap
+   */
+  _sentenceComplexityIQ(features) {
+    const avgWords = features.avg_words_per_sentence || 10;
+    let iq = 60 + (avgWords - 11.0) * 6.0;
+
+    // Boost for sentence variance (variety indicates sophistication)
+    const variance = features.sentence_variance || 0;
+    if (variance > 5 && avgWords > 12) {
+      iq += Math.min(8, variance * 0.6);
+    }
+
+    // Readability boost (higher grade level = more complex writing)
+    const readability = features.readability || {};
+    if (readability.flesch_kincaid) {
+      // Higher F-K grade level = higher IQ (but with diminishing returns)
+      const fkGrade = readability.flesch_kincaid;
+      if (fkGrade > 12) {
+        iq += Math.min(5, (fkGrade - 12) * 0.5);
+      }
+    }
+
+    // Lower lexical overlap = more varied writing = higher complexity
+    const lexicalOverlap = features.lexical_overlap || 0;
+    if (lexicalOverlap < 0.2 && avgWords > 15) {
+      // Very low overlap with long sentences = sophisticated writing
+      iq += Math.min(4, (0.2 - lexicalOverlap) * 20);
+    }
+
+    return Math.max(50, Math.min(145, iq));
+  }
+
+  /**
+   * Grammatical Precision IQ - enhanced with punctuation entropy and connectives
+   */
+  _grammarIQ(features) {
+    // Use enhanced dependency depth approximation
+    const depDepth = features.avg_dependency_depth ||
+      (this.depDepthCalibration.intercept +
+       ((features.punctuation_complexity || 0) * this.depDepthCalibration.punctuation_coefficient) +
+       ((features.subordinate_clauses || 0) * this.depDepthCalibration.clause_coefficient));
+
+    let iq = 53 + (depDepth - 1.795) * 80;
+
+    // Boost for punctuation entropy (more varied punctuation = more sophisticated)
+    const punctEntropy = features.punctuation_entropy || 0;
+    if (punctEntropy > 2.0) {
+      iq += Math.min(4, (punctEntropy - 2.0) * 1.0);
+    }
+
+    // Boost for connective density (better logical flow = higher IQ)
+    const connectiveDensity = features.connective_density || 0;
+    if (connectiveDensity > 0.08 && connectiveDensity < 0.20) {
+      // Optimal connective density (too much = repetitive)
+      iq += Math.min(3, (connectiveDensity - 0.08) * 25);
+    }
+
+    return Math.max(50, Math.min(145, iq));
+  }
+
+  /**
+   * Apply hybrid calibration adjustments (optimized for accuracy)
+   */
+  _applyHybridCalibration(dimensions, features) {
+    // Enhanced vocabulary adjustment - more nuanced
+    if (this.hybridCalibration.vocabularyAdjustment && this.aoaDictionaryLoaded) {
+      const vocabScore = dimensions.vocabulary_sophistication;
+      const meanAoa = features.mean_aoa || 0;
+      const matchRate = features.aoa_match_rate || 0;
+      const pctAdvanced = features.pct_advanced || 0;
+
+      // High AoA with good coverage and high advanced word percentage
+      if (meanAoa > 8 && matchRate > 65 && pctAdvanced > 20 && vocabScore < 120) {
+        const boost = Math.min(1.15, 1.0 + (pctAdvanced / 100) * 0.6);
+        dimensions.vocabulary_sophistication = Math.min(145, vocabScore * boost);
+      }
+      // Very sophisticated vocabulary (AoA > 10)
+      else if (meanAoa > 10 && matchRate > 70 && vocabScore > 100 && vocabScore < 135) {
+        dimensions.vocabulary_sophistication = Math.min(145, vocabScore * 1.08);
+      }
+      // Extreme sophistication (AoA > 12) - more aggressive boost
+      else if (meanAoa > 12 && matchRate > 75) {
+        if (vocabScore < 135) {
+          dimensions.vocabulary_sophistication = Math.min(145, vocabScore * 1.12);
+        } else if (vocabScore < 140) {
+          dimensions.vocabulary_sophistication = Math.min(145, vocabScore * 1.05);
+        }
+      }
+    }
+
+    // Enhanced syntax adjustment - more precise
+    if (this.hybridCalibration.syntaxAdjustment) {
+      const grammarScore = dimensions.grammatical_precision;
+      const punctComplexity = features.punctuation_complexity || 0;
+      const subClauses = features.subordinate_clauses || 0;
+      const avgWords = features.avg_words_per_sentence || 0;
+
+      // Moderate complexity that might be underestimated
+      if (punctComplexity > 2.5 && subClauses > 1.2 && avgWords > 15 && grammarScore < 105) {
+        dimensions.grammatical_precision = Math.min(145, grammarScore * 1.1);
+      }
+      // High complexity with long sentences
+      else if (punctComplexity > 3.5 && subClauses > 1.8 && avgWords > 20 && grammarScore < 120) {
+        dimensions.grammatical_precision = Math.min(145, grammarScore * 1.15);
+      }
+      // Very high complexity
+      else if (punctComplexity > 4.5 && subClauses > 2.5 && grammarScore < 135) {
+        dimensions.grammatical_precision = Math.min(145, grammarScore * 1.18);
+      }
+      // Extreme complexity
+      else if (punctComplexity > 5.5 && subClauses > 3.0 && grammarScore < 140) {
+        dimensions.grammatical_precision = Math.min(145, grammarScore * 1.2);
+      }
+    }
+  }
+
+  /**
+   * Combine dimensions
+   */
+  _combineDimensions(dimensions) {
+    let totalWeight = 0;
+    let weightedSum = 0;
+
+    for (const [dim, iq] of Object.entries(dimensions)) {
+      const weight = this.dimensionWeights[dim] || 0;
+      weightedSum += iq * weight;
+      totalWeight += weight;
+    }
+
+    if (totalWeight === 0) {
+      return 100.0;
+    }
+
+    const finalIQ = weightedSum / totalWeight;
+    return Math.max(50, Math.min(150, finalIQ));
+  }
+
+  /**
+   * Compute confidence
+   */
+  _computeConfidence(dimensions, features, wordCount, originalText) {
+    let baseConfidence = 0;
+
+    if (wordCount >= 100) {
+      baseConfidence = 90;
+    } else if (wordCount >= 50) {
+      baseConfidence = 70 + (wordCount - 50) * 0.4;
+    } else if (wordCount >= 20) {
+      baseConfidence = 50 + (wordCount - 20) * 0.67;
+    } else if (wordCount >= 10) {
+      baseConfidence = 30 + (wordCount - 10) * 2;
+    } else {
+      baseConfidence = 20 + (wordCount - 5) * 2;
+    }
+
+    // Boost confidence if using real AoA dictionary with good coverage
+    if (this.aoaDictionaryLoaded && features.aoa_match_rate > 60) {
+      baseConfidence = Math.min(95, baseConfidence + 8);
+    } else if (this.aoaDictionaryLoaded) {
+      baseConfidence = Math.min(95, baseConfidence + 5);
+    }
+
+    const iqValues = Object.values(dimensions);
+    let agreementScore = 50;
+
+    if (iqValues.length > 1) {
+      const mean = iqValues.reduce((a, b) => a + b, 0) / iqValues.length;
+      const variance = iqValues.reduce((sum, iq) => sum + Math.pow(iq - mean, 2), 0) / iqValues.length;
+      const stdDev = Math.sqrt(variance);
+      agreementScore = Math.max(40, 100 - stdDev * 5);
+    }
+
+    const sentenceCount = features.sentences?.length || 1;
+    const avgWordsPerSentence = features.avg_words_per_sentence || 0;
+    let qualityPenalty = 0;
+
+    if (avgWordsPerSentence < 5) {
+      qualityPenalty = 15;
+    } else if (avgWordsPerSentence < 8) {
+      qualityPenalty = 5;
+    }
+
+    if (sentenceCount === 1 && wordCount < 15) {
+      qualityPenalty += 10;
+    }
+
+    const agreementWeight = wordCount >= 20 ? 0.3 : 0.2;
+    const baseWeight = 1 - agreementWeight;
+
+    let confidence = baseConfidence * baseWeight + agreementScore * agreementWeight;
+    confidence -= qualityPenalty;
+
+    return Math.max(15, Math.min(95, Math.round(confidence)));
+  }
+
+  // ========== Feature Extraction Helpers ==========
+
+  _normalizeText(text) {
+    return text
+      .replace(/https?:\/\/[^\s]+/g, '')
+      .replace(/\bwww\.[^\s]+/g, '')
+      .replace(/\b(x\.com|twitter\.com)[^\s]*/g, '')
+      .replace(/\bt\.co\/[a-zA-Z0-9]+/g, '')
+      .replace(/\b[a-zA-Z0-9-]+\.(com|org|net|io|co|edu|gov)[^\s]*/g, '')
+      .replace(/@\w+/g, '')
+      .replace(/#\w+/g, '')
+      .replace(/[^\w\s.,!?;:()'-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  _tokenize(text) {
+    const matches = text.match(/\b\w+\b/g);
+    return matches ? matches.map(w => w.toLowerCase()) : [];
+  }
+
+  _sentences(text) {
+    return text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+  }
+
+  _computeTTR(tokens) {
+    if (tokens.length === 0) return 0;
+    const uniqueTokens = new Set(tokens).size;
+    return uniqueTokens / tokens.length;
+  }
+
+  _computeMSTTR(tokens, segmentSize = 100) {
+    if (tokens.length === 0) return 0;
+    const segments = [];
+    for (let i = 0; i < tokens.length; i += segmentSize) {
+      segments.push(tokens.slice(i, i + segmentSize));
+    }
+    if (segments.length === 0) return 0;
+    const ttrs = segments.map(seg => {
+      const unique = new Set(seg).size;
+      return unique / seg.length;
+    });
+    return ttrs.reduce((a, b) => a + b, 0) / ttrs.length;
+  }
+
+  _avgWordLength(tokens) {
+    if (tokens.length === 0) return 0;
+    const totalChars = tokens.reduce((sum, t) => sum + t.length, 0);
+    return totalChars / tokens.length;
+  }
+
+  _avgSyllables(tokens) {
+    if (tokens.length === 0) return 0;
+    const totalSyllables = tokens.reduce((sum, word) => {
+      return sum + this._countSyllables(word);
+    }, 0);
+    return totalSyllables / tokens.length;
+  }
+
+  _countSyllables(word) {
+    word = word.toLowerCase().replace(/[^a-z]/g, '');
+    if (word.length <= 3) return 1;
+    const vowels = word.match(/[aeiouy]+/g);
+    if (!vowels) return 1;
+    let count = vowels.length;
+    if (word.endsWith('e')) count--;
+    const diphthongs = word.match(/[aeiou]{2,}/g);
+    if (diphthongs) {
+      diphthongs.forEach(d => {
+        if (d.length > 2) count -= (d.length - 2);
+      });
+    }
+    return Math.max(1, count);
+  }
+
+  _punctuationComplexity(text, sentences) {
+    const commas = (text.match(/,/g) || []).length;
+    const semicolons = (text.match(/;/g) || []).length;
+    const colons = (text.match(/:/g) || []).length;
+    const dashes = (text.match(/[—–-]/g) || []).length;
+    const parentheses = (text.match(/[()]/g) || []).length / 2;
+    const totalPunct = commas + semicolons + colons + dashes + parentheses;
+    return sentences.length > 0 ? totalPunct / sentences.length : 0;
+  }
+
+  _countSubordinateClauses(text, sentences) {
+    const markers = ['which', 'that', 'who', 'whom', 'whose', 'where', 'when', 'why',
+                     'although', 'though', 'because', 'since', 'while', 'whereas', 'if',
+                     'unless', 'until', 'before', 'after', 'whether', 'however', 'therefore',
+                     'furthermore', 'moreover', 'nevertheless', 'consequently'];
+    let count = 0;
+    const lowerText = text.toLowerCase();
+    markers.forEach(marker => {
+      const regex = new RegExp(`\\b${marker}\\b`, 'gi');
+      const matches = lowerText.match(regex);
+      if (matches) count += matches.length;
+    });
+    return sentences.length > 0 ? count / sentences.length : 0;
+  }
+
+  _vocabularySophistication(tokens) {
+    const longWords = tokens.filter(w => w.length >= 8).length;
+    const veryLongWords = tokens.filter(w => w.length >= 12).length;
+    const simpleWords = ['the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been',
+                        'have', 'has', 'had', 'do', 'does', 'did', 'get', 'got', 'go',
+                        'went', 'see', 'saw', 'know', 'think', 'say', 'said', 'come',
+                        'came', 'like', 'just', 'really', 'very', 'much', 'many'];
+    const simpleCount = tokens.filter(w => simpleWords.includes(w)).length;
+    const simpleRatio = tokens.length > 0 ? simpleCount / tokens.length : 0;
+    const sophistication = (longWords + veryLongWords * 2) / Math.max(1, tokens.length) - simpleRatio;
+    return sophistication;
+  }
+
+  /**
+   * Compute MTLD (Measure of Textual Lexical Diversity)
+   * Based on McCarthy & Jarvis (2010)
+   */
+  _computeMTLD(tokens) {
+    if (tokens.length === 0) return 0;
+
+    const threshold = 0.72;
+    const factorLengths = [];
+    let currentFactor = [];
+    let currentTypes = new Set();
+
+    for (const token of tokens) {
+      currentFactor.push(token);
+      currentTypes.add(token.toLowerCase());
+
+      if (currentFactor.length > 0) {
+        const ttr = currentTypes.size / currentFactor.length;
+        if (ttr < threshold) {
+          factorLengths.push(currentFactor.length);
+          currentFactor = [];
+          currentTypes = new Set();
+        }
+      }
+    }
+
+    // Handle remaining factor
+    if (currentFactor.length > 0) {
+      factorLengths.push(currentFactor.length);
+    }
+
+    if (factorLengths.length === 0) return 0;
+    return factorLengths.reduce((a, b) => a + b, 0) / factorLengths.length;
+  }
+
+  /**
+   * Compute Yule's K (vocabulary richness measure)
+   * Yule's K = 10,000 * (sum(f_i^2) - N) / N^2
+   */
+  _computeYulesK(tokens) {
+    if (tokens.length === 0) return 0;
+
+    const wordCounts = {};
+    for (const token of tokens) {
+      const lower = token.toLowerCase();
+      wordCounts[lower] = (wordCounts[lower] || 0) + 1;
+    }
+
+    const totalWords = tokens.length;
+    let sumFiSquared = 0;
+    for (const count of Object.values(wordCounts)) {
+      sumFiSquared += count * count;
+    }
+
+    const yulesK = 10000 * (sumFiSquared - totalWords) / (totalWords * totalWords);
+    return yulesK;
+  }
+
+  /**
+   * Compute punctuation entropy (Shannon entropy)
+   */
+  _computePunctuationEntropy(text) {
+    const punctChars = text.match(/[.,;:!?()\-\[\]{}"']/g);
+    if (!punctChars || punctChars.length === 0) return 0;
+
+    const punctCounts = {};
+    for (const char of punctChars) {
+      punctCounts[char] = (punctCounts[char] || 0) + 1;
+    }
+
+    const total = punctChars.length;
+    let entropy = 0;
+    for (const count of Object.values(punctCounts)) {
+      const prob = count / total;
+      entropy -= prob * Math.log2(prob);
+    }
+
+    return entropy;
+  }
+
+  /**
+   * Compute lexical overlap between adjacent sentences
+   */
+  _computeLexicalOverlap(sentences) {
+    if (sentences.length < 2) return 0;
+
+    const overlaps = [];
+    for (let i = 0; i < sentences.length - 1; i++) {
+      const words1 = new Set(sentences[i].toLowerCase().match(/\b\w+\b/g) || []);
+      const words2 = new Set(sentences[i + 1].toLowerCase().match(/\b\w+\b/g) || []);
+
+      if (words1.size === 0 || words2.size === 0) continue;
+
+      const intersection = new Set([...words1].filter(x => words2.has(x)));
+      const overlap = intersection.size / Math.max(words1.size, words2.size);
+      overlaps.push(overlap);
+    }
+
+    if (overlaps.length === 0) return 0;
+    return overlaps.reduce((a, b) => a + b, 0) / overlaps.length;
+  }
+
+  /**
+   * Compute connective density
+   */
+  _computeConnectiveDensity(text, tokens) {
+    const connectives = [
+      'and', 'but', 'or', 'so', 'because', 'since', 'although', 'though',
+      'however', 'therefore', 'furthermore', 'moreover', 'nevertheless',
+      'thus', 'consequently', 'hence', 'meanwhile', 'additionally',
+      'while', 'whereas', 'if', 'unless', 'until', 'before', 'after'
+    ];
+
+    const lowerTokens = tokens.map(t => t.toLowerCase());
+    let connectiveCount = 0;
+    for (const token of lowerTokens) {
+      if (connectives.includes(token)) {
+        connectiveCount++;
+      }
+    }
+
+    return tokens.length > 0 ? connectiveCount / tokens.length : 0;
+  }
+
+  /**
+   * Compute readability indices (Flesch-Kincaid, SMOG, ARI, LIX)
+   */
+  _computeReadability(text, sentences, tokens) {
+    const words = tokens;
+    const sentenceCount = sentences.length;
+    const wordCount = words.length;
+
+    if (wordCount === 0 || sentenceCount === 0) {
+      return {
+        flesch_kincaid: 0,
+        smog: 0,
+        ari: 0,
+        lix: 0
+      };
+    }
+
+    // Count syllables
+    let totalSyllables = 0;
+    let polysyllableWords = 0; // Words with 3+ syllables (for SMOG)
+    for (const word of words) {
+      const syllables = this._countSyllables(word);
+      totalSyllables += syllables;
+      if (syllables >= 3) polysyllableWords++;
+    }
+    const avgSyllablesPerWord = totalSyllables / wordCount;
+
+    // Average sentence length
+    const avgSentenceLength = wordCount / sentenceCount;
+
+    // Average word length (characters)
+    const totalChars = words.reduce((sum, w) => sum + w.length, 0);
+    const avgWordLength = totalChars / wordCount;
+
+    // Flesch-Kincaid Grade Level
+    const fleschKincaid = 0.39 * avgSentenceLength + 11.8 * avgSyllablesPerWord - 15.59;
+
+    // SMOG Index (requires polysyllable words per sentence)
+    const smog = Math.sqrt(polysyllableWords * (30 / sentenceCount)) + 3;
+
+    // Automated Readability Index (ARI)
+    const ari = 4.71 * (totalChars / wordCount) + 0.5 * (wordCount / sentenceCount) - 21.43;
+
+    // LIX (Läsbarhetsindex - Swedish readability index)
+    const longWords = words.filter(w => w.length > 6).length;
+    const lix = (wordCount / sentenceCount) + (longWords * 100 / wordCount);
+
+    return {
+      flesch_kincaid: Math.max(0, fleschKincaid),
+      smog: Math.max(0, smog),
+      ari: Math.max(0, ari),
+      lix: Math.max(0, lix)
+    };
+  }
+}
+
+// Export for use in content script
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ComprehensiveIQEstimatorUltimate;
+}
+

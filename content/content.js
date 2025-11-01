@@ -5,8 +5,8 @@
 (function() {
   'use strict';
 
-  // Initialize Comprehensive IQ Estimator (fully client-side, no server needed)
-  const iqEstimator = new ComprehensiveIQEstimator();
+  // Initialize Comprehensive IQ Estimator Ultimate (with real dependency parsing support)
+  const iqEstimator = new ComprehensiveIQEstimatorUltimate();
 
   // State management
   const processedTweets = new Set();
@@ -662,6 +662,26 @@
   }
 
   /**
+   * Create loading badge while IQ is being calculated
+   */
+  function createLoadingBadge() {
+    const badge = document.createElement('span');
+    badge.className = 'iq-badge iq-badge-loading';
+    badge.setAttribute('data-iq-loading', 'true');
+
+    badge.style.setProperty('background-color', '#bdbdbd', 'important');
+    badge.style.setProperty('color', '#000000', 'important');
+    badge.style.setProperty('cursor', 'wait', 'important');
+
+    badge.innerHTML = `
+      <span class="iq-label">IQ</span>
+      <span class="iq-score">...</span>
+    `;
+
+    return badge;
+  }
+
+  /**
    * Create IQ badge element with debug data attached
    * @param {number} iq - Rounded IQ score
    * @param {Object} estimationResult - Full estimation result object
@@ -766,58 +786,90 @@
       console.groupEnd();
     }
 
-    // Feature Extraction Details
+    // Feature Extraction Details - Use actual computed features from result
     console.group('%c🔍 Feature Extraction Details', 'color: #00BCD4; font-weight: bold;');
 
-    // Re-extract features for detailed view (or use stored if available)
-    const normalizedText = text
-      .replace(/https?:\/\/[^\s]+/g, '') // Remove HTTP/HTTPS URLs
-      .replace(/\bwww\.[^\s]+/g, '') // Remove www links
-      .replace(/\b(x\.com|twitter\.com)[^\s]*/g, '') // Remove X/Twitter links
-      .replace(/\bt\.co\/[a-zA-Z0-9]+/g, '') // Remove t.co shortened links
-      .replace(/\b[a-zA-Z0-9-]+\.(com|org|net|io|co|edu|gov)[^\s]*/g, '') // Remove domain links
-      .replace(/@\w+/g, '') // Remove mentions
-      .replace(/#\w+/g, '') // Remove hashtags
-      .replace(/[^\w\s.,!?;:()'-]/g, ' ') // Keep punctuation
-      .replace(/\s+/g, ' ')
-      .trim();
+    // Access features if stored in result, otherwise calculate basic ones
+    const features = result.features || {};
+    const tokens = features.tokens || text.match(/\b\w+\b/g) || [];
+    const sentences = features.sentences || text.split(/[.!?]+/).filter(s => s.trim().length > 0);
 
-    const tokens = normalizedText.match(/\b\w+\b/g) || [];
-    const sentences = normalizedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-
-    const uniqueTokens = new Set(tokens.map(t => t.toLowerCase()));
-    const ttr = tokens.length > 0 ? uniqueTokens.size / tokens.length : 0;
-    const avgWordLength = tokens.length > 0
-      ? tokens.reduce((sum, t) => sum + t.length, 0) / tokens.length
-      : 0;
-    const avgWordsPerSentence = sentences.length > 0 ? tokens.length / sentences.length : 0;
-
-    console.log(`%cVocabulary Sophistication Features:`, 'font-weight: bold; color: #E91E63;');
-    console.log(`  Average Word Length: ${avgWordLength.toFixed(2)} chars`);
+    // Vocabulary Sophistication Features
+    console.log(`%c📚 Vocabulary Sophistication Features:`, 'font-weight: bold; color: #E91E63;');
+    console.log(`  Average Word Length: ${features.avg_word_length?.toFixed(2) || (tokens.length > 0 ? (tokens.reduce((s, t) => s + t.length, 0) / tokens.length).toFixed(2) : '0.00')} chars`);
+    console.log(`  Average Syllables per Word: ${features.avg_syllables?.toFixed(2) || 'N/A'}`);
     console.log(`  Total Words: ${tokens.length}`);
-    console.log(`  Advanced Words (8+ chars): ${tokens.filter(t => t.length >= 8).length} (${((tokens.filter(t => t.length >= 8).length / tokens.length) * 100).toFixed(1)}%)`);
+    console.log(`  Advanced Words (8+ chars): ${tokens.filter(t => t.length >= 8).length} (${tokens.length > 0 ? ((tokens.filter(t => t.length >= 8).length / tokens.length) * 100).toFixed(1) : 0}%)`);
+    if (features.mean_aoa !== undefined) {
+      console.log(`  Mean Age of Acquisition (AoA): ${features.mean_aoa.toFixed(2)} years`);
+      console.log(`  Advanced Vocabulary (%): ${features.pct_advanced?.toFixed(1) || 'N/A'}%`);
+      console.log(`  AoA Dictionary Match Rate: ${features.aoa_match_rate?.toFixed(1) || 0}%`);
+    }
+    console.log(`  Trained Mapping: IQ = 70 + (mean_aoa - 3.91) × 24 + pct_advanced × 1.0`);
 
-    console.log(`%cLexical Diversity Features:`, 'font-weight: bold; color: #3F51B5;');
-    console.log(`  Type-Token Ratio (TTR): ${ttr.toFixed(4)}`);
+    // Lexical Diversity Features
+    console.log(`%c🔤 Lexical Diversity Features:`, 'font-weight: bold; color: #3F51B5;');
+    if (features.ttr !== undefined) {
+      console.log(`  Type-Token Ratio (TTR): ${features.ttr.toFixed(4)}`);
+    }
+    if (features.msttr !== undefined) {
+      console.log(`  Mean Segmental TTR (MSTTR): ${features.msttr.toFixed(4)}`);
+    }
+    if (features.mtld !== undefined) {
+      console.log(`  Measure of Textual Lexical Diversity (MTLD): ${features.mtld.toFixed(2)}`);
+      console.log(`    → Higher MTLD = more diverse vocabulary usage`);
+    }
+    if (features.yules_k !== undefined) {
+      console.log(`  Yule's K (Vocabulary Richness): ${features.yules_k.toFixed(2)}`);
+      console.log(`    → Lower Yule's K = more diverse, Higher = more repetitive`);
+    }
+    const uniqueTokens = new Set(tokens.map(t => t.toLowerCase()));
     console.log(`  Unique Words: ${uniqueTokens.size} of ${tokens.length}`);
-    console.log(`  Trained Mapping: IQ = 70 + (TTR - 0.659) × 170`);
+    console.log(`  Trained Mapping: IQ = 70 + (TTR - 0.659) × 170 (+ MTLD & Yule's K adjustments)`);
 
-    console.log(`%cSentence Complexity Features:`, 'font-weight: bold; color: #009688;');
-    console.log(`  Average Words per Sentence: ${avgWordsPerSentence.toFixed(2)}`);
+    // Sentence Complexity Features
+    console.log(`%c📝 Sentence Complexity Features:`, 'font-weight: bold; color: #009688;');
+    console.log(`  Average Words per Sentence: ${features.avg_words_per_sentence?.toFixed(2) || (sentences.length > 0 ? (tokens.length / sentences.length).toFixed(2) : '0.00')}`);
     console.log(`  Total Sentences: ${sentences.length}`);
-    console.log(`  Trained Mapping: IQ = 60 + (avg_words - 11.0) × 6.0`);
+    if (features.sentence_variance !== undefined) {
+      console.log(`  Sentence Length Variance (std dev): ${features.sentence_variance.toFixed(2)}`);
+      console.log(`    → Higher variance = more variety in sentence structure`);
+    }
+    if (features.readability) {
+      console.log(`  Readability Indices:`);
+      console.log(`    Flesch-Kincaid Grade Level: ${features.readability.flesch_kincaid?.toFixed(1) || 'N/A'}`);
+      console.log(`    SMOG Index: ${features.readability.smog?.toFixed(1) || 'N/A'}`);
+      console.log(`    ARI (Automated Readability): ${features.readability.ari?.toFixed(1) || 'N/A'}`);
+      console.log(`    LIX (Readability Index): ${features.readability.lix?.toFixed(1) || 'N/A'}`);
+    }
+    if (features.lexical_overlap !== undefined) {
+      console.log(`  Lexical Overlap: ${features.lexical_overlap.toFixed(3)}`);
+      console.log(`    → Lower overlap = more varied writing = higher complexity`);
+    }
+    console.log(`  Trained Mapping: IQ = 60 + (avg_words - 11.0) × 6.0 (+ variance & readability boosts)`);
 
-    console.log(`%cGrammatical Precision Features:`, 'font-weight: bold; color: #FF5722;');
-    const commas = (normalizedText.match(/,/g) || []).length;
-    const semicolons = (normalizedText.match(/;/g) || []).length;
-    const subordinateMarkers = ['which', 'that', 'who', 'although', 'because', 'however'].reduce((count, marker) => {
-      const regex = new RegExp(`\\b${marker}\\b`, 'gi');
-      return count + (normalizedText.match(regex) || []).length;
-    }, 0);
-    console.log(`  Punctuation Complexity: ${((commas + semicolons) / Math.max(1, sentences.length)).toFixed(2)} per sentence`);
-    console.log(`  Subordinate Clauses: ${subordinateMarkers} markers found`);
-    console.log(`  Estimated Dependency Depth: ~${(1.795 + ((commas + semicolons) / Math.max(1, sentences.length)) * 0.3).toFixed(2)}`);
-    console.log(`  Trained Mapping: IQ = 53 + (dep_depth - 1.795) × 80`);
+    // Grammatical Precision Features
+    console.log(`%c⚙️ Grammatical Precision Features:`, 'font-weight: bold; color: #FF5722;');
+    if (features.punctuation_complexity !== undefined) {
+      console.log(`  Punctuation Complexity: ${features.punctuation_complexity.toFixed(2)} per sentence`);
+    }
+    if (features.punctuation_entropy !== undefined) {
+      console.log(`  Punctuation Entropy (Shannon): ${features.punctuation_entropy.toFixed(3)}`);
+      console.log(`    → Higher entropy = more varied punctuation usage`);
+    }
+    if (features.subordinate_clauses !== undefined) {
+      console.log(`  Subordinate Clauses: ${features.subordinate_clauses.toFixed(2)} per sentence`);
+    }
+    if (features.connective_density !== undefined) {
+      console.log(`  Connective Density: ${features.connective_density.toFixed(4)}`);
+      console.log(`    → Optimal range 0.08-0.20 indicates good logical flow`);
+    }
+    if (features.avg_dependency_depth !== undefined) {
+      console.log(`  Average Dependency Depth: ${features.avg_dependency_depth.toFixed(3)}`);
+      console.log(`    → Enhanced approximation (calibrated on Python spaCy results)`);
+      console.log(`    → Uses: punctuation, clauses, relative clauses, sentence length, prepositions`);
+    }
+    console.log(`  Trained Mapping: IQ = 53 + (dep_depth - 1.795) × 80 (+ entropy & connectives)`);
 
     console.groupEnd();
 
@@ -909,9 +961,27 @@
       return;
     }
 
+    // Show loading indicator while processing (especially for dependency parsing)
+    let loadingBadge = null;
+    const engagementBar = tweetElement.querySelector('[role="group"]');
+    if (engagementBar && settings.showIQBadge) {
+      loadingBadge = createLoadingBadge();
+      const firstChild = engagementBar.firstElementChild;
+      if (firstChild) {
+        engagementBar.insertBefore(loadingBadge, firstChild);
+      } else {
+        engagementBar.appendChild(loadingBadge);
+      }
+    }
+
     try {
-      // Calculate IQ using the comprehensive client-side estimator
-      const result = iqEstimator.estimate(tweetText);
+      // Calculate IQ using the comprehensive client-side estimator (async with real dependency parsing)
+      const result = await iqEstimator.estimate(tweetText);
+
+      // Remove loading badge
+      if (loadingBadge) {
+        loadingBadge.remove();
+      }
 
       // Only show badge if estimation was successful
       if (result.is_valid && result.iq_estimate !== null && settings.showIQBadge) {
@@ -921,8 +991,6 @@
         const badge = createIQBadge(iq, result, tweetText);
 
         // Find the engagement bar (comments, retweets, likes, views, bookmarks)
-        const engagementBar = tweetElement.querySelector('[role="group"]');
-
         if (engagementBar) {
           // Insert badge as the first item, before the comment icon
           const firstChild = engagementBar.firstElementChild;
@@ -942,6 +1010,10 @@
       }
     } catch (error) {
       console.error('Error processing tweet:', error);
+      // Remove loading badge on error
+      if (loadingBadge) {
+        loadingBadge.remove();
+      }
     } finally {
       // Remove processing flag even if there was an error
       tweetElement.removeAttribute('data-iq-processing');

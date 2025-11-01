@@ -9,8 +9,12 @@
   ],
   "host_permissions": [
     "https://*.twitter.com/*",
-    "https://*.x.com/*"
+    "https://*.x.com/*",
+    "https://cdn.jsdelivr.net/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -18,7 +22,8 @@
         "https://*.x.com/*"
       ],
       "js": [
-        "content/comprehensiveIQEstimator.js",
+        "content/spacyDependencyParser.js",
+        "content/comprehensiveIQEstimatorUltimate.js",
         "content/content.js"
       ],
       "css": [
