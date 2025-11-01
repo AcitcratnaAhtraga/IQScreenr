@@ -527,9 +527,20 @@
     const isSingleTweetPage = /\/status\/\d+/.test(window.location.pathname);
 
     // First, find the main tweet container (the top-level article or div with tweet data-testid)
-    const mainTweetContainer = tweetElement.querySelector('[data-testid="tweet"]') ||
-                                (tweetElement.getAttribute('data-testid') === 'tweet' ? tweetElement : null) ||
-                                tweetElement;
+    // Handle nested structures (e.g., notifications where wrapper contains actual tweet)
+    let mainTweetContainer = tweetElement.querySelector('[data-testid="tweet"]') ||
+                            (tweetElement.getAttribute('data-testid') === 'tweet' ? tweetElement : null);
+
+    // If we found a nested tweet container, use that as the main container
+    // This handles notification pages where the wrapper article contains the actual tweet
+    if (mainTweetContainer && mainTweetContainer !== tweetElement) {
+      tweetElement = mainTweetContainer;
+    }
+
+    // Fallback to original element if no nested tweet found
+    if (!mainTweetContainer) {
+      mainTweetContainer = tweetElement;
+    }
 
     // Find ALL tweetText elements in this article (main tweet + any quoted tweets)
     const allTweetTextElements = Array.from(tweetElement.querySelectorAll('[data-testid="tweetText"]'));
@@ -1025,8 +1036,47 @@
       }
 
       // Remove spinner, start counting from 0
-      scoreContainer.innerHTML = '0';
-      const scoreElement = scoreContainer;
+      // Check if we already have flip structure (confidence might have been set before animation)
+      const hasFlipStructure = badge.querySelector('.iq-badge-inner');
+      let scoreElement;
+
+      if (hasFlipStructure) {
+        // Use the front score element in flip structure
+        scoreElement = badge.querySelector('.iq-badge-front .iq-score');
+        if (!scoreElement) {
+          // Create front score element if missing
+          const frontDiv = badge.querySelector('.iq-badge-front');
+          if (frontDiv) {
+            const label = frontDiv.querySelector('.iq-label') || document.createElement('span');
+            if (!label.classList.contains('iq-label')) {
+              label.className = 'iq-label';
+              label.textContent = 'IQ';
+            }
+            const score = document.createElement('span');
+            score.className = 'iq-score';
+            score.textContent = '0';
+            frontDiv.innerHTML = '';
+            frontDiv.appendChild(label);
+            frontDiv.appendChild(score);
+            scoreElement = score;
+          }
+        } else {
+          scoreElement.textContent = '0';
+        }
+      } else {
+        // No flip structure yet - use the scoreContainer directly
+        if (scoreContainer) {
+          scoreContainer.innerHTML = '0';
+          scoreElement = scoreContainer;
+        } else {
+          // Create simple structure
+          badge.innerHTML = `
+            <span class="iq-label">IQ</span>
+            <span class="iq-score">0</span>
+          `;
+          scoreElement = badge.querySelector('.iq-score');
+        }
+      }
 
       // Remove loading class and spinner
       badge.classList.remove('iq-badge-loading');
@@ -1131,6 +1181,13 @@
           badge.removeAttribute('data-iq-animating');
           badge.setAttribute('data-iq-animated', 'true');
 
+          // Set up flip structure with confidence if available (after animation completes)
+          const confidenceAttr = badge.getAttribute('data-confidence');
+          if (confidenceAttr !== null) {
+            const confidence = parseInt(confidenceAttr, 10);
+            updateBadgeWithFlipStructure(badge, finalIQ, confidence);
+          }
+
           // Small delay before pulse animation to ensure final number is visible
           setTimeout(() => {
             // Trigger pulse animation with color transition
@@ -1171,6 +1228,58 @@
   }
 
   /**
+   * Update badge HTML structure to support flip animation showing confidence
+   */
+  function updateBadgeWithFlipStructure(badge, iq, confidence) {
+    // Only update if badge has finished animating (not loading)
+    if (badge.classList.contains('iq-badge-loading') || badge.hasAttribute('data-iq-loading')) {
+      return;
+    }
+
+    // Check if already has flip structure
+    if (badge.querySelector('.iq-badge-inner')) {
+      // Update existing structure
+      const frontScore = badge.querySelector('.iq-badge-front .iq-score');
+      const backLabel = badge.querySelector('.iq-badge-back .iq-label');
+      const backScore = badge.querySelector('.iq-badge-back .iq-score');
+
+      if (frontScore) {
+        frontScore.textContent = iq;
+      }
+      if (backLabel) {
+        backLabel.textContent = '%';
+      }
+      if (backScore) {
+        backScore.textContent = confidence;
+      }
+      return;
+    }
+
+    // Get current badge content
+    const currentLabel = badge.querySelector('.iq-label');
+    const currentScore = badge.querySelector('.iq-score');
+    const labelText = currentLabel ? currentLabel.textContent : 'IQ';
+    const scoreText = currentScore ? currentScore.textContent : String(iq);
+
+    // Create flip structure
+    badge.innerHTML = `
+      <div class="iq-badge-inner">
+        <div class="iq-badge-front">
+          <span class="iq-label">${labelText}</span>
+          <span class="iq-score">${scoreText}</span>
+        </div>
+        <div class="iq-badge-back">
+          <span class="iq-label">%</span>
+          <span class="iq-score">${confidence}</span>
+        </div>
+      </div>
+    `;
+
+    // Add class to indicate this badge has flip functionality
+    badge.classList.add('iq-badge-flip');
+  }
+
+  /**
    * Parse color string to RGB object
    */
   function parseColor(colorStr) {
@@ -1201,7 +1310,9 @@
    * @param {string} iqColor - The final background color
    */
   function triggerPulseAnimation(badge, iqColor) {
-    const scoreElement = badge.querySelector('.iq-score');
+    // Find score element - could be in flip structure (front) or direct
+    let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
+                       badge.querySelector('.iq-score');
     if (!scoreElement) return;
 
     // Add pulse animation class
@@ -1248,6 +1359,12 @@
     badge.className = 'iq-badge';
     badge.setAttribute('data-iq-score', iq);
 
+    // Store confidence if available
+    const confidence = estimationResult.confidence ? Math.round(estimationResult.confidence) : null;
+    if (confidence !== null) {
+      badge.setAttribute('data-confidence', confidence);
+    }
+
     // Store debug data on the badge element for hover access
     badge._debugData = {
       iq: iq,
@@ -1261,19 +1378,38 @@
     badge.style.setProperty('color', '#000000', 'important');
     badge.style.setProperty('cursor', 'help', 'important');
 
-    badge.innerHTML = `
-      <span class="iq-label">IQ</span>
-      <span class="iq-score">${iq}</span>
-    `;
+    // Create flip structure if confidence is available, otherwise use simple structure
+    if (confidence !== null) {
+      badge.innerHTML = `
+        <div class="iq-badge-inner">
+          <div class="iq-badge-front">
+            <span class="iq-label">IQ</span>
+            <span class="iq-score">${iq}</span>
+          </div>
+          <div class="iq-badge-back">
+            <span class="iq-label">%</span>
+            <span class="iq-score">${confidence}</span>
+          </div>
+        </div>
+      `;
+      badge.classList.add('iq-badge-flip');
+    } else {
+      badge.innerHTML = `
+        <span class="iq-label">IQ</span>
+        <span class="iq-score">${iq}</span>
+      `;
+    }
 
     // Re-apply background color after innerHTML in case it got reset
     badge.style.setProperty('background-color', iqColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
 
-    // Add hover event listeners for debug output
-    badge.addEventListener('mouseenter', () => {
-      logDebugInfo(badge._debugData);
-    });
+    // Add hover event listeners for debug output (only if no confidence, since flip will show it)
+    if (confidence === null) {
+      badge.addEventListener('mouseenter', () => {
+        logDebugInfo(badge._debugData);
+      });
+    }
 
     return badge;
   }
@@ -1493,37 +1629,48 @@
    * Process a single tweet
    */
   async function processTweet(tweetElement) {
+    // Handle nested tweet structures (notifications)
+    // Find the actual tweet article if this is a wrapper
+    let actualTweetElement = tweetElement;
+    const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                        tweetElement.querySelector('article[role="article"]');
+    if (nestedTweet && nestedTweet !== tweetElement) {
+      actualTweetElement = nestedTweet;
+      // Mark the wrapper as analyzed to avoid reprocessing
+      tweetElement.setAttribute('data-iq-analyzed', 'true');
+    }
+
     // Skip if already processed (including invalid badges)
-    if (tweetElement.hasAttribute('data-iq-analyzed')) {
+    if (actualTweetElement.hasAttribute('data-iq-analyzed')) {
       return;
     }
 
     // Check if badge already exists and is finalized (not loading)
-    const existingBadge = tweetElement.querySelector('.iq-badge');
+    const existingBadge = actualTweetElement.querySelector('.iq-badge');
     if (existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
         !existingBadge.classList.contains('iq-badge-loading') &&
         !existingBadge.hasAttribute('data-iq-invalid')) {
-      tweetElement.setAttribute('data-iq-analyzed', 'true');
+      actualTweetElement.setAttribute('data-iq-analyzed', 'true');
       return;
     }
 
     // Mark as processing to avoid double-processing
-    tweetElement.setAttribute('data-iq-processing', 'true');
+    actualTweetElement.setAttribute('data-iq-processing', 'true');
 
     // STEP 1: Quick synchronous text extraction for early validation
     let tweetText = null;
-    tweetText = extractTweetText(tweetElement);
+    tweetText = extractTweetText(actualTweetElement);
 
     // STEP 2: Early validation - if invalid, show X badge immediately
     if (!tweetText) {
       if (settings.showIQBadge) {
         // Remove any loading badge and show X badge
-        const existingBadge = tweetElement.querySelector('.iq-badge');
+        const existingBadge = actualTweetElement.querySelector('.iq-badge');
         if (existingBadge) {
           existingBadge.remove();
         }
         const invalidBadge = createInvalidBadge();
-        const engagementBar = tweetElement.querySelector('[role="group"]');
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
         if (engagementBar) {
           const firstChild = engagementBar.firstElementChild;
           if (firstChild) {
@@ -1532,18 +1679,18 @@
             engagementBar.appendChild(invalidBadge);
           }
         } else {
-          const tweetContent = tweetElement.querySelector('div[data-testid="tweetText"]') ||
-                              tweetElement.querySelector('div[lang]') ||
-                              tweetElement.firstElementChild;
+          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweetElement.querySelector('div[lang]') ||
+                              actualTweetElement.firstElementChild;
           if (tweetContent && tweetContent.parentElement) {
             tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
           } else {
-            tweetElement.insertBefore(invalidBadge, tweetElement.firstChild);
+            actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
           }
         }
       }
-      tweetElement.setAttribute('data-iq-analyzed', 'true');
-      tweetElement.removeAttribute('data-iq-processing');
+      actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+      actualTweetElement.removeAttribute('data-iq-processing');
       return;
     }
 
@@ -1551,12 +1698,12 @@
     if (!validation.isValid) {
       if (settings.showIQBadge) {
         // Remove any loading badge and show X badge
-        const existingBadge = tweetElement.querySelector('.iq-badge');
+        const existingBadge = actualTweetElement.querySelector('.iq-badge');
         if (existingBadge) {
           existingBadge.remove();
         }
         const invalidBadge = createInvalidBadge();
-        const engagementBar = tweetElement.querySelector('[role="group"]');
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
         if (engagementBar) {
           const firstChild = engagementBar.firstElementChild;
           if (firstChild) {
@@ -1565,18 +1712,18 @@
             engagementBar.appendChild(invalidBadge);
           }
         } else {
-          const tweetContent = tweetElement.querySelector('div[data-testid="tweetText"]') ||
-                              tweetElement.querySelector('div[lang]') ||
-                              tweetElement.firstElementChild;
+          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweetElement.querySelector('div[lang]') ||
+                              actualTweetElement.firstElementChild;
           if (tweetContent && tweetContent.parentElement) {
             tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
           } else {
-            tweetElement.insertBefore(invalidBadge, tweetElement.firstChild);
+            actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
           }
         }
       }
-      tweetElement.setAttribute('data-iq-analyzed', 'true');
-      tweetElement.removeAttribute('data-iq-processing');
+      actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+      actualTweetElement.removeAttribute('data-iq-processing');
       return;
     }
 
@@ -1584,15 +1731,15 @@
     let loadingBadge = null;
     if (settings.showIQBadge) {
       // Check for existing loading badge
-      loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
-                     tweetElement.querySelector('.iq-badge-loading');
+      loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                     actualTweetElement.querySelector('.iq-badge-loading');
 
       // If no loading badge exists, create one now
       if (!loadingBadge) {
         loadingBadge = createLoadingBadge();
 
         // Try to find engagement bar
-        const engagementBar = tweetElement.querySelector('[role="group"]');
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
         if (engagementBar) {
           const firstChild = engagementBar.firstElementChild;
           if (firstChild) {
@@ -1602,20 +1749,20 @@
           }
         } else {
           // Fallback: attach to tweet element
-          const tweetContent = tweetElement.querySelector('div[data-testid="tweetText"]') ||
-                              tweetElement.querySelector('div[lang]') ||
-                              tweetElement.firstElementChild;
+          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweetElement.querySelector('div[lang]') ||
+                              actualTweetElement.firstElementChild;
           if (tweetContent && tweetContent.parentElement) {
             tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
           } else {
-            tweetElement.insertBefore(loadingBadge, tweetElement.firstChild);
+            actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
           }
         }
       }
 
       // Ensure the badge is in the right place (engagement bar is preferred)
       if (loadingBadge && loadingBadge.parentElement) {
-        const engagementBar = tweetElement.querySelector('[role="group"]');
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
         if (engagementBar && !engagementBar.contains(loadingBadge)) {
           // Move badge to engagement bar if it exists
           const firstChild = engagementBar.firstElementChild;
@@ -1635,7 +1782,7 @@
       if (!loadingBadge.parentElement) {
         // Recreate it if lost
         loadingBadge = createLoadingBadge();
-        const engagementBar = tweetElement.querySelector('[role="group"]');
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
         if (engagementBar) {
           const firstChild = engagementBar.firstElementChild;
           if (firstChild) {
@@ -1648,7 +1795,7 @@
     }
 
     // First, check if tweet is already expanded - if so, just extract normally
-    const alreadyExpanded = Array.from(tweetElement.querySelectorAll('span[role="button"], button, div[role="button"]')).some(el => {
+    const alreadyExpanded = Array.from(actualTweetElement.querySelectorAll('span[role="button"], button, div[role="button"]')).some(el => {
       const text = el.textContent.trim().toLowerCase();
       return text === 'show less' || text === 'read less' ||
              (text.includes('show') && text.includes('less'));
@@ -1656,14 +1803,14 @@
 
     // If already expanded, just extract normally (don't try to collapse it)
     if (alreadyExpanded) {
-      tweetText = extractTweetText(tweetElement);
-    } else if (isTweetTruncated(tweetElement)) {
+      tweetText = extractTweetText(actualTweetElement);
+    } else if (isTweetTruncated(actualTweetElement)) {
 
       // Extract full text without visually expanding the tweet
-      tweetText = tryExtractFullTextWithoutExpanding(tweetElement);
+      tweetText = tryExtractFullTextWithoutExpanding(actualTweetElement);
 
       // Get a baseline to compare - what would normal extraction give us?
-      const baselineText = extractTweetText(tweetElement);
+      const baselineText = extractTweetText(actualTweetElement);
       const baselineLength = baselineText ? baselineText.length : 0;
 
       // If extracted text is similar to baseline (within 50 chars), it's likely truncated
@@ -1681,11 +1828,11 @@
 
         // VERIFY badge before async expansion
         if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
-          loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
-                         tweetElement.querySelector('.iq-badge-loading');
+          loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                         actualTweetElement.querySelector('.iq-badge-loading');
           if (!loadingBadge) {
             loadingBadge = createLoadingBadge();
-            const engagementBar = tweetElement.querySelector('[role="group"]');
+            const engagementBar = actualTweetElement.querySelector('[role="group"]');
             if (engagementBar) {
               const firstChild = engagementBar.firstElementChild;
               if (firstChild) {
@@ -1697,15 +1844,15 @@
           }
         }
 
-        const expandedText = await extractFullTextWithoutVisualExpansion(tweetElement);
+        const expandedText = await extractFullTextWithoutVisualExpansion(actualTweetElement);
 
         // VERIFY badge after async expansion
         if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
-          loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
-                         tweetElement.querySelector('.iq-badge-loading');
+          loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                         actualTweetElement.querySelector('.iq-badge-loading');
           if (!loadingBadge) {
             loadingBadge = createLoadingBadge();
-            const engagementBar = tweetElement.querySelector('[role="group"]');
+            const engagementBar = actualTweetElement.querySelector('[role="group"]');
             if (engagementBar) {
               const firstChild = engagementBar.firstElementChild;
               if (firstChild) {
@@ -1740,11 +1887,11 @@
       if (settings.showIQBadge) {
         // Re-check loading badge in case it was removed
         if (!loadingBadge || !loadingBadge.parentElement) {
-          loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
-                         tweetElement.querySelector('.iq-badge-loading');
+          loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                         actualTweetElement.querySelector('.iq-badge-loading');
           if (!loadingBadge) {
             loadingBadge = createLoadingBadge();
-            const engagementBar = tweetElement.querySelector('[role="group"]');
+            const engagementBar = actualTweetElement.querySelector('[role="group"]');
             if (engagementBar) {
               const firstChild = engagementBar.firstElementChild;
               if (firstChild) {
@@ -1794,17 +1941,32 @@
             timestamp: new Date().toISOString()
           };
 
-          // Add hover event listener for debug info
-          loadingBadge.addEventListener('mouseenter', () => {
-            logDebugInfo(loadingBadge._debugData);
-          });
+          // Store confidence for flip display
+          const confidence = result.confidence ? Math.round(result.confidence) : null;
+          if (confidence !== null) {
+            loadingBadge.setAttribute('data-confidence', confidence);
+            updateBadgeWithFlipStructure(loadingBadge, iq, confidence);
+          }
 
-          processedTweets.add(tweetElement);
-          tweetElement.setAttribute('data-iq-analyzed', 'true');
-          tweetElement.removeAttribute('data-iq-processing');
+          // Add hover event listener for debug info (only log if confidence not available)
+          if (confidence === null) {
+            loadingBadge.addEventListener('mouseenter', () => {
+              logDebugInfo(loadingBadge._debugData);
+            });
+          }
+
+          processedTweets.add(actualTweetElement);
+          actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+          actualTweetElement.removeAttribute('data-iq-processing');
         } else {
           // Fallback: create new badge if loading badge doesn't exist
           const badge = createIQBadge(iq, result, tweetText);
+
+          // Store confidence for flip display
+          const confidence = result.confidence ? Math.round(result.confidence) : null;
+          if (confidence !== null) {
+            badge.setAttribute('data-confidence', confidence);
+          }
 
           // Store animation data and prepare for animation
           const iqColor = getIQColor(iq);
@@ -1837,7 +1999,7 @@
           animateCountUp(badge, iq, iqColor);
 
           // Find the engagement bar (comments, retweets, likes, views, bookmarks)
-          const engagementBar = tweetElement.querySelector('[role="group"]');
+          const engagementBar = actualTweetElement.querySelector('[role="group"]');
           if (engagementBar) {
             // Insert badge as the first item, before the comment icon
             const firstChild = engagementBar.firstElementChild;
@@ -1848,19 +2010,19 @@
             }
           } else {
             // Fallback: append to the end of the tweet article
-            tweetElement.appendChild(badge);
+            actualTweetElement.appendChild(badge);
           }
 
-          processedTweets.add(tweetElement);
-          tweetElement.setAttribute('data-iq-analyzed', 'true');
-          tweetElement.removeAttribute('data-iq-processing');
+          processedTweets.add(actualTweetElement);
+          actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+          actualTweetElement.removeAttribute('data-iq-processing');
         }
       } else {
         // Remove loading badge if estimation failed
         if (loadingBadge) {
           loadingBadge.remove();
         }
-        tweetElement.removeAttribute('data-iq-processing');
+        actualTweetElement.removeAttribute('data-iq-processing');
       }
     } catch (error) {
       console.error('Error processing tweet:', error);
@@ -1870,7 +2032,7 @@
       }
     } finally {
       // Remove processing flag even if there was an error
-      tweetElement.removeAttribute('data-iq-processing');
+      actualTweetElement.removeAttribute('data-iq-processing');
     }
   }
 
@@ -1897,9 +2059,42 @@
       tweets = document.querySelectorAll('article');
     }
 
-    const newTweets = Array.from(tweets).filter(tweet =>
-      tweet && !tweet.hasAttribute('data-iq-analyzed') && !tweet.hasAttribute('data-iq-processing')
-    );
+    // Process tweets and handle nested structure (e.g., notifications)
+    const processedTweetElements = new Set();
+    const newTweets = [];
+
+    Array.from(tweets).forEach((tweet) => {
+      if (!tweet || tweet.hasAttribute('data-iq-analyzed') || tweet.hasAttribute('data-iq-processing')) {
+        return;
+      }
+
+      // Check if this article contains a nested tweet article (common in notifications)
+      // If so, prefer the nested one as it's the actual tweet
+      const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
+                          tweet.querySelector('article[role="article"]');
+
+      if (nestedTweet && nestedTweet !== tweet) {
+        // Use the nested tweet if it hasn't been processed
+        if (!nestedTweet.hasAttribute('data-iq-analyzed') &&
+            !nestedTweet.hasAttribute('data-iq-processing') &&
+            !processedTweetElements.has(nestedTweet)) {
+          newTweets.push(nestedTweet);
+          processedTweetElements.add(nestedTweet);
+        }
+      } else {
+        // Use this tweet if it contains tweet text or has tweet indicators
+        // Skip notification wrappers that don't have actual tweet content
+        const hasTweetText = tweet.querySelector('[data-testid="tweetText"]');
+        const hasEngagementBar = tweet.querySelector('[role="group"]');
+
+        // Only process if it looks like an actual tweet (has text or engagement bar)
+        // This prevents processing empty notification wrapper articles
+        if ((hasTweetText || hasEngagementBar) && !processedTweetElements.has(tweet)) {
+          newTweets.push(tweet);
+          processedTweetElements.add(tweet);
+        }
+      }
+    });
 
     // Add loading badges to ALL new tweets (completely non-blocking)
     if (settings.showIQBadge) {
@@ -1931,8 +2126,17 @@
       return;
     }
 
+    // Handle nested tweet structures (notifications)
+    // Find the actual tweet article if this is a wrapper
+    let actualTweet = tweet;
+    const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
+                        tweet.querySelector('article[role="article"]');
+    if (nestedTweet && nestedTweet !== tweet) {
+      actualTweet = nestedTweet;
+    }
+
     const loadingBadge = createLoadingBadge();
-    const engagementBar = tweet.querySelector('[role="group"]');
+    const engagementBar = actualTweet.querySelector('[role="group"]');
 
     if (engagementBar) {
       try {
@@ -1947,7 +2151,7 @@
       }
     } else {
       try {
-        tweet.insertBefore(loadingBadge, tweet.firstChild);
+        actualTweet.insertBefore(loadingBadge, actualTweet.firstChild);
       } catch (e) {
         // Silently fail
       }
