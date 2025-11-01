@@ -539,45 +539,32 @@
     }
 
     // If there's only one, use it (but verify it's not a quoted tweet)
-    // On single tweet pages, be extra cautious - if it's the only one and looks quoted, return null
     if (allTweetTextElements.length === 1) {
       const textElement = allTweetTextElements[0];
       const depth = getElementDepth(textElement, mainTweetContainer);
-
-      // CRITICAL: On single tweet pages with "Quote" visible, if there's only ONE tweetText,
-      // it MUST be the quoted tweet's text (since the main tweet has no text - just an image/GIF)
-      if (isSingleTweetPage) {
-        const hasQuoteLabel = tweetElement.textContent.includes('Quote') ||
-                             tweetElement.querySelector('span')?.textContent?.includes('Quote');
-
-        if (hasQuoteLabel) {
-          // This is a quote tweet page, and the only text found is from the quoted tweet
-          // The main tweet (PunishedAbammon) has no text - just a GIF
-          return null;
-        }
-      }
-
       const isQuoted = isInsideQuotedTweet(textElement, tweetElement);
 
-      // On single tweet pages, if the only text is very deep (>10), it might be quoted content
-      // Check if there's a quoted tweet container - if so, this might be the quoted text
-      if (isSingleTweetPage && depth > 10) {
-        const hasQuotedContainer = tweetElement.querySelector('[data-testid="quotedTweet"]') ||
-                                   tweetElement.querySelector('[data-testid="quoteTweet"]') ||
-                                   tweetElement.querySelectorAll('article').length > 1;
+      // Only skip if it's actually inside a quoted tweet container
+      // Don't be too aggressive with "Quote" label checking - it might appear elsewhere on the page
+      if (isQuoted) {
+        return null;
+      }
 
-        if (hasQuotedContainer) {
-          return null; // Likely quoted content, main tweet has no text
+      // On single tweet pages, if the text is very deep (>12) and there's a quoted container,
+      // check if this text element is actually inside the quoted container
+      if (isSingleTweetPage && depth > 12) {
+        const quotedContainer = tweetElement.querySelector('[data-testid="quotedTweet"]') ||
+                               tweetElement.querySelector('[data-testid="quoteTweet"]');
+        if (quotedContainer && quotedContainer.contains(textElement)) {
+          return null; // This text is inside the quoted tweet, main tweet has no text
         }
       }
 
-      // Check if it's inside a quoted tweet container
-      if (!isQuoted) {
-        let text = textElement.innerText || textElement.textContent || '';
-        text = text.trim();
-        if (text.length > 0) {
-          return text;
-        }
+      // Extract and return the text if it exists
+      let text = textElement.innerText || textElement.textContent || '';
+      text = text.trim();
+      if (text.length > 0) {
+        return text;
       }
       return null;
     }
@@ -689,52 +676,7 @@
       }
     }
 
-    // NEW: Look for visual/hierarchical indicators of quoted content
-    // On single tweet pages, check if there's a "Quote" label or quoted tweet structure
-    if (isSingleTweetPage) {
-      // Check if there's a "Quote" text/label in the tweet (indicates this is a quote tweet page)
-      const hasQuoteLabel = tweetElement.textContent.includes('Quote') ||
-                           tweetElement.querySelector('[data-testid="quoteTweet"]') ||
-                           tweetElement.querySelector('div[dir="auto"]')?.textContent?.includes('Quote');
-
-      // Check if the element is in a section that appears after the main content
-      // Quoted tweets are usually in a distinct visual block
-      let current = element;
-      let foundQuoteIndicator = false;
-
-      // Walk up the DOM tree looking for quoted tweet indicators
-      while (current && current !== tweetElement) {
-        // Check if current or parent has quote-related attributes/classes
-        const parentText = current.parentElement?.textContent || '';
-
-        // Look for nested structure that indicates quoted content
-        // Quoted tweets often have the quoted author's info nearby
-        if (current.closest('[data-testid="tweet"]') !== tweetElement.querySelector('[data-testid="tweet"]:first-of-type')) {
-          foundQuoteIndicator = true;
-          break;
-        }
-
-        // Check for nested divs with specific structure (quoted tweets often in nested divs)
-        if (current.tagName === 'DIV') {
-          const siblings = Array.from(current.parentElement?.children || []);
-          // If we're in a div that has a "Quote" text sibling or parent
-          if (siblings.some(sib => sib.textContent?.includes('Quote'))) {
-            foundQuoteIndicator = true;
-            break;
-          }
-        }
-
-        current = current.parentElement;
-        if (!current) break;
-      }
-
-      // If we found quote indicators AND we're not in the main tweet text area, it's quoted
-      if (hasQuoteLabel && foundQuoteIndicator) {
-        return true;
-      }
-    }
-
-    // Check for nested articles - quoted tweets are nested articles
+    // Check for nested articles - quoted tweets are nested articles within the same tweet
     let current = element;
     let articleCount = 0;
     const articles = [];
@@ -745,20 +687,30 @@
         articleCount++;
         articles.push(current);
 
-        // On single tweet pages, be more aggressive: any nested article is likely quoted
-        if (isSingleTweetPage && articleCount > 1) {
-          return true;
-        }
-
-        // If we're inside a nested article (second+ article), it's likely a quoted tweet
+        // If we're inside a nested article (second+ article), check if it's actually a quoted tweet
+        // Not just any article - must be nested within the tweet structure
         if (articleCount > 1) {
           // Double-check: see if this article is nested inside another article or tweet container
+          // AND is marked as a quoted tweet
+          const isQuotedContainer = current.querySelector('[data-testid="quotedTweet"]') ||
+                                   current.querySelector('[data-testid="quoteTweet"]') ||
+                                   current.getAttribute('data-testid') === 'quotedTweet';
+
+          if (isQuotedContainer) {
+            return true; // This is definitely inside a quoted tweet container
+          }
+
+          // Also check if parent structure indicates quoted tweet
           let parent = current.parentElement;
           while (parent && parent !== tweetElement) {
             if (parent.tagName === 'ARTICLE' ||
                 parent.getAttribute('data-testid') === 'tweet' ||
                 parent.querySelector('[data-testid="tweet"]')) {
-              return true; // Nested article = quoted tweet
+              // Found nested article structure - but only return true if explicitly marked as quoted
+              if (parent.querySelector('[data-testid="quotedTweet"]') ||
+                  parent.querySelector('[data-testid="quoteTweet"]')) {
+                return true;
+              }
             }
             parent = parent.parentElement;
           }
@@ -774,37 +726,16 @@
     const mainContainer = tweetElement.querySelector('[data-testid="tweet"]') || tweetElement;
     const depth = getElementDepth(element, mainContainer);
 
-    // On single tweet pages with quote tweets, check if there's a "Quote" text visible
-    // AND if this element is in a visually distinct section
-    if (isSingleTweetPage) {
-      // Check if there's any "Quote" text in the tweet (indicates it's a quote tweet)
-      const tweetHasQuoteLabel = tweetElement.textContent.includes('Quote') ||
-                                 tweetElement.querySelector('span')?.textContent?.includes('Quote');
-
-      if (tweetHasQuoteLabel) {
-        // If depth > 8 on a quote tweet page, it's likely quoted content
-        if (depth > 8) {
-          return true;
-        }
-
-        // Additional check: if the element is not directly under the main tweet container
-        // and there's a Quote label, it's likely quoted
-        const mainTweetContainer = tweetElement.querySelector('[data-testid="tweet"]');
-        if (mainTweetContainer && !mainTweetContainer.contains(element)) {
-          return true;
-        }
-      }
-    }
-
-    // If depth > 12 and we're not sure, be cautious - likely quoted
-    if (depth > 12) {
-      // Check if there's a shallower tweetText element (which would be the main tweet)
+    // If depth > 15 and we're not sure, be cautious - likely quoted
+    // But only if there's a shallower tweetText element (which would be the main tweet)
+    if (depth > 15) {
       const allTexts = tweetElement.querySelectorAll('[data-testid="tweetText"]');
       for (const otherText of allTexts) {
         if (otherText !== element) {
           const otherDepth = getElementDepth(otherText, mainContainer);
-          if (otherDepth < depth - 2) {
-            // There's a much shallower text element, so this one is likely quoted
+          // Only return true if there's a MUCH shallower element (difference of 5+)
+          // This indicates the main tweet text is at a normal depth and this is likely quoted
+          if (otherDepth < depth - 5) {
             return true;
           }
         }
