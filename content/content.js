@@ -1836,6 +1836,15 @@
    * Process a single tweet
    */
   async function processTweet(tweetElement) {
+    if (!tweetElement || !settings.showIQBadge) {
+      if (!tweetElement) {
+        debugLog('[Process Tweet] Skipped - null tweetElement');
+      } else {
+        debugLog('[Process Tweet] Skipped - showIQBadge is false');
+      }
+      return;
+    }
+
     // Handle nested tweet structures (notifications)
     // Find the actual tweet article if this is a wrapper
     let actualTweetElement = tweetElement;
@@ -1845,24 +1854,43 @@
       actualTweetElement = nestedTweet;
       // Mark the wrapper as analyzed to avoid reprocessing
       tweetElement.setAttribute('data-iq-analyzed', 'true');
+      debugLog('[Process Tweet] Found nested tweet structure');
     }
 
     // Skip if already processed (including invalid badges)
     if (actualTweetElement.hasAttribute('data-iq-analyzed')) {
+      debugLog('[Process Tweet] Skipped - already analyzed', {
+        hasBadge: !!actualTweetElement.querySelector('.iq-badge'),
+        badgeType: actualTweetElement.querySelector('.iq-badge')?.className
+      });
       return;
     }
 
     // Check if badge already exists and is finalized (not loading)
     const existingBadge = actualTweetElement.querySelector('.iq-badge');
+    debugLog('[Process Tweet] Starting processing', {
+      hasExistingBadge: !!existingBadge,
+      existingBadgeLoading: existingBadge?.hasAttribute('data-iq-loading'),
+      existingBadgeClassList: existingBadge?.classList.toString(),
+      existingBadgeInvalid: existingBadge?.hasAttribute('data-iq-invalid'),
+      tweetHasText: !!actualTweetElement.querySelector('[data-testid="tweetText"]'),
+      tweetHasEngagementBar: !!actualTweetElement.querySelector('[role="group"]'),
+      tweetId: actualTweetElement.getAttribute('data-testid'),
+      tweetTag: actualTweetElement.tagName,
+      tweetParent: actualTweetElement.parentElement?.tagName
+    });
+
     if (existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
         !existingBadge.classList.contains('iq-badge-loading') &&
         !existingBadge.hasAttribute('data-iq-invalid')) {
+      debugLog('[Process Tweet] Badge already finalized - marking as analyzed');
       actualTweetElement.setAttribute('data-iq-analyzed', 'true');
       return;
     }
 
     // Mark as processing to avoid double-processing
     actualTweetElement.setAttribute('data-iq-processing', 'true');
+    debugLog('[Process Tweet] Marked as processing');
 
     // STEP 1: Quick synchronous text extraction for early validation
     let tweetText = null;
@@ -2261,6 +2289,7 @@
    * Process all visible tweets
    */
   function processVisibleTweets() {
+    debugLog('[Process Visible Tweets] Starting - URL:', window.location.href);
 
     // Find all tweet articles (X.com/Twitter structure)
     const tweetSelectors = [
@@ -2272,20 +2301,31 @@
     let tweets = [];
     for (const selector of tweetSelectors) {
       tweets = document.querySelectorAll(selector);
-      if (tweets.length > 0) break;
+      if (tweets.length > 0) {
+        debugLog('[Process Visible Tweets] Found', tweets.length, 'tweets using selector:', selector);
+        break;
+      }
     }
 
     // Fallback: find any article elements that might be tweets
     if (tweets.length === 0) {
       tweets = document.querySelectorAll('article');
+      debugLog('[Process Visible Tweets] Fallback: Found', tweets.length, 'article elements');
     }
+
+    debugLog('[Process Visible Tweets] Total tweets found:', tweets.length);
 
     // Process tweets and handle nested structure (e.g., notifications)
     const processedTweetElements = new Set();
     const newTweets = [];
 
-    Array.from(tweets).forEach((tweet) => {
-      if (!tweet || tweet.hasAttribute('data-iq-analyzed') || tweet.hasAttribute('data-iq-processing')) {
+    Array.from(tweets).forEach((tweet, index) => {
+      if (!tweet || tweet.hasAttribute('data-iq-processing')) {
+        if (!tweet) {
+          debugLog('[Process Visible Tweets] Skipped null tweet at index', index);
+        } else {
+          debugLog('[Process Visible Tweets] Skipped tweet at index', index, '- already processing');
+        }
         return;
       }
 
@@ -2294,13 +2334,45 @@
       const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
                           tweet.querySelector('article[role="article"]');
 
+      let actualTweet = tweet;
+      if (nestedTweet && nestedTweet !== tweet) {
+        actualTweet = nestedTweet;
+        debugLog('[Process Visible Tweets] Found nested tweet at index', index);
+      }
+
+      // Check if tweet was already processed but badge is missing (e.g., after scroll/virtualization)
+      if (actualTweet.hasAttribute('data-iq-analyzed')) {
+        // If badge is missing, we need to restore it
+        const existingBadge = actualTweet.querySelector('.iq-badge');
+        if (!existingBadge && settings.showIQBadge) {
+          // Badge was removed - re-process the tweet to restore it
+          debugLog('[Process Visible Tweets] Badge missing for analyzed tweet at index', index, '- restoring');
+          // Clear the analyzed flag to allow reprocessing
+          actualTweet.removeAttribute('data-iq-analyzed');
+          // Remove from processedTweets set if it's there
+          processedTweets.delete(actualTweet);
+        } else {
+          // Badge exists, skip this tweet
+          debugLog('[Process Visible Tweets] Skipped tweet at index', index, '- already analyzed with badge');
+          return;
+        }
+      }
+
+      // Now handle normal processing logic
       if (nestedTweet && nestedTweet !== tweet) {
         // Use the nested tweet if it hasn't been processed
         if (!nestedTweet.hasAttribute('data-iq-analyzed') &&
             !nestedTweet.hasAttribute('data-iq-processing') &&
             !processedTweetElements.has(nestedTweet)) {
+          debugLog('[Process Visible Tweets] Adding nested tweet at index', index, 'to process');
           newTweets.push(nestedTweet);
           processedTweetElements.add(nestedTweet);
+        } else {
+          debugLog('[Process Visible Tweets] Skipped nested tweet at index', index, {
+            hasAnalyzed: nestedTweet.hasAttribute('data-iq-analyzed'),
+            hasProcessing: nestedTweet.hasAttribute('data-iq-processing'),
+            inSet: processedTweetElements.has(nestedTweet)
+          });
         }
       } else {
         // Use this tweet if it contains tweet text or has tweet indicators
@@ -2308,31 +2380,54 @@
         const hasTweetText = tweet.querySelector('[data-testid="tweetText"]');
         const hasEngagementBar = tweet.querySelector('[role="group"]');
 
+        debugLog('[Process Visible Tweets] Checking tweet at index', index, {
+          hasTweetText: !!hasTweetText,
+          hasEngagementBar: !!hasEngagementBar,
+          inSet: processedTweetElements.has(tweet),
+          isFirst: index === 0
+        });
+
         // Only process if it looks like an actual tweet (has text or engagement bar)
         // This prevents processing empty notification wrapper articles
         if ((hasTweetText || hasEngagementBar) && !processedTweetElements.has(tweet)) {
+          debugLog('[Process Visible Tweets] Adding tweet at index', index, 'to process');
           newTweets.push(tweet);
           processedTweetElements.add(tweet);
+        } else {
+          debugLog('[Process Visible Tweets] Skipped tweet at index', index, {
+            reason: !hasTweetText && !hasEngagementBar ? 'no content indicators' : 'already in set',
+            hasTweetText: !!hasTweetText,
+            hasEngagementBar: !!hasEngagementBar,
+            inSet: processedTweetElements.has(tweet)
+          });
         }
       }
     });
 
     // Add loading badges to ALL new tweets (completely non-blocking)
+    debugLog('[Process Visible Tweets] Will process', newTweets.length, 'new tweets');
     if (settings.showIQBadge) {
-      newTweets.forEach((tweet) => {
+      newTweets.forEach((tweet, idx) => {
         // Use setTimeout(0) to schedule badge insertion without blocking
         setTimeout(() => {
           if (!tweet.querySelector('.iq-badge')) {
+            debugLog('[Process Visible Tweets] Adding loading badge to tweet at index', idx);
             addLoadingBadgeToTweet(tweet);
+          } else {
+            debugLog('[Process Visible Tweets] Tweet at index', idx, 'already has badge, skipping');
           }
         }, 0);
       });
+    } else {
+      debugLog('[Process Visible Tweets] Skipping badges - showIQBadge is false');
     }
 
     // Process each tweet (non-blocking, separate from badge insertion)
     // This handles validation and IQ calculation - completely async
     setTimeout(() => {
-      newTweets.forEach((tweet) => {
+      debugLog('[Process Visible Tweets] Processing', newTweets.length, 'tweets');
+      newTweets.forEach((tweet, idx) => {
+        debugLog('[Process Visible Tweets] Calling processTweet for tweet at index', idx);
         processTweet(tweet);
       });
     }, 0);
