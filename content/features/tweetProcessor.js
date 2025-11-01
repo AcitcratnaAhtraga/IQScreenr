@@ -26,7 +26,7 @@ async function processTweet(tweetElement) {
     return;
   }
 
-  const { extractTweetText, isTweetTruncated, tryExtractFullTextWithoutExpanding, extractFullTextWithoutVisualExpansion } = getTextExtraction();
+  const { extractTweetText, isTweetTruncated, tryExtractFullTextWithoutExpanding, extractFullTextWithoutVisualExpansion, extractTweetHandle } = getTextExtraction();
   const { validateTweetText } = getTweetDetection();
   const badgeManager = getBadgeManager();
   if (!badgeManager || !badgeManager.createLoadingBadge) {
@@ -275,6 +275,26 @@ async function processTweet(tweetElement) {
       }
     }
 
+    // Extract handle and other metadata from tweet
+    const handle = extractTweetHandle(actualTweetElement);
+
+    // Try to extract tweet URL if available
+    let tweetUrl = null;
+    try {
+      // Look for links to the tweet status
+      const statusLinks = actualTweetElement.querySelectorAll('a[href*="/status/"]');
+      if (statusLinks.length > 0) {
+        const href = statusLinks[0].getAttribute('href') || '';
+        if (href.startsWith('http')) {
+          tweetUrl = href;
+        } else if (href.startsWith('/')) {
+          tweetUrl = window.location.origin + href;
+        }
+      }
+    } catch (e) {
+      // Ignore errors in URL extraction
+    }
+
     let result = getCachedIQ(tweetText);
     let fromCache = false;
 
@@ -282,11 +302,18 @@ async function processTweet(tweetElement) {
       result = await iqEstimator.estimate(tweetText);
 
       if (result.is_valid && result.iq_estimate !== null) {
-        cacheIQ(tweetText, result);
+        // Cache with metadata: handle, timestamp, tweetUrl, and any other useful data
+        const metadata = {
+          handle: handle,
+          timestamp: new Date().toISOString(),
+          tweetUrl: tweetUrl
+        };
+        cacheIQ(tweetText, result, metadata);
       }
     } else {
       fromCache = true;
-      debugLogFn('Using cached IQ result for tweet');
+      const handleInfo = handle ? ` for @${handle}` : '';
+      debugLogFn(`Using cached IQ result for tweet${handleInfo}`);
     }
 
     if (result.is_valid && result.iq_estimate !== null && settings.showIQBadge) {

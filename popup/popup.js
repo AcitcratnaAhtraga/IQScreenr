@@ -3,6 +3,20 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  const saveStatus = document.getElementById('saveStatus');
+
+  // Helper function to show save status
+  function showStatus(message, type = 'success') {
+    saveStatus.textContent = message;
+    saveStatus.className = `status ${type}`;
+    if (type === 'success') {
+      setTimeout(() => {
+        saveStatus.textContent = '';
+        saveStatus.className = 'status';
+      }, 2000);
+    }
+  }
+
   // Initialize defaults if not set
   chrome.storage.sync.get(['showIQBadge', 'minIQ', 'maxIQ'], (result) => {
     // Set defaults if this is first run
@@ -11,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
         showIQBadge: true,
         minIQ: 60,
         maxIQ: 145
+      }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error loading settings', 'error');
+        }
       });
       result = { showIQBadge: true, minIQ: 60, maxIQ: 145 };
     }
@@ -29,7 +47,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle checkbox changes
   document.getElementById('showIQBadge').addEventListener('change', (e) => {
-    chrome.storage.sync.set({ showIQBadge: e.target.checked });
+    chrome.storage.sync.set({ showIQBadge: e.target.checked }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving setting', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+      }
+    });
   });
 
   // Handle range changes
@@ -47,10 +71,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const newMax = value + 5;
       maxIQRange.value = Math.min(160, newMax);
       maxIQValue.textContent = maxIQRange.value;
-      chrome.storage.sync.set({ maxIQ: parseInt(maxIQRange.value) });
+      chrome.storage.sync.set({ maxIQ: parseInt(maxIQRange.value) }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        }
+      });
     }
 
-    chrome.storage.sync.set({ minIQ: value });
+    chrome.storage.sync.set({ minIQ: value }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving setting', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+      }
+    });
   });
 
   maxIQRange.addEventListener('input', (e) => {
@@ -62,10 +96,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const newMin = value - 5;
       minIQRange.value = Math.max(50, newMin);
       minIQValue.textContent = minIQRange.value;
-      chrome.storage.sync.set({ minIQ: parseInt(minIQRange.value) });
+      chrome.storage.sync.set({ minIQ: parseInt(minIQRange.value) }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        }
+      });
     }
 
-    chrome.storage.sync.set({ maxIQ: value });
+    chrome.storage.sync.set({ maxIQ: value }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving setting', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+      }
+    });
   });
 
   // Handle reset button
@@ -78,12 +122,17 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       chrome.storage.sync.set(defaults, () => {
-        // Update UI
-        document.getElementById('showIQBadge').checked = defaults.showIQBadge;
-        document.getElementById('minIQ').value = defaults.minIQ;
-        document.getElementById('maxIQ').value = defaults.maxIQ;
-        document.getElementById('minIQValue').textContent = defaults.minIQ;
-        document.getElementById('maxIQValue').textContent = defaults.maxIQ;
+        if (chrome.runtime.lastError) {
+          showStatus('Error resetting settings', 'error');
+        } else {
+          // Update UI
+          document.getElementById('showIQBadge').checked = defaults.showIQBadge;
+          document.getElementById('minIQ').value = defaults.minIQ;
+          document.getElementById('maxIQ').value = defaults.maxIQ;
+          document.getElementById('minIQValue').textContent = defaults.minIQ;
+          document.getElementById('maxIQValue').textContent = defaults.maxIQ;
+          showStatus('Settings reset to defaults', 'success');
+        }
       });
     }
   });

@@ -634,6 +634,73 @@ function getInputText(inputElement) {
   }
 }
 
+/**
+ * Extract Twitter handle/username from a tweet element
+ * Returns the handle without @ symbol (e.g., "username" not "@username")
+ */
+function extractTweetHandle(tweetElement) {
+  if (!tweetElement) {
+    return null;
+  }
+
+  // Handle nested tweet structures
+  let actualTweetElement = tweetElement;
+  const nestedTweet = tweetElement.querySelector('[data-testid="tweet"]') ||
+                      tweetElement.querySelector('article[role="article"]');
+  if (nestedTweet && nestedTweet !== tweetElement) {
+    actualTweetElement = nestedTweet;
+  }
+
+  // Method 1: Look for links with href containing /@username pattern
+  // Twitter/X uses links like: href="/username" or href="https://twitter.com/username"
+  const userLinks = actualTweetElement.querySelectorAll('a[href*="/"]');
+  for (const link of userLinks) {
+    const href = link.getAttribute('href') || '';
+    // Match patterns like /username or /@username or /username/status/...
+    const match = href.match(/^\/(?:@)?([a-zA-Z0-9_]+)(?:\/|$)/);
+    if (match && match[1]) {
+      // Verify this is actually a user link (not a status link, etc.)
+      // User links typically don't have "/status/" in them (unless it's part of the username)
+      if (!href.includes('/status/') || href.indexOf('/status/') > match[1].length + 1) {
+        return match[1];
+      }
+    }
+  }
+
+  // Method 2: Look for User-Name container (data-testid="User-Name")
+  const userNameContainer = actualTweetElement.querySelector('[data-testid="User-Name"]');
+  if (userNameContainer) {
+    // Look for links inside the User-Name container
+    const links = userNameContainer.querySelectorAll('a[href*="/"]');
+    for (const link of links) {
+      const href = link.getAttribute('href') || '';
+      const match = href.match(/^\/(?:@)?([a-zA-Z0-9_]+)(?:\/|$)/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+  }
+
+  // Method 3: Look for text nodes starting with @ that appear to be usernames
+  // This is a fallback - less reliable but might catch some cases
+  const textNodes = [];
+  const walker = document.createTreeWalker(
+    actualTweetElement,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+  let node;
+  while (node = walker.nextNode()) {
+    const text = node.textContent.trim();
+    if (text.match(/^@[a-zA-Z0-9_]+$/)) {
+      return text.substring(1); // Remove @ symbol
+    }
+  }
+
+  return null;
+}
+
 // Export for use in other modules
 if (typeof window !== 'undefined') {
   window.TextExtraction = {
@@ -642,7 +709,8 @@ if (typeof window !== 'undefined') {
     tryExtractFullTextWithoutExpanding,
     extractFullTextWithoutVisualExpansion,
     expandTruncatedTweet,
-    getInputText
+    getInputText,
+    extractTweetHandle
   };
 }
 

@@ -14,25 +14,37 @@
     </div>
 
     <div class="settings-section">
+      <h2>Display Settings</h2>
       <div class="setting-item">
         <label class="switch-label">
           <input type="checkbox" id="showIQBadge" checked>
           <span class="switch-text">Show IQ Badge</span>
         </label>
-        <p class="setting-desc">Display IQ scores next to tweets</p>
+        <p class="setting-desc">Display IQ scores next to tweets as you browse</p>
+      </div>
+      <div class="setting-note">
+        <span class="note-icon">💡</span>
+        <span class="note-text">Hover over any badge and check the browser console (F12) for detailed analysis breakdown</span>
       </div>
     </div>
 
     <div class="settings-section">
       <h2>Scoring Scale</h2>
+      <p class="section-desc">Adjust the IQ score range displayed on badges</p>
       <div class="setting-item">
-        <label for="minIQ" class="range-label">Minimum IQ: <span id="minIQValue">60</span></label>
+        <label for="minIQ" class="range-label">
+          <span>Minimum IQ</span>
+          <span class="range-value" id="minIQValue">60</span>
+        </label>
         <input type="range" id="minIQ" min="50" max="90" value="60" step="5">
         <p class="setting-desc">Lowest score in the scale</p>
       </div>
 
       <div class="setting-item">
-        <label for="maxIQ" class="range-label">Maximum IQ: <span id="maxIQValue">145</span></label>
+        <label for="maxIQ" class="range-label">
+          <span>Maximum IQ</span>
+          <span class="range-value" id="maxIQValue">145</span>
+        </label>
         <input type="range" id="maxIQ" min="120" max="160" value="145" step="5">
         <p class="setting-desc">Highest score in the scale</p>
       </div>
@@ -41,19 +53,19 @@
     <div class="info-section">
       <h2>How It Works</h2>
       <div class="info-content">
-        <p>Uses a research-based estimator with 4 dimensions (trained on graded samples):</p>
+        <p>This extension uses a research-based estimator trained on graded samples. It analyzes tweets across 4 key dimensions:</p>
         <ul>
-          <li><strong>Vocabulary Sophistication (35%):</strong> Age of Acquisition proxies via word length and syllable complexity</li>
-          <li><strong>Lexical Diversity (25%):</strong> Type-Token Ratio (TTR) - measures word variety</li>
-          <li><strong>Sentence Complexity (20%):</strong> Average words per sentence</li>
-          <li><strong>Grammatical Precision (20%):</strong> Syntax complexity via punctuation and subordinate clauses</li>
+          <li><strong>Vocabulary Sophistication (35%):</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies</li>
+          <li><strong>Lexical Diversity (25%):</strong> Measures word variety using Type-Token Ratio (TTR)</li>
+          <li><strong>Sentence Complexity (20%):</strong> Analyzes average words per sentence and sentence structure</li>
+          <li><strong>Grammatical Precision (20%):</strong> Evaluates syntax complexity via punctuation patterns and clause usage</li>
         </ul>
-        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-          <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
-        </p>
-        <p style="margin-top: 5px; font-size: 0.85em; color: #888;">
-          <em>Hover over any IQ badge and check the browser console (F12) for detailed calculations and breakdown.</em>
-        </p>
+        <div class="privacy-notice">
+          <span class="privacy-icon">🔒</span>
+          <div class="privacy-text">
+            <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -101,7 +113,10 @@
 
     <div class="footer">
       <button id="resetSettings" class="btn-secondary">Reset to Defaults</button>
-      <p class="version">Version 1.0.0</p>
+      <div class="footer-info">
+        <p class="version">Version 1.0.0</p>
+        <p class="status" id="saveStatus"></p>
+      </div>
     </div>
   </div>
 
