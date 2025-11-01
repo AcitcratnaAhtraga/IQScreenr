@@ -5,14 +5,6 @@
 (function() {
   'use strict';
 
-  // Enable debug mode by default (can be disabled by setting window.DEBUG_IQ_EXTRACTION = false)
-  if (window.DEBUG_IQ_EXTRACTION === undefined) {
-    window.DEBUG_IQ_EXTRACTION = true;
-  }
-
-  // Log that the extension is loading
-  console.log('%c🧠 IQGuessr Extension Loading...', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
-  console.log('[IQGuessr] Debug mode:', window.DEBUG_IQ_EXTRACTION);
 
   // Initialize Comprehensive IQ Estimator Ultimate (with real dependency parsing support)
   const iqEstimator = new ComprehensiveIQEstimatorUltimate();
@@ -118,8 +110,6 @@
    * Checks innerHTML, all text nodes, and data attributes that might contain full text
    */
   function tryExtractFullTextWithoutExpanding(tweetElement) {
-    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
-
     // Find the tweet text container
     const textContainer = tweetElement.querySelector('[data-testid="tweetText"]');
     if (!textContainer) {
@@ -129,9 +119,6 @@
     // Method 0: Check if we already stored the full text in a data attribute
     const storedFullText = tweetElement.getAttribute('data-iq-full-text');
     if (storedFullText && storedFullText.length > 50) {
-      if (DEBUG) {
-        console.log('[IQGuessr] Using stored full text from previous extraction');
-      }
       return storedFullText;
     }
 
@@ -142,15 +129,9 @@
       const ariaLabel = span.getAttribute('aria-label');
       const title = span.getAttribute('title');
       if (ariaLabel && ariaLabel.length > 200) {
-        if (DEBUG) {
-          console.log('[IQGuessr] Found full text in aria-label');
-        }
         return ariaLabel.trim();
       }
       if (title && title.length > 200) {
-        if (DEBUG) {
-          console.log('[IQGuessr] Found full text in title attribute');
-        }
         return title.trim();
       }
     }
@@ -187,9 +168,6 @@
       fullText = fullText.replace(/\bshow\s+more\b/gi, '').trim();
 
       if (fullText.length > 50) {
-        if (DEBUG) {
-          console.log('[IQGuessr] Found full text from all text nodes:', fullText.length, 'chars');
-        }
         return fullText;
       }
     }
@@ -206,9 +184,6 @@
       let cleanedText = fullTextFromHTML.replace(/show\s+more/gi, '').replace(/\s+/g, ' ').trim();
 
       if (cleanedText.length > 50) {
-        if (DEBUG) {
-          console.log('[IQGuessr] Found full text in innerHTML:', cleanedText.length, 'chars');
-        }
         return cleanedText;
       }
     }
@@ -221,9 +196,6 @@
                       (elem.textContent || '');
 
       if (dataText.length > 50 && !dataText.toLowerCase().includes('show more')) {
-        if (DEBUG) {
-          console.log('[IQGuessr] Found text in data attribute:', dataText.length, 'chars');
-        }
         return dataText.trim();
       }
     }
@@ -242,9 +214,6 @@
     }
 
     if (longestText.length > 50) {
-      if (DEBUG) {
-        console.log('[IQGuessr] Found longest text from child elements:', longestText.length, 'chars');
-      }
       return longestText;
     }
 
@@ -256,8 +225,6 @@
    * Uses MutationObserver to detect expansion, extracts text instantly, then manipulates DOM to restore truncated state
    */
   async function extractFullTextWithoutVisualExpansion(tweetElement) {
-    const DEBUG = window.DEBUG_IQ_EXTRACTION === true;
-
     return new Promise((resolve) => {
       try {
         // Find the actual "show more" button
@@ -271,9 +238,6 @@
           });
 
         if (!showMoreButton) {
-          if (DEBUG) {
-            console.log('[IQGuessr] No show more button found');
-          }
           resolve(null);
           return;
         }
@@ -370,21 +334,10 @@
                 } else {
                   textContainer.parentNode.insertBefore(buttonWrapper, textContainer.nextSibling);
                 }
-
-                if (DEBUG) {
-                  console.log('[IQGuessr] Added toggle button after text container');
-                }
-              }
-
-              if (DEBUG) {
-                console.log('[IQGuessr] Extracted', fullText.length, 'chars and added custom toggle button');
               }
 
               resolve(fullText);
             } catch (e) {
-              if (DEBUG) {
-                console.warn('[IQGuessr] Error during extraction:', e);
-              }
               resolve(fullText);
             }
           }
@@ -406,9 +359,6 @@
             showMoreButton.dispatchEvent(clickEvent);
           } catch (e2) {
             observer.disconnect();
-            if (DEBUG) {
-              console.warn('[IQGuessr] Failed to click show more button:', e2);
-            }
             resolve(null);
             return;
           }
@@ -420,24 +370,15 @@
             observer.disconnect();
             const currentText = extractTweetText(tweetElement);
             if (currentText && currentText.length > baselineLength + 50) {
-              if (DEBUG) {
-                console.log('[IQGuessr] Extracted', currentText.length, 'chars via timeout fallback');
-              }
               tweetElement.setAttribute('data-iq-full-text', currentText);
               resolve(currentText);
             } else {
-              if (DEBUG) {
-                console.log('[IQGuessr] Expansion not detected, using baseline text');
-              }
               resolve(null);
             }
           }
         }, 500);
 
       } catch (e) {
-        if (DEBUG) {
-          console.warn('[IQGuessr] Extraction method failed:', e);
-        }
         resolve(null);
       }
     });
@@ -495,15 +436,6 @@
         });
 
       if (showMoreButton) {
-        const DEBUG_EXPANSION = window.DEBUG_IQ_EXTRACTION === true;
-
-        if (DEBUG_EXPANSION) {
-          console.log('[IQGuessr] Found "show more" button, expanding tweet...', {
-            initialLength: initialLength,
-            buttonText: showMoreButton.textContent,
-            buttonType: showMoreButton.tagName
-          });
-        }
 
         // Try multiple click methods for better compatibility
         try {
@@ -533,9 +465,7 @@
               });
               showMoreButton.dispatchEvent(enterEvent);
             } catch (e3) {
-              if (DEBUG_EXPANSION) {
-                console.warn('[IQGuessr] Could not click show more button:', e3);
-              }
+              // Silent fail
             }
           }
         }
@@ -559,24 +489,8 @@
                                      return (text.includes('show') && text.includes('more'));
                                    });
 
-          if (DEBUG_EXPANSION && attempts % 2 === 0) {
-            console.log(`[IQGuessr] Expansion check (attempt ${attempts}):`, {
-              initialLength: initialLength,
-              currentLength: currentLength,
-              increased: currentLength - initialLength,
-              buttonStillExists: buttonStillExists
-            });
-          }
-
           if (currentLength > initialLength + 50 || !buttonStillExists || attempts >= maxAttempts) {
             // Expansion likely complete, or we've tried enough
-            if (DEBUG_EXPANSION) {
-              console.log('[IQGuessr] Expansion complete:', {
-                finalLength: currentLength,
-                lengthIncrease: currentLength - initialLength,
-                buttonDisappeared: !buttonStillExists
-              });
-            }
             resolve();
           } else {
             // Keep checking
@@ -598,9 +512,6 @@
    * Excludes usernames, metadata, quoted tweets, and other non-content text
    */
   function extractTweetText(tweetElement) {
-    // DEBUG MODE: Enabled by default (set window.DEBUG_IQ_EXTRACTION = false to disable)
-    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
-
     // Strategy: The main tweet text is typically the FIRST occurrence and shallower in the DOM
     // Quoted tweets are nested deeper and come later in the DOM tree
     // On single tweet pages, we need to be extra careful to exclude quoted content
@@ -616,25 +527,7 @@
     // Find ALL tweetText elements in this article (main tweet + any quoted tweets)
     const allTweetTextElements = Array.from(tweetElement.querySelectorAll('[data-testid="tweetText"]'));
 
-    if (DEBUG) {
-      console.group('🔍 [IQGuessr] EXTRACT TWEET TEXT DEBUG');
-      console.log('Page type:', isSingleTweetPage ? 'Single Tweet Page' : 'Feed/Timeline');
-      console.log('Tweet element:', tweetElement);
-      console.log('Main container:', mainTweetContainer);
-      console.log('Found tweetText elements:', allTweetTextElements.length);
-      allTweetTextElements.forEach((el, i) => {
-        const text = (el.innerText || el.textContent || '').substring(0, 50);
-        const depth = getElementDepth(el, mainTweetContainer);
-        const isQuoted = isInsideQuotedTweet(el, tweetElement);
-        console.log(`  [${i}] Text: "${text}..." | Depth: ${depth} | IsQuoted: ${isQuoted}`);
-      });
-    }
-
     if (allTweetTextElements.length === 0) {
-      if (DEBUG) {
-        console.log('❌ No tweet text found');
-        console.groupEnd();
-      }
       return null;
     }
 
@@ -653,24 +546,11 @@
         if (hasQuoteLabel) {
           // This is a quote tweet page, and the only text found is from the quoted tweet
           // The main tweet (PunishedAbammon) has no text - just a GIF
-          if (DEBUG) {
-            console.log('❌ Single tweet page with Quote label: Only text found is from quoted tweet, returning null');
-            console.groupEnd();
-          }
           return null;
         }
       }
 
       const isQuoted = isInsideQuotedTweet(textElement, tweetElement);
-
-      if (DEBUG) {
-        console.log('Only one tweetText found:', {
-          text: (textElement.innerText || textElement.textContent || '').substring(0, 50),
-          isQuoted: isQuoted,
-          depth: depth,
-          isSingleTweetPage: isSingleTweetPage
-        });
-      }
 
       // On single tweet pages, if the only text is very deep (>10), it might be quoted content
       // Check if there's a quoted tweet container - if so, this might be the quoted text
@@ -680,10 +560,6 @@
                                    tweetElement.querySelectorAll('article').length > 1;
 
         if (hasQuotedContainer) {
-          if (DEBUG) {
-            console.log('❌ Single tweet page: Only text found is likely quoted (deep + quoted container exists), returning null');
-            console.groupEnd();
-          }
           return null; // Likely quoted content, main tweet has no text
         }
       }
@@ -693,16 +569,7 @@
         let text = textElement.innerText || textElement.textContent || '';
         text = text.trim();
         if (text.length > 0) {
-          if (DEBUG) {
-            console.log('✅ Returning main tweet text');
-            console.groupEnd();
-          }
           return text;
-        }
-      } else {
-        if (DEBUG) {
-          console.log('❌ Only text found is in quoted tweet, returning null');
-          console.groupEnd();
         }
       }
       return null;
@@ -717,25 +584,13 @@
     let shallowestDepth = Infinity;
     let firstNonQuotedIndex = -1;
 
-    if (DEBUG) {
-      console.log('Multiple tweetText elements found, analyzing each:');
-    }
-
     for (let i = 0; i < allTweetTextElements.length; i++) {
       const textElement = allTweetTextElements[i];
       const isQuoted = isInsideQuotedTweet(textElement, tweetElement);
       const depth = getElementDepth(textElement, mainTweetContainer);
 
-      if (DEBUG) {
-        const text = (textElement.innerText || textElement.textContent || '').substring(0, 50);
-        console.log(`  [${i}] "${text}..." | Depth: ${depth} | IsQuoted: ${isQuoted}`);
-      }
-
       // Skip if inside a quoted tweet
       if (isQuoted) {
-        if (DEBUG) {
-          console.log(`    ⏭️  Skipped (quoted)`);
-        }
         continue;
       }
 
@@ -744,18 +599,12 @@
         shallowestDepth = depth;
         mainTextElement = textElement;
         firstNonQuotedIndex = i;
-        if (DEBUG) {
-          console.log(`    ✅ Selected as candidate (depth: ${depth})`);
-        }
       }
     }
 
     // Safety check: If we found a main text element, verify it's not suspiciously deep
     // Main tweet text should be relatively shallow (depth < 10 typically)
     if (mainTextElement && shallowestDepth > 12) {
-      if (DEBUG) {
-        console.log(`⚠️  Found element but depth ${shallowestDepth} is suspicious, rechecking...`);
-      }
       // This might actually be a quoted tweet that we didn't detect
       // Check if there's a shallower element we might have missed
       const previousElement = mainTextElement;
@@ -770,15 +619,11 @@
           if (depth < shallowestDepth && depth <= 10) {
             shallowestDepth = depth;
             mainTextElement = textElement;
-            if (DEBUG) {
-              console.log(`    ✅ Found shallower element at depth ${depth}`);
-            }
           }
         }
       }
 
-      if (!mainTextElement && DEBUG) {
-        console.log(`    ⚠️  No shallower element found, but keeping original`);
+      if (!mainTextElement) {
         mainTextElement = previousElement;
       }
     }
@@ -787,17 +632,8 @@
       let text = mainTextElement.innerText || mainTextElement.textContent || '';
       text = text.trim();
       if (text.length > 0) {
-        if (DEBUG) {
-          console.log(`✅ Returning: "${text.substring(0, 80)}..."`);
-          console.groupEnd();
-        }
         return text;
       }
-    }
-
-    if (DEBUG) {
-      console.log('❌ No valid main tweet text found');
-      console.groupEnd();
     }
 
     // Fallback: If no tweetText elements worked, try other selectors but exclude quoted
@@ -826,7 +662,6 @@
    * Check if an element is inside a quoted tweet container
    */
   function isInsideQuotedTweet(element, tweetElement) {
-    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
     const isSingleTweetPage = /\/status\/\d+/.test(window.location.pathname);
 
     // Check if element is inside any known quoted tweet containers
@@ -840,9 +675,6 @@
       try {
         const quotedContainer = tweetElement.querySelector(selector);
         if (quotedContainer && quotedContainer.contains(element)) {
-          if (DEBUG) {
-            console.log(`      🔍 isInsideQuotedTweet: TRUE (found ${selector})`);
-          }
           return true;
         }
       } catch (e) {
@@ -891,9 +723,6 @@
 
       // If we found quote indicators AND we're not in the main tweet text area, it's quoted
       if (hasQuoteLabel && foundQuoteIndicator) {
-        if (DEBUG) {
-          console.log(`      🔍 isInsideQuotedTweet: TRUE (single tweet page, quote indicators found)`);
-        }
         return true;
       }
     }
@@ -911,9 +740,6 @@
 
         // On single tweet pages, be more aggressive: any nested article is likely quoted
         if (isSingleTweetPage && articleCount > 1) {
-          if (DEBUG) {
-            console.log(`      🔍 isInsideQuotedTweet: TRUE (single tweet page, nested article, count: ${articleCount})`);
-          }
           return true;
         }
 
@@ -925,9 +751,6 @@
             if (parent.tagName === 'ARTICLE' ||
                 parent.getAttribute('data-testid') === 'tweet' ||
                 parent.querySelector('[data-testid="tweet"]')) {
-              if (DEBUG) {
-                console.log(`      🔍 isInsideQuotedTweet: TRUE (nested article, count: ${articleCount})`);
-              }
               return true; // Nested article = quoted tweet
             }
             parent = parent.parentElement;
@@ -954,9 +777,6 @@
       if (tweetHasQuoteLabel) {
         // If depth > 8 on a quote tweet page, it's likely quoted content
         if (depth > 8) {
-          if (DEBUG) {
-            console.log(`      🔍 isInsideQuotedTweet: TRUE (single tweet page with Quote label, depth ${depth})`);
-          }
           return true;
         }
 
@@ -964,9 +784,6 @@
         // and there's a Quote label, it's likely quoted
         const mainTweetContainer = tweetElement.querySelector('[data-testid="tweet"]');
         if (mainTweetContainer && !mainTweetContainer.contains(element)) {
-          if (DEBUG) {
-            console.log(`      🔍 isInsideQuotedTweet: TRUE (element outside main tweet container on quote tweet page)`);
-          }
           return true;
         }
       }
@@ -981,18 +798,12 @@
           const otherDepth = getElementDepth(otherText, mainContainer);
           if (otherDepth < depth - 2) {
             // There's a much shallower text element, so this one is likely quoted
-            if (DEBUG) {
-              console.log(`      🔍 isInsideQuotedTweet: TRUE (deep element, depth ${depth} vs ${otherDepth})`);
-            }
             return true;
           }
         }
       }
     }
 
-    if (DEBUG && articleCount > 0) {
-      console.log(`      🔍 isInsideQuotedTweet: FALSE (article count: ${articleCount}, depth: ${depth})`);
-    }
     return false;
   }
 
@@ -1434,11 +1245,7 @@
     tweetElement.setAttribute('data-iq-processing', 'true');
 
     // Try to extract full text without visually expanding the tweet
-    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false; // Default to true
     let tweetText = null;
-
-    // ALWAYS log when processing a tweet
-    console.log('[IQGuessr] 📝 Processing tweet:', tweetElement);
 
     // First, check if tweet is already expanded - if so, just extract normally
     const alreadyExpanded = Array.from(tweetElement.querySelectorAll('span[role="button"], button, div[role="button"]')).some(el => {
@@ -1447,22 +1254,10 @@
              (text.includes('show') && text.includes('less'));
     });
 
-    console.log('[IQGuessr] Already expanded?', alreadyExpanded);
-
     // If already expanded, just extract normally (don't try to collapse it)
     if (alreadyExpanded) {
-      console.log('[IQGuessr] ℹ️ Tweet is already expanded, extracting text normally');
       tweetText = extractTweetText(tweetElement);
-      if (tweetText) {
-        console.log('[IQGuessr] ✅ Extracted text length:', tweetText.length, 'chars');
-        console.log('[IQGuessr] Text preview:', tweetText.substring(0, 100) + '...');
-      } else {
-        console.warn('[IQGuessr] ⚠️ No text extracted from expanded tweet!');
-      }
     } else if (isTweetTruncated(tweetElement)) {
-      if (DEBUG) {
-        console.log('[IQGuessr] ✅ Tweet is truncated, attempting to extract full text without expanding...');
-      }
 
       // Extract full text without visually expanding the tweet
       tweetText = tryExtractFullTextWithoutExpanding(tweetElement);
@@ -1470,11 +1265,6 @@
       // Get a baseline to compare - what would normal extraction give us?
       const baselineText = extractTweetText(tweetElement);
       const baselineLength = baselineText ? baselineText.length : 0;
-
-      if (DEBUG) {
-        console.log('[IQGuessr] Baseline text length:', baselineLength, 'chars');
-        console.log('[IQGuessr] Extracted without visual expansion:', tweetText ? tweetText.length : 0, 'chars');
-      }
 
       // If extracted text is similar to baseline (within 50 chars), it's likely truncated
       // Try the expansion method to get the full text
@@ -1488,53 +1278,25 @@
 
       if (likelyTruncated && baselineLength > 50) {
         // Likely truncated - try expansion method
-        if (DEBUG) {
-          console.log('[IQGuessr] Extracted text seems truncated (extracted:', extractedLength, 'baseline:', baselineLength, '), trying expansion method...');
-        }
         const expandedText = await extractFullTextWithoutVisualExpansion(tweetElement);
         if (expandedText && expandedText.length > Math.max(extractedLength, baselineLength) + 50) {
           tweetText = expandedText;
-          if (DEBUG) {
-            console.log('[IQGuessr] ✅ Successfully extracted full text via expansion:', tweetText.length, 'chars (was:', Math.max(extractedLength, baselineLength), 'chars)');
-          }
         } else if (expandedText && expandedText.length > extractedLength) {
           // Even if not much better, use it if it's longer
           tweetText = expandedText;
-          if (DEBUG) {
-            console.log('[IQGuessr] Expanded text is longer, using it:', tweetText.length, 'chars');
-          }
         } else if (tweetText) {
-          if (DEBUG) {
-            console.log('[IQGuessr] Expansion method did not yield better results, using extracted text:', tweetText.length, 'chars');
-          }
+          // Keep existing extracted text
         } else {
           tweetText = baselineText;
-          if (DEBUG) {
-            console.log('[IQGuessr] ⚠️ Using baseline text (some text may be missing):', tweetText.length, 'chars');
-          }
         }
-      } else if (tweetText) {
-        if (DEBUG) {
-          console.log('[IQGuessr] ✅ Successfully extracted full text without expansion:', tweetText.length, 'chars');
-        }
-      } else {
+      } else if (!tweetText) {
         tweetText = baselineText;
-        if (DEBUG) {
-          console.log('[IQGuessr] ⚠️ Using baseline text (some text may be missing)');
-        }
-      }
-    } else {
-      if (DEBUG) {
-        console.log('[IQGuessr] ℹ️ Tweet is not truncated, using normal extraction');
       }
     }
 
     // Extract text (either we already have it from above, or use normal extraction)
     if (!tweetText) {
       tweetText = extractTweetText(tweetElement);
-      if (DEBUG) {
-        console.log('[IQGuessr] Final extracted text length:', tweetText ? tweetText.length : 0, 'chars');
-      }
     }
 
     // Validate text before processing
@@ -1613,11 +1375,6 @@
    * Process all visible tweets
    */
   function processVisibleTweets() {
-    const DEBUG = window.DEBUG_IQ_EXTRACTION !== false;
-
-    if (DEBUG) {
-      console.log('[IQGuessr] 🔍 processVisibleTweets() called');
-    }
 
     // Find all tweet articles (X.com/Twitter structure)
     const tweetSelectors = [
@@ -1637,22 +1394,11 @@
       tweets = document.querySelectorAll('article');
     }
 
-    if (DEBUG) {
-      console.log('[IQGuessr] Found', tweets.length, 'total tweets on page');
-    }
-
     const newTweets = Array.from(tweets).filter(tweet =>
       tweet && !tweet.hasAttribute('data-iq-analyzed') && !tweet.hasAttribute('data-iq-processing')
     );
 
-    if (DEBUG) {
-      console.log('[IQGuessr] Processing', newTweets.length, 'new tweets');
-    }
-
-    newTweets.forEach((tweet, index) => {
-      if (DEBUG) {
-        console.log(`[IQGuessr] Processing tweet ${index + 1}/${newTweets.length}`);
-      }
+    newTweets.forEach((tweet) => {
       processTweet(tweet);
     });
   }
@@ -1694,24 +1440,16 @@
    * Initialize the extension
    */
   function init() {
-    console.log('[IQGuessr] 🚀 Initializing extension...');
-    console.log('[IQGuessr] Document ready state:', document.readyState);
-
     // Process existing tweets
     if (document.readyState === 'loading') {
-      console.log('[IQGuessr] Document still loading, waiting for DOMContentLoaded...');
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('[IQGuessr] DOMContentLoaded fired, starting processing...');
         setTimeout(() => {
-          console.log('[IQGuessr] Processing tweets after delay...');
           processVisibleTweets();
         }, 1000);
         setupObserver();
       });
     } else {
-      console.log('[IQGuessr] Document already ready, starting processing...');
       setTimeout(() => {
-        console.log('[IQGuessr] Processing tweets after delay...');
         processVisibleTweets();
       }, 1000);
       setupObserver();
@@ -1722,12 +1460,9 @@
     window.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
-        console.log('[IQGuessr] Scroll detected, processing tweets...');
         processVisibleTweets();
       }, 500);
     });
-
-    console.log('[IQGuessr] ✅ Extension initialized');
   }
 
   // Start the extension
