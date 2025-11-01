@@ -242,16 +242,16 @@
           return;
         }
 
-        // Store baseline text length before expansion
-        const baselineText = extractTweetText(tweetElement);
-        const baselineLength = baselineText ? baselineText.length : 0;
-
-        // Get the text container
+        // Get the text container first (needed for baseline measurement)
         const textContainer = tweetElement.querySelector('[data-testid="tweetText"]');
         if (!textContainer) {
           resolve(null);
           return;
         }
+
+        // Store baseline text length before expansion
+        const baselineText = extractTweetText(tweetElement);
+        const baselineLength = baselineText ? baselineText.length : 0;
 
         // Store the original HTML structure before expansion
         const originalHTML = textContainer.innerHTML;
@@ -365,11 +365,13 @@
         }
 
         // Fallback timeout - if MutationObserver doesn't catch it in time
+        // Capture baselineLength in closure to ensure it's available
+        const capturedBaselineLength = baselineLength;
         setTimeout(() => {
           if (!expansionDetected) {
             observer.disconnect();
             const currentText = extractTweetText(tweetElement);
-            if (currentText && currentText.length > baselineLength + 50) {
+            if (currentText && currentText.length > capturedBaselineLength + 50) {
               tweetElement.setAttribute('data-iq-full-text', currentText);
               resolve(currentText);
             } else {
