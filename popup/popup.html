@@ -41,15 +41,19 @@
     <div class="info-section">
       <h2>How It Works</h2>
       <div class="info-content">
-        <p>The IQ score is calculated based on:</p>
+        <p>Uses a research-based estimator with 4 dimensions (trained on graded samples):</p>
         <ul>
-          <li><strong>Word Length:</strong> Average length of words used</li>
-          <li><strong>Vocabulary Diversity:</strong> Ratio of unique words</li>
-          <li><strong>Sentence Complexity:</strong> Length and variance of sentences</li>
-          <li><strong>Syllable Complexity:</strong> Average syllables per word</li>
-          <li><strong>Readability Index:</strong> Text complexity score</li>
-          <li><strong>Syntax Structure:</strong> Use of complex punctuation and clauses</li>
+          <li><strong>Vocabulary Sophistication (35%):</strong> Age of Acquisition proxies via word length and syllable complexity</li>
+          <li><strong>Lexical Diversity (25%):</strong> Type-Token Ratio (TTR) - measures word variety</li>
+          <li><strong>Sentence Complexity (20%):</strong> Average words per sentence</li>
+          <li><strong>Grammatical Precision (20%):</strong> Syntax complexity via punctuation and subordinate clauses</li>
         </ul>
+        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+          <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
+        </p>
+        <p style="margin-top: 5px; font-size: 0.85em; color: #888;">
+          <em>Hover over any IQ badge and check the browser console (F12) for detailed calculations and breakdown.</em>
+        </p>
       </div>
     </div>
 

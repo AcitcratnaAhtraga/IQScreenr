@@ -203,16 +203,28 @@
   }
 
   /**
-   * Create IQ badge element
+   * Create IQ badge element with debug data attached
+   * @param {number} iq - Rounded IQ score
+   * @param {Object} estimationResult - Full estimation result object
+   * @param {string} tweetText - Original tweet text
    */
-  function createIQBadge(iq) {
+  function createIQBadge(iq, estimationResult, tweetText) {
     const badge = document.createElement('span');
     badge.className = 'iq-badge';
     badge.setAttribute('data-iq-score', iq);
 
+    // Store debug data on the badge element for hover access
+    badge._debugData = {
+      iq: iq,
+      result: estimationResult,
+      text: tweetText,
+      timestamp: new Date().toISOString()
+    };
+
     const iqColor = getIQColor(iq);
     badge.style.setProperty('background-color', iqColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
+    badge.style.setProperty('cursor', 'help', 'important');
 
     badge.innerHTML = `
       <span class="iq-label">IQ</span>
@@ -223,7 +235,174 @@
     badge.style.setProperty('background-color', iqColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
 
+    // Add hover event listeners for debug output
+    badge.addEventListener('mouseenter', () => {
+      logDebugInfo(badge._debugData);
+    });
+
     return badge;
+  }
+
+  /**
+   * Log comprehensive debug information to console
+   * @param {Object} debugData - Debug data stored on badge
+   */
+  function logDebugInfo(debugData) {
+    const { iq, result, text, timestamp } = debugData;
+
+    // Clear previous output with visual separator
+    console.log(
+      '%c' + '='.repeat(80),
+      'color: #4CAF50; font-weight: bold; font-size: 14px;'
+    );
+    console.log(
+      '%c🧠 IQ ESTIMATION DEBUG - Hover Details',
+      'color: #2196F3; font-weight: bold; font-size: 16px; background: #E3F2FD; padding: 4px 8px;'
+    );
+    console.log('%c' + '='.repeat(80), 'color: #4CAF50; font-weight: bold;');
+
+    // Original Text
+    console.group('%c📝 Original Text', 'color: #FF9800; font-weight: bold;');
+    console.log('%c' + text, 'color: #333; font-family: monospace; background: #FFF9C4; padding: 8px; border-left: 3px solid #FFC107;');
+    console.log(`Length: ${text.length} characters, ${text.split(/\s+/).length} words`);
+    console.groupEnd();
+
+    // Final IQ Estimate
+    console.group('%c🎯 Final IQ Estimate', 'color: #9C27B0; font-weight: bold;');
+    console.log(
+      '%c' + `IQ: ${iq.toFixed(1)}`,
+      'font-size: 20px; font-weight: bold; color: #7B1FA2; background: #F3E5F5; padding: 8px;'
+    );
+    console.log(`Confidence: ${result.confidence?.toFixed(1) || 'N/A'}%`);
+    console.log(`Method: ${result.dimension_scores ? 'Knowledge-Based (4 Dimensions)' : 'Unknown'}`);
+    console.groupEnd();
+
+    // Dimension Breakdown
+    if (result.dimension_scores) {
+      console.group('%c📊 Dimension Breakdown (Weighted Combination)', 'color: #2196F3; font-weight: bold;');
+
+      const weights = {
+        vocabulary_sophistication: 0.35,
+        lexical_diversity: 0.25,
+        sentence_complexity: 0.20,
+        grammatical_precision: 0.20
+      };
+
+      Object.entries(result.dimension_scores).forEach(([dim, dimIQ]) => {
+        const weight = weights[dim] || 0;
+        const contribution = dimIQ * weight;
+        const contributionPercent = ((contribution / iq) * 100).toFixed(1);
+
+        const dimName = dim
+          .replace(/_/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+
+        console.log(
+          `%c${dimName}: ${dimIQ.toFixed(1)} IQ`,
+          `color: ${getDimensionColor(dim)}; font-weight: bold;`
+        );
+        console.log(`  Weight: ${(weight * 100).toFixed(0)}% | Contribution: ${contribution.toFixed(1)} (${contributionPercent}% of final)`);
+      });
+
+      console.groupEnd();
+    }
+
+    // Feature Extraction Details
+    console.group('%c🔍 Feature Extraction Details', 'color: #00BCD4; font-weight: bold;');
+
+    // Re-extract features for detailed view (or use stored if available)
+    const normalizedText = text
+      .replace(/https?:\/\/[^\s]+/g, '')
+      .replace(/@\w+/g, '')
+      .replace(/#\w+/g, '')
+      .replace(/[^\w\s.,!?;:()'-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const tokens = normalizedText.match(/\b\w+\b/g) || [];
+    const sentences = normalizedText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+
+    const uniqueTokens = new Set(tokens.map(t => t.toLowerCase()));
+    const ttr = tokens.length > 0 ? uniqueTokens.size / tokens.length : 0;
+    const avgWordLength = tokens.length > 0
+      ? tokens.reduce((sum, t) => sum + t.length, 0) / tokens.length
+      : 0;
+    const avgWordsPerSentence = sentences.length > 0 ? tokens.length / sentences.length : 0;
+
+    console.log(`%cVocabulary Sophistication Features:`, 'font-weight: bold; color: #E91E63;');
+    console.log(`  Average Word Length: ${avgWordLength.toFixed(2)} chars`);
+    console.log(`  Total Words: ${tokens.length}`);
+    console.log(`  Advanced Words (8+ chars): ${tokens.filter(t => t.length >= 8).length} (${((tokens.filter(t => t.length >= 8).length / tokens.length) * 100).toFixed(1)}%)`);
+
+    console.log(`%cLexical Diversity Features:`, 'font-weight: bold; color: #3F51B5;');
+    console.log(`  Type-Token Ratio (TTR): ${ttr.toFixed(4)}`);
+    console.log(`  Unique Words: ${uniqueTokens.size} of ${tokens.length}`);
+    console.log(`  Trained Mapping: IQ = 70 + (TTR - 0.659) × 170`);
+
+    console.log(`%cSentence Complexity Features:`, 'font-weight: bold; color: #009688;');
+    console.log(`  Average Words per Sentence: ${avgWordsPerSentence.toFixed(2)}`);
+    console.log(`  Total Sentences: ${sentences.length}`);
+    console.log(`  Trained Mapping: IQ = 60 + (avg_words - 11.0) × 6.0`);
+
+    console.log(`%cGrammatical Precision Features:`, 'font-weight: bold; color: #FF5722;');
+    const commas = (normalizedText.match(/,/g) || []).length;
+    const semicolons = (normalizedText.match(/;/g) || []).length;
+    const subordinateMarkers = ['which', 'that', 'who', 'although', 'because', 'however'].reduce((count, marker) => {
+      const regex = new RegExp(`\\b${marker}\\b`, 'gi');
+      return count + (normalizedText.match(regex) || []).length;
+    }, 0);
+    console.log(`  Punctuation Complexity: ${((commas + semicolons) / Math.max(1, sentences.length)).toFixed(2)} per sentence`);
+    console.log(`  Subordinate Clauses: ${subordinateMarkers} markers found`);
+    console.log(`  Estimated Dependency Depth: ~${(1.795 + ((commas + semicolons) / Math.max(1, sentences.length)) * 0.3).toFixed(2)}`);
+    console.log(`  Trained Mapping: IQ = 53 + (dep_depth - 1.795) × 80`);
+
+    console.groupEnd();
+
+    // Calculation Summary
+    console.group('%c🧮 Calculation Summary', 'color: #795548; font-weight: bold;');
+    console.log(`Weighted Average Formula:`);
+    console.log(`  IQ = (Vocab × 35% + Diversity × 25% + Sentence × 20% + Grammar × 20%)`);
+    if (result.dimension_scores) {
+      const calculated =
+        (result.dimension_scores.vocabulary_sophistication || 100) * 0.35 +
+        (result.dimension_scores.lexical_diversity || 100) * 0.25 +
+        (result.dimension_scores.sentence_complexity || 100) * 0.20 +
+        (result.dimension_scores.grammatical_precision || 100) * 0.20;
+      console.log(`  = (${(result.dimension_scores.vocabulary_sophistication || 100).toFixed(1)} × 0.35) + ` +
+                  `(${(result.dimension_scores.lexical_diversity || 100).toFixed(1)} × 0.25) + ` +
+                  `(${(result.dimension_scores.sentence_complexity || 100).toFixed(1)} × 0.20) + ` +
+                  `(${(result.dimension_scores.grammatical_precision || 100).toFixed(1)} × 0.20)`);
+      console.log(`  = ${calculated.toFixed(2)} → Rounded: ${Math.round(calculated)}`);
+    }
+    console.groupEnd();
+
+    // Full Result Object (collapsed)
+    console.groupCollapsed('%c📦 Full Result Object', 'color: #607D8B; font-weight: bold;');
+    console.log(result);
+    console.groupEnd();
+
+    // Timestamp
+    console.log(
+      `%c⏰ Analyzed at: ${new Date(timestamp).toLocaleTimeString()}`,
+      'color: #757575; font-style: italic;'
+    );
+    console.log(
+      '%c' + '='.repeat(80),
+      'color: #4CAF50; font-weight: bold; font-size: 14px;'
+    );
+  }
+
+  /**
+   * Get color for dimension in console output
+   */
+  function getDimensionColor(dimension) {
+    const colors = {
+      vocabulary_sophistication: '#E91E63',
+      lexical_diversity: '#3F51B5',
+      sentence_complexity: '#009688',
+      grammatical_precision: '#FF5722'
+    };
+    return colors[dimension] || '#757575';
   }
 
   /**
@@ -259,8 +438,8 @@
       if (result.is_valid && result.iq_estimate !== null && settings.showIQBadge) {
         const iq = Math.round(result.iq_estimate);
 
-        // Create and inject badge
-        const badge = createIQBadge(iq);
+        // Create and inject badge (pass full result for debug)
+        const badge = createIQBadge(iq, result, tweetText);
 
         // Find the engagement bar (comments, retweets, likes, views, bookmarks)
         const engagementBar = tweetElement.querySelector('[role="group"]');

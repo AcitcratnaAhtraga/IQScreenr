@@ -86,8 +86,8 @@ Click "Reset to Defaults" in the popup to restore original settings.
 IQGuessr/
 ├── manifest.json              # Extension manifest
 ├── content/
-│   ├── iqCalculator.js        # IQ calculation algorithm
-│   └── content.js             # Content script (tweet detection & badge injection)
+│   ├── comprehensiveIQEstimator.js  # Research-based IQ estimator (client-side)
+│   └── content.js                   # Content script (tweet detection & badge injection)
 ├── popup/
 │   ├── popup.html             # Settings UI
 │   ├── popup.css              # Popup styles
@@ -107,17 +107,36 @@ IQGuessr/
 
 ### IQ Calculation
 
-The extension uses a sophisticated algorithm that analyzes multiple linguistic features:
+The extension uses a **research-based estimator** ported from Python, trained on 15 graded samples. It analyzes 4 dimensions:
 
-1. **Word Length Analysis**: Longer words indicate higher vocabulary
-2. **Uniqueness Ratio**: Diverse vocabulary suggests higher complexity
-3. **Sentence Metrics**: Average length, variance, and maximum length
-4. **Syllable Complexity**: More syllables per word indicates sophistication
-5. **Readability Index**: Inverted Flesch Reading Ease score
-6. **Vocabulary Sophistication**: Analysis of long words vs common words
-7. **Syntax Complexity**: Punctuation usage and subordinate clauses
+1. **Vocabulary Sophistication (35% weight)**: Age of Acquisition proxies via word length and syllable complexity
+   - Uses trained mapping: `IQ = 70 + (mean_AoA - 3.91) × 24`
+   - Estimates word difficulty from length and syllables
 
-Each metric contributes to a weighted score that maps to the 60-145+ IQ range.
+2. **Lexical Diversity (25% weight)**: Type-Token Ratio (TTR) - measures word variety
+   - Uses trained mapping: `IQ = 70 + (TTR - 0.659) × 170`
+   - Higher diversity = higher IQ
+
+3. **Sentence Complexity (20% weight)**: Average words per sentence
+   - Uses trained mapping: `IQ = 60 + (avg_words - 11.0) × 6.0`
+   - Moderate complexity optimal
+
+4. **Grammatical Precision (20% weight)**: Syntax complexity via punctuation and clauses
+   - Approximates dependency depth from punctuation patterns
+   - Uses trained mapping: `IQ = 53 + (dep_depth - 1.795) × 80`
+
+The final IQ is a **weighted combination** of these 4 dimensions. All processing happens **client-side** in your browser - no data is sent anywhere.
+
+### Debug Mode
+
+**Hover over any IQ badge** and open the browser console (F12) to see:
+- Detailed feature extraction (TTR, word length, sentence metrics, etc.)
+- Dimension breakdown with individual IQ scores
+- Weighted calculation showing how final IQ was computed
+- Full feature values and trained mapping formulas
+- Complete result object
+
+This helps you understand exactly how each tweet was analyzed.
 
 ### Tweet Detection
 
@@ -143,10 +162,10 @@ Edit `content/content.js` and modify the `getIQColor()` function to change color
 
 ### Modifying IQ Algorithm
 
-Edit `content/iqCalculator.js` to adjust:
-- Weighting of different metrics
-- Baseline values
-- Score mapping to IQ range
+Edit `content/comprehensiveIQEstimator.js` to adjust:
+- Dimension weights (currently 35%, 25%, 20%, 20%)
+- Trained mapping parameters
+- Feature extraction logic
 
 ### Styling Badges
 
