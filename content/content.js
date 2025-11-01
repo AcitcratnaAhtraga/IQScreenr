@@ -1837,11 +1837,6 @@
    */
   async function processTweet(tweetElement) {
     if (!tweetElement || !settings.showIQBadge) {
-      if (!tweetElement) {
-        debugLog('[Process Tweet] Skipped - null tweetElement');
-      } else {
-        debugLog('[Process Tweet] Skipped - showIQBadge is false');
-      }
       return;
     }
 
@@ -1854,43 +1849,24 @@
       actualTweetElement = nestedTweet;
       // Mark the wrapper as analyzed to avoid reprocessing
       tweetElement.setAttribute('data-iq-analyzed', 'true');
-      debugLog('[Process Tweet] Found nested tweet structure');
     }
 
     // Skip if already processed (including invalid badges)
     if (actualTweetElement.hasAttribute('data-iq-analyzed')) {
-      debugLog('[Process Tweet] Skipped - already analyzed', {
-        hasBadge: !!actualTweetElement.querySelector('.iq-badge'),
-        badgeType: actualTweetElement.querySelector('.iq-badge')?.className
-      });
       return;
     }
 
     // Check if badge already exists and is finalized (not loading)
     const existingBadge = actualTweetElement.querySelector('.iq-badge');
-    debugLog('[Process Tweet] Starting processing', {
-      hasExistingBadge: !!existingBadge,
-      existingBadgeLoading: existingBadge?.hasAttribute('data-iq-loading'),
-      existingBadgeClassList: existingBadge?.classList.toString(),
-      existingBadgeInvalid: existingBadge?.hasAttribute('data-iq-invalid'),
-      tweetHasText: !!actualTweetElement.querySelector('[data-testid="tweetText"]'),
-      tweetHasEngagementBar: !!actualTweetElement.querySelector('[role="group"]'),
-      tweetId: actualTweetElement.getAttribute('data-testid'),
-      tweetTag: actualTweetElement.tagName,
-      tweetParent: actualTweetElement.parentElement?.tagName
-    });
-
     if (existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
         !existingBadge.classList.contains('iq-badge-loading') &&
         !existingBadge.hasAttribute('data-iq-invalid')) {
-      debugLog('[Process Tweet] Badge already finalized - marking as analyzed');
       actualTweetElement.setAttribute('data-iq-analyzed', 'true');
       return;
     }
 
     // Mark as processing to avoid double-processing
     actualTweetElement.setAttribute('data-iq-processing', 'true');
-    debugLog('[Process Tweet] Marked as processing');
 
     // STEP 1: Quick synchronous text extraction for early validation
     let tweetText = null;
@@ -2289,8 +2265,6 @@
    * Process all visible tweets
    */
   function processVisibleTweets() {
-    debugLog('[Process Visible Tweets] Starting - URL:', window.location.href);
-
     // Find all tweet articles (X.com/Twitter structure)
     const tweetSelectors = [
       'article[data-testid="tweet"]',
@@ -2301,19 +2275,13 @@
     let tweets = [];
     for (const selector of tweetSelectors) {
       tweets = document.querySelectorAll(selector);
-      if (tweets.length > 0) {
-        debugLog('[Process Visible Tweets] Found', tweets.length, 'tweets using selector:', selector);
-        break;
-      }
+      if (tweets.length > 0) break;
     }
 
     // Fallback: find any article elements that might be tweets
     if (tweets.length === 0) {
       tweets = document.querySelectorAll('article');
-      debugLog('[Process Visible Tweets] Fallback: Found', tweets.length, 'article elements');
     }
-
-    debugLog('[Process Visible Tweets] Total tweets found:', tweets.length);
 
     // Process tweets and handle nested structure (e.g., notifications)
     const processedTweetElements = new Set();
@@ -2321,11 +2289,6 @@
 
     Array.from(tweets).forEach((tweet, index) => {
       if (!tweet || tweet.hasAttribute('data-iq-processing')) {
-        if (!tweet) {
-          debugLog('[Process Visible Tweets] Skipped null tweet at index', index);
-        } else {
-          debugLog('[Process Visible Tweets] Skipped tweet at index', index, '- already processing');
-        }
         return;
       }
 
@@ -2337,7 +2300,6 @@
       let actualTweet = tweet;
       if (nestedTweet && nestedTweet !== tweet) {
         actualTweet = nestedTweet;
-        debugLog('[Process Visible Tweets] Found nested tweet at index', index);
       }
 
       // Check if tweet was already processed but badge is missing (e.g., after scroll/virtualization)
@@ -2346,14 +2308,12 @@
         const existingBadge = actualTweet.querySelector('.iq-badge');
         if (!existingBadge && settings.showIQBadge) {
           // Badge was removed - re-process the tweet to restore it
-          debugLog('[Process Visible Tweets] Badge missing for analyzed tweet at index', index, '- restoring');
           // Clear the analyzed flag to allow reprocessing
           actualTweet.removeAttribute('data-iq-analyzed');
           // Remove from processedTweets set if it's there
           processedTweets.delete(actualTweet);
         } else {
           // Badge exists, skip this tweet
-          debugLog('[Process Visible Tweets] Skipped tweet at index', index, '- already analyzed with badge');
           return;
         }
       }
@@ -2364,15 +2324,8 @@
         if (!nestedTweet.hasAttribute('data-iq-analyzed') &&
             !nestedTweet.hasAttribute('data-iq-processing') &&
             !processedTweetElements.has(nestedTweet)) {
-          debugLog('[Process Visible Tweets] Adding nested tweet at index', index, 'to process');
           newTweets.push(nestedTweet);
           processedTweetElements.add(nestedTweet);
-        } else {
-          debugLog('[Process Visible Tweets] Skipped nested tweet at index', index, {
-            hasAnalyzed: nestedTweet.hasAttribute('data-iq-analyzed'),
-            hasProcessing: nestedTweet.hasAttribute('data-iq-processing'),
-            inSet: processedTweetElements.has(nestedTweet)
-          });
         }
       } else {
         // Use this tweet if it contains tweet text or has tweet indicators
@@ -2380,54 +2333,31 @@
         const hasTweetText = tweet.querySelector('[data-testid="tweetText"]');
         const hasEngagementBar = tweet.querySelector('[role="group"]');
 
-        debugLog('[Process Visible Tweets] Checking tweet at index', index, {
-          hasTweetText: !!hasTweetText,
-          hasEngagementBar: !!hasEngagementBar,
-          inSet: processedTweetElements.has(tweet),
-          isFirst: index === 0
-        });
-
         // Only process if it looks like an actual tweet (has text or engagement bar)
         // This prevents processing empty notification wrapper articles
         if ((hasTweetText || hasEngagementBar) && !processedTweetElements.has(tweet)) {
-          debugLog('[Process Visible Tweets] Adding tweet at index', index, 'to process');
           newTweets.push(tweet);
           processedTweetElements.add(tweet);
-        } else {
-          debugLog('[Process Visible Tweets] Skipped tweet at index', index, {
-            reason: !hasTweetText && !hasEngagementBar ? 'no content indicators' : 'already in set',
-            hasTweetText: !!hasTweetText,
-            hasEngagementBar: !!hasEngagementBar,
-            inSet: processedTweetElements.has(tweet)
-          });
         }
       }
     });
 
     // Add loading badges to ALL new tweets (completely non-blocking)
-    debugLog('[Process Visible Tweets] Will process', newTweets.length, 'new tweets');
     if (settings.showIQBadge) {
-      newTweets.forEach((tweet, idx) => {
+      newTweets.forEach((tweet) => {
         // Use setTimeout(0) to schedule badge insertion without blocking
         setTimeout(() => {
           if (!tweet.querySelector('.iq-badge')) {
-            debugLog('[Process Visible Tweets] Adding loading badge to tweet at index', idx);
             addLoadingBadgeToTweet(tweet);
-          } else {
-            debugLog('[Process Visible Tweets] Tweet at index', idx, 'already has badge, skipping');
           }
         }, 0);
       });
-    } else {
-      debugLog('[Process Visible Tweets] Skipping badges - showIQBadge is false');
     }
 
     // Process each tweet (non-blocking, separate from badge insertion)
     // This handles validation and IQ calculation - completely async
     setTimeout(() => {
-      debugLog('[Process Visible Tweets] Processing', newTweets.length, 'tweets');
-      newTweets.forEach((tweet, idx) => {
-        debugLog('[Process Visible Tweets] Calling processTweet for tweet at index', idx);
+      newTweets.forEach((tweet) => {
         processTweet(tweet);
       });
     }, 0);
@@ -2913,6 +2843,7 @@
 
       // PRIORITY 1: Look for toolbar with comment buttons (image, GIF, poll, emoji, location icons)
       // This is the row of buttons at the bottom of comment boxes
+      // CRITICAL: Only use toolbars that are near the input element, not the original post
       const toolbarSelectors = [
         '[data-testid="toolBar"]',
         'div[role="toolbar"]',
@@ -2923,13 +2854,46 @@
 
       let toolbarElement = null;
       let firstButtonInToolbar = null;
+      const inputRect = inputElement ? inputElement.getBoundingClientRect() : null;
 
       for (const selector of toolbarSelectors) {
-        toolbarElement = container.querySelector(selector);
-        if (toolbarElement) {
+        const toolbars = container.querySelectorAll(selector);
+        // Check all toolbars and find the one closest to the input
+        for (const toolbar of toolbars) {
+          // Verify this toolbar is near the input, not near original post
+          if (inputRect) {
+            try {
+              const toolbarRect = toolbar.getBoundingClientRect();
+              const distance = Math.abs(toolbarRect.top - inputRect.bottom);
+              // If toolbar is too far from input (more than 200px), skip it
+              // This prevents using the original post's toolbar
+              if (distance > 200) {
+                continue;
+              }
+
+              // Also check if this toolbar contains the original post's engagement bar
+              const originalPostArticles = document.querySelectorAll('article[data-testid="tweet"]');
+              let isOriginalPostToolbar = false;
+              for (const article of originalPostArticles) {
+                const engagementBar = article.querySelector('[role="group"]');
+                if (engagementBar && toolbar.contains(engagementBar)) {
+                  // This is the original post's engagement bar, skip it
+                  isOriginalPostToolbar = true;
+                  break;
+                }
+              }
+              if (isOriginalPostToolbar) {
+                continue;
+              }
+            } catch (e) {
+              // If comparison fails, skip this toolbar
+              continue;
+            }
+          }
+
           // Check if this toolbar has buttons (image, GIF icons, etc.)
           // Look for buttons with aria-label containing image, gif, poll, emoji, location
-          const buttons = toolbarElement.querySelectorAll('button, div[role="button"]');
+          const buttons = toolbar.querySelectorAll('button, div[role="button"]');
           if (buttons.length > 0) {
             // Check if buttons have relevant labels/icons
             let hasRelevantButtons = false;
@@ -2944,6 +2908,7 @@
                 hasRelevantButtons = true;
                 if (!firstButtonInToolbar) {
                   firstButtonInToolbar = btn;
+                  toolbarElement = toolbar;
                 }
                 break;
               }
@@ -2958,18 +2923,21 @@
           // If toolbar has buttons but we didn't check labels, use first button anyway
           if (buttons.length > 0 && !firstButtonInToolbar) {
             firstButtonInToolbar = buttons[0];
+            toolbarElement = toolbar;
           }
+        }
+
+        if (toolbarElement && firstButtonInToolbar) {
+          break;
         }
       }
 
       // If we found the toolbar with buttons, place badge before the first button
       if (toolbarElement && firstButtonInToolbar && firstButtonInToolbar.parentElement) {
         firstButtonInToolbar.parentElement.insertBefore(badge, firstButtonInToolbar);
-        debugLog('[Real-time Badge] Placed badge before toolbar buttons');
       } else if (replyVisibilityElement && replyVisibilityElement.parentElement) {
         // PRIORITY 2: Insert before reply visibility element
         replyVisibilityElement.parentElement.insertBefore(badge, replyVisibilityElement);
-        debugLog('[Real-time Badge] Placed badge before reply visibility');
       } else if (toolbarElement) {
         // PRIORITY 3: Insert at start of toolbar
         const firstChild = toolbarElement.firstElementChild;
@@ -2978,7 +2946,6 @@
         } else {
           toolbarElement.appendChild(badge);
         }
-        debugLog('[Real-time Badge] Placed badge in toolbar');
       } else {
         // Fallback: look for common compose box footer structure
         const footerSelectors = [
@@ -3482,7 +3449,6 @@
           if (container && badge.parentElement === container) {
             // Badge is in the right container but attached to wrong input - reassign
             container._iqInputElement = inputElement;
-            debugLog('[Real-time Badge] Reassigned badge to focused input');
           }
         }
       }
@@ -3575,26 +3541,105 @@
     }, { capture: true });
 
     // Find container for badge - look for compose box wrapper that contains reply settings
-    // Try to find a parent container that would contain "Everyone can reply" text
+    // CRITICAL: Must be specific to THIS input element to avoid placing badge near original post
     // First check if we're in a modal/dialog - prioritize modal containers
     const parentModalForContainer = inputElement.closest('[role="dialog"], [data-testid*="modal"], [data-testid*="Dialog"]');
     let container = null;
 
+    // Strategy: Find the closest container that's specific to THIS input, not the original post
+    // Look for containers that are parents of the input but NOT parents of tweet articles
+
+    // Check if this is a reply input (not original post compose)
+    const isReplyInput = inputElement.closest('div[data-testid*="cellInnerDiv"]')?.querySelector('article[data-testid="tweet"]') ||
+                        inputElement.closest('[aria-label*="Replying to"]') ||
+                        window.location.pathname.includes('/status/');
+
     if (parentModalForContainer) {
-      // In a modal - look for toolbar in modal first
+      // In a modal - look for toolbar in modal first, but only within the modal
       container = parentModalForContainer.querySelector('[data-testid="toolBar"]') ||
-                  parentModalForContainer.querySelector('div[role="group"]') ||
-                  inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement;
+                  parentModalForContainer.querySelector('div[role="group"]');
+
+      // If not found, find container specifically near this input within modal
+      if (!container) {
+        let parent = inputElement.parentElement;
+        for (let i = 0; i < 5 && parent && parent !== parentModalForContainer; i++) {
+          // Check if this parent contains the input but not a tweet article (avoid original post)
+          if (parent.contains(inputElement) && !parent.querySelector('article[data-testid="tweet"]')) {
+            const hasToolbar = parent.querySelector('[data-testid="toolBar"]');
+            if (hasToolbar) {
+              container = parent;
+              break;
+            }
+          }
+          parent = parent.parentElement;
+        }
+      }
     }
 
-    // Fallback to standard container detection
+    // For reply inputs (not modals), be very specific - find container that contains THIS input
+    // but is NOT in the original tweet's engagement area
+    if (!container && isReplyInput) {
+      // Walk up from input element and find the FIRST container that:
+      // 1. Contains this input
+      // 2. Has a toolbar or tweet button
+      // 3. Does NOT contain an article with the original post's structure
+      let current = inputElement.parentElement;
+      const originalTweetArticles = document.querySelectorAll('article[data-testid="tweet"]');
+
+      for (let i = 0; i < 8 && current; i++) {
+        // Check if this level has a toolbar
+        const toolbar = current.querySelector('[data-testid="toolBar"]');
+        if (toolbar && toolbar.contains(inputElement)) {
+          // Verify this container is NOT the original post's container
+          // by checking if it's far from original tweet articles
+          let isOriginalPostContainer = false;
+          for (const article of originalTweetArticles) {
+            const engagementBar = article.querySelector('[role="group"]');
+            if (engagementBar && current.contains(engagementBar)) {
+              isOriginalPostContainer = true;
+              break;
+            }
+          }
+          if (!isOriginalPostContainer) {
+            container = toolbar.parentElement || toolbar;
+            break;
+          }
+        }
+        current = current.parentElement;
+      }
+    }
+
+    // Fallback to standard container detection, but still be careful
     if (!container) {
-      container = inputElement.closest('[data-testid="toolBar"]') ||
-                  inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement ||
-                  inputElement.closest('[data-testid="tweetButton"]')?.parentElement?.parentElement ||
-                  inputElement.closest('div[style*="flex"]')?.parentElement ||
-                  inputElement.parentElement?.parentElement ||
-                  inputElement.parentElement;
+      // Try finding toolbar closest to this specific input
+      const toolbars = Array.from(document.querySelectorAll('[data-testid="toolBar"]'));
+      for (const toolbar of toolbars) {
+        if (toolbar.contains(inputElement)) {
+          // Verify it's not the original post's toolbar
+          const article = toolbar.closest('article[data-testid="tweet"]');
+          if (article) {
+            const engagementBar = article.querySelector('[role="group"]');
+            if (engagementBar && toolbar !== engagementBar) {
+              // This toolbar is not the engagement bar, so it's likely a compose toolbar
+              container = toolbar;
+              break;
+            }
+          } else {
+            // No article parent means it's likely a standalone compose box
+            container = toolbar;
+            break;
+          }
+        }
+      }
+
+      // Last resort: use parent hierarchy
+      if (!container) {
+        container = inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement ||
+                    inputElement.closest('[data-testid="tweetButton"]')?.parentElement?.parentElement ||
+                    inputElement.closest('div[style*="flex"]')?.parentElement ||
+                    inputElement.parentElement?.parentElement ||
+                    inputElement.parentElement;
+      }
     }
 
     // Try to find a container that actually has reply visibility text nearby
