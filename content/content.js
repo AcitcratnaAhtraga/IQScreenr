@@ -1110,6 +1110,7 @@
       let animationFrameId = null;
       let lastUpdateTime = startTime;
 
+
       function updateNumber() {
         const now = performance.now();
         const elapsed = now - startTime;
@@ -1118,7 +1119,29 @@
         // Ease-out cubic function: fast start, slow end
         // f(t) = 1 - (1 - t)^3
         const easedProgress = 1 - Math.pow(1 - progress, 3);
-        let currentIQ = Math.floor(easedProgress * finalIQ);
+        let targetIQ = progress >= 1 ? finalIQ : Math.floor(easedProgress * finalIQ);
+
+        // CRITICAL FIX: Ensure incremental updates - never jump more than a few numbers at a time
+        // If browser throttles or frames are bunched, cap the maximum change per frame
+        const maxIncrement = Math.max(1, Math.ceil(finalIQ / 50)); // Max 1/50th of total per frame
+        let currentIQ = lastDisplayedIQ === -1 ? 0 : lastDisplayedIQ;
+
+        // If we're past duration (progress >= 1), force increment towards final
+        if (progress >= 1) {
+          // After duration, increment by at least 1 per frame until we reach final
+          currentIQ = Math.min(currentIQ + maxIncrement, finalIQ);
+          targetIQ = finalIQ;
+        } else if (targetIQ > currentIQ) {
+          // Don't jump too far ahead - increment gradually
+          const difference = targetIQ - currentIQ;
+          if (difference > maxIncrement) {
+            currentIQ = currentIQ + maxIncrement;
+          } else {
+            currentIQ = targetIQ;
+          }
+        } else {
+          currentIQ = targetIQ;
+        }
 
         // Force update if we haven't updated in a while (prevents stalling)
         const timeSinceLastUpdate = now - lastUpdateTime;
@@ -1126,13 +1149,9 @@
 
         // Always update if IQ changed OR if we need to force update OR if we're near the end
         if (currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95) {
-          // If we're stuck at the same number, force at least some progress
-          if (currentIQ === lastDisplayedIQ && progress < 0.99) {
-            // Use linear progress as fallback to ensure movement
-            const linearProgress = Math.floor((progress * 0.9 + 0.1) * finalIQ);
-            if (linearProgress > currentIQ) {
-              currentIQ = linearProgress;
-            }
+          // If we're near the end and not at final, force progress
+          if (progress >= 0.95 && currentIQ < finalIQ - 1) {
+            currentIQ = Math.min(currentIQ + 1, finalIQ);
           }
 
           // Clamp to final IQ
@@ -1141,7 +1160,9 @@
           }
 
           // Only update if it actually changed or we're forcing it
-          if (currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95) {
+          const willUpdate = currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95;
+          if (willUpdate) {
+
             scoreElement.textContent = currentIQ;
             lastDisplayedIQ = currentIQ;
             lastUpdateTime = now;
@@ -1156,11 +1177,17 @@
           badge.style.setProperty('background-color', currentColor, 'important');
         }
 
-        if (progress < 1) {
+        // Continue animation until we've reached the final IQ
+        // Don't stop just because progress >= 1, we need to actually reach the final number
+        const hasReachedFinal = lastDisplayedIQ >= finalIQ;
+
+        if (!hasReachedFinal) {
           // Continue animation - always schedule next frame
           animationFrameId = requestAnimationFrame(updateNumber);
         } else {
-          // Animation complete - ensure final number and color are shown
+          // Animation complete - we've reached the final IQ
+
+          // Ensure final number and color are shown (should already be set, but just in case)
           scoreElement.textContent = finalIQ;
           badge.style.setProperty('background-color', iqColor, 'important');
 
