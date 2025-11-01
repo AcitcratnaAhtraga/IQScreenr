@@ -312,8 +312,6 @@ async function processTweet(tweetElement) {
       }
     } else {
       fromCache = true;
-      const handleInfo = handle ? ` for @${handle}` : '';
-      debugLogFn(`Using cached IQ result for tweet${handleInfo}`);
     }
 
     if (result.is_valid && result.iq_estimate !== null && settings.showIQBadge) {
@@ -346,11 +344,12 @@ async function processTweet(tweetElement) {
           updateBadgeWithFlipStructure(loadingBadge, iq, confidence);
         }
 
-        if (confidence === null) {
-          loadingBadge.addEventListener('mouseenter', () => {
+        // Always add hover event listener for console debug info
+        loadingBadge.addEventListener('mouseenter', () => {
+          if (loadingBadge._debugData) {
             logDebugInfo(loadingBadge._debugData);
-          });
-        }
+          }
+        });
 
         processedTweets.add(actualTweetElement);
         actualTweetElement.setAttribute('data-iq-analyzed', 'true');

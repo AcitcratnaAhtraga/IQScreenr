@@ -249,11 +249,12 @@ function createIQBadge(iq, estimationResult, tweetText) {
   badge.style.setProperty('background-color', iqColor, 'important');
   badge.style.setProperty('color', '#000000', 'important');
 
-  if (confidence === null) {
-    badge.addEventListener('mouseenter', () => {
+  // Always add hover event listener for console debug info
+  badge.addEventListener('mouseenter', () => {
+    if (badge._debugData) {
       logDebugInfo(badge._debugData);
-    });
-  }
+    }
+  });
 
   return badge;
 }
