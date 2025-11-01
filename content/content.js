@@ -797,8 +797,33 @@
     }
 
     // Check if it's mostly just metadata/username
+    // Allow @mentions at the start IF there's substantial content after them
+    // Match @mention (username can contain letters, numbers, underscore)
+    const startsWithMention = text.match(/^@[\w]+/);
+    let textToCheck = text;
+
+    // If starts with @mention, remove it for validation purposes
+    // but only reject if the remaining text is too short
+    if (startsWithMention) {
+      // Remove the @mention and any trailing space
+      const mentionMatch = text.match(/^@[\w]+\s*/);
+      if (mentionMatch) {
+        textToCheck = text.substring(mentionMatch[0].length).trim();
+      } else {
+        textToCheck = text.substring(startsWithMention[0].length).trim();
+      }
+      const remainingWords = textToCheck.match(/\b[a-zA-Z]{2,}\b/g) || [];
+      // If after removing @mention, there are still at least 5 words, it's valid
+      if (remainingWords.length >= 5) {
+        // Valid - has @mention but also substantial content
+        return { isValid: true, reason: null };
+      }
+      // Otherwise, treat as invalid (just @mention without sufficient content)
+      return { isValid: false, reason: 'Starts with @mention but insufficient content after' };
+    }
+
+    // Check other metadata patterns
     const isLikelyMetadata =
-      text.match(/^@\w+/) ||  // Starts with @username
       text.match(/^\d+[h|m|d|w|s]?\s*$/) ||  // Just time/date
       words.length < textWithoutEmoji.split(/\s+/).length * 0.3;  // Less than 30% actual words
 
@@ -2233,6 +2258,656 @@
   }
 
   /**
+   * Real-time IQ badge for comments and posts
+   * Monitors text input areas and shows live IQ score as user types
+   */
+  const realtimeBadgeManagers = new Map(); // Track active input areas
+
+  /**
+   * Find text input elements for new posts or comments
+   */
+  function findTextInputs() {
+    const inputs = [];
+
+    // Find textareas (used in some Twitter/X interfaces)
+    const textareas = document.querySelectorAll('textarea[data-testid="tweetTextarea_0"], textarea[data-testid*="tweetTextarea"]');
+    textareas.forEach(textarea => {
+      if (!textarea.hasAttribute('data-iq-realtime-monitored')) {
+        inputs.push(textarea);
+      }
+    });
+
+    // Find contenteditable divs (main Twitter/X compose box)
+    const contentEditables = document.querySelectorAll(
+      'div[data-testid="tweetTextarea_0"], ' +
+      'div[role="textbox"][contenteditable="true"]'
+    );
+    contentEditables.forEach(div => {
+      // Make sure it's actually a compose box, not just any contenteditable
+      const isComposeBox = div.closest('[data-testid="toolBar"]') ||
+                          div.closest('[data-testid="tweetButton"]') ||
+                          div.getAttribute('data-testid')?.includes('tweetTextarea') ||
+                          div.getAttribute('data-testid')?.includes('tweet');
+      if (isComposeBox && !div.hasAttribute('data-iq-realtime-monitored')) {
+        inputs.push(div);
+      }
+    });
+
+    return inputs;
+  }
+
+  /**
+   * Get text content from an input element (handles both textarea and contenteditable)
+   */
+  function getInputText(inputElement) {
+    if (inputElement.tagName === 'TEXTAREA') {
+      return inputElement.value || '';
+    } else {
+      // Contenteditable div
+      return inputElement.textContent || inputElement.innerText || '';
+    }
+  }
+
+  /**
+   * Create or update real-time IQ badge near the input area
+   * Positioned to the left of "Everyone can reply"
+   */
+  function createRealtimeBadge(inputElement, container) {
+    // Store inputElement reference on container for later use
+    if (!container._iqInputElement) {
+      container._iqInputElement = inputElement;
+    }
+
+    // IMPORTANT: Search for existing badge more broadly to prevent duplicates
+    // Check in container first, then in nearby parent elements
+    let badge = container.querySelector('.iq-badge-realtime');
+
+    // If not found in container, search in parent containers and document
+    if (!badge) {
+      let searchContainer = container.parentElement;
+      for (let i = 0; i < 3 && searchContainer; i++) {
+        badge = searchContainer.querySelector('.iq-badge-realtime');
+        if (badge) break;
+        searchContainer = searchContainer.parentElement;
+      }
+    }
+
+    // Last resort: search entire document for any badge near this input
+    if (!badge && inputElement) {
+      const allBadges = document.querySelectorAll('.iq-badge-realtime');
+      for (const existingBadge of allBadges) {
+        // Check if this badge is near our input element
+        try {
+          const inputRect = inputElement.getBoundingClientRect();
+          const badgeRect = existingBadge.getBoundingClientRect();
+          const distance = Math.abs(badgeRect.top - inputRect.bottom) + Math.abs(badgeRect.left - inputRect.left);
+          if (distance < 300) { // Within 300px
+            badge = existingBadge;
+            // Update container reference to badge's actual container
+            container = badge.parentElement || container;
+            break;
+          }
+        } catch (e) {
+          // If getBoundingClientRect fails, skip
+        }
+      }
+    }
+
+    // If we found an existing badge, remove any other duplicates and return it
+    if (badge) {
+      // Remove any other duplicate badges (keep only the first one we found)
+      const allBadges = document.querySelectorAll('.iq-badge-realtime');
+      let foundFirst = false;
+      for (const existingBadge of allBadges) {
+        if (existingBadge === badge) {
+          foundFirst = true;
+        } else if (foundFirst) {
+          // This is a duplicate - remove it
+          existingBadge.remove();
+        } else {
+          // This might be the badge from a different input - check distance
+          try {
+            const inputRect = inputElement.getBoundingClientRect();
+            const badgeRect = existingBadge.getBoundingClientRect();
+            const distance = Math.abs(badgeRect.top - inputRect.bottom) + Math.abs(badgeRect.left - inputRect.left);
+            if (distance < 300) {
+              // Too close - might be duplicate, remove it
+              existingBadge.remove();
+            }
+          } catch (e) {
+            // If comparison fails, be safe and remove potential duplicate
+            if (existingBadge !== badge) {
+              existingBadge.remove();
+            }
+          }
+        }
+      }
+
+      // CRITICAL: Reapply height constraints to prevent growth
+      badge.style.setProperty('height', 'auto', 'important');
+      badge.style.setProperty('max-height', 'none', 'important');
+      badge.style.setProperty('flex-shrink', '0', 'important');
+      badge.style.setProperty('flex-grow', '0', 'important');
+      badge.style.setProperty('align-self', 'flex-start', 'important');
+
+      return badge; // Return existing badge, don't create new one
+    }
+
+    // No existing badge found - create new one
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'iq-badge iq-badge-realtime';
+      badge.setAttribute('data-iq-realtime', 'true');
+
+      // Initialize with loading state
+      const darkerRed = '#b71c1c';
+      const rgb = hexToRgb(darkerRed);
+      const desat = desaturateColor(rgb, 0.5);
+      const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+      badge.style.setProperty('background-color', loadingColor, 'important');
+      badge.style.setProperty('color', '#000000', 'important');
+      badge.style.setProperty('display', 'inline-flex', 'important');
+      badge.style.setProperty('vertical-align', 'middle', 'important');
+      badge.style.setProperty('margin-right', '8px', 'important');
+      // CRITICAL: Fix height to prevent growth
+      badge.style.setProperty('height', 'auto', 'important');
+      badge.style.setProperty('max-height', 'none', 'important');
+      badge.style.setProperty('flex-shrink', '0', 'important');
+      badge.style.setProperty('flex-grow', '0', 'important');
+      badge.style.setProperty('align-self', 'flex-start', 'important');
+      badge.innerHTML = `
+        <span class="iq-label">IQ</span>
+        <span class="iq-score">0</span>
+      `;
+
+      // Find "Everyone can reply" element or similar reply visibility text
+      // Look for elements containing "Everyone", "can reply", or similar text
+      const replyVisibilitySelectors = [
+        '[data-testid="replyVisibilityLabel"]',
+        'div[role="button"][aria-label*="can reply"]',
+        '*[aria-label*="can reply"]'
+      ];
+
+      let replyVisibilityElement = null;
+      // First search within container
+      for (const selector of replyVisibilitySelectors) {
+        replyVisibilityElement = container.querySelector(selector);
+        if (replyVisibilityElement) break;
+      }
+
+      // If not found in container, search in document
+      if (!replyVisibilityElement) {
+        for (const selector of replyVisibilitySelectors) {
+          const candidate = document.querySelector(selector);
+          if (candidate) {
+            if (container.contains(candidate)) {
+              replyVisibilityElement = candidate;
+              break;
+            }
+            // Check if it's near the input element (within reasonable DOM distance)
+            if (inputElement) {
+              try {
+                const inputRect = inputElement.getBoundingClientRect();
+                const replyRect = candidate.getBoundingClientRect();
+                const distance = Math.abs(replyRect.top - inputRect.bottom);
+                if (distance < 200) { // Within 200px vertically
+                  replyVisibilityElement = candidate;
+                  break;
+                }
+              } catch (e) {
+                // If getBoundingClientRect fails, skip this candidate
+              }
+            }
+          }
+        }
+      }
+
+      // Fallback: search for text containing "Everyone can reply" or "can reply"
+      // Search in container first, then nearby elements
+      if (!replyVisibilityElement) {
+        // Search container
+        const containerElements = container.querySelectorAll('*');
+        for (const el of containerElements) {
+          const text = el.textContent || '';
+          if (text.includes('can reply') || (text.includes('Everyone') && text.includes('reply'))) {
+            replyVisibilityElement = el;
+            break;
+          }
+        }
+
+        // If still not found, search nearby elements (siblings and parents)
+        if (!replyVisibilityElement && container.parentElement) {
+          const nearbyElements = container.parentElement.querySelectorAll('*');
+          for (const el of nearbyElements) {
+            const text = el.textContent || '';
+            if ((text.includes('can reply') || (text.includes('Everyone') && text.includes('reply'))) &&
+                el !== badge) {
+              replyVisibilityElement = el;
+              break;
+            }
+          }
+        }
+      }
+
+      // If we found the reply visibility element, insert badge before it
+      if (replyVisibilityElement && replyVisibilityElement.parentElement) {
+        replyVisibilityElement.parentElement.insertBefore(badge, replyVisibilityElement);
+      } else {
+        // Fallback: look for common compose box footer structure
+        // Twitter/X often has a footer with reply settings and character count
+        const footerSelectors = [
+          '[data-testid="toolBar"]',
+          'div[role="group"]',
+          '.css-1dbjc4n[style*="flex"]'
+        ];
+
+        let footerElement = null;
+        for (const selector of footerSelectors) {
+          footerElement = container.querySelector(selector);
+          if (footerElement && footerElement !== badge.parentElement) {
+            // Try to find a good spot in the footer (before character count or buttons)
+            const firstChild = footerElement.firstElementChild;
+            if (firstChild) {
+              footerElement.insertBefore(badge, firstChild);
+              break;
+            } else {
+              footerElement.appendChild(badge);
+              break;
+            }
+          }
+        }
+
+        // Last resort: append to container but position it better
+        if (!badge.parentElement) {
+          container.appendChild(badge);
+          badge.style.setProperty('position', 'relative', 'important');
+          badge.style.setProperty('float', 'left', 'important');
+          badge.style.setProperty('margin-bottom', '8px', 'important');
+        }
+      }
+    }
+
+    return badge;
+  }
+
+  /**
+   * Animate real-time badge update (count-up from current to new IQ)
+   */
+  function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
+    // Cancel any existing animation
+    if (badge._animationFrameId) {
+      cancelAnimationFrame(badge._animationFrameId);
+      badge._animationFrameId = null;
+    }
+
+    // Reset animation state to allow new animation
+    badge.removeAttribute('data-iq-animating');
+    badge.removeAttribute('data-iq-animated');
+
+    // Get loading color (darker red)
+    const darkerRed = '#b71c1c';
+    const rgb = hexToRgb(darkerRed);
+    const desat = desaturateColor(rgb, 0.5);
+    const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+
+    // Find score element
+    const scoreElement = badge.querySelector('.iq-score');
+    if (!scoreElement) return;
+
+    // CRITICAL: Always reset score element to starting value BEFORE animation
+    // Determine starting IQ - if oldIQ is -1, we start from 0 (first calculation)
+    // If oldIQ >= 0, we start from that (updating from previous score)
+    const startIQ = oldIQ >= 0 ? oldIQ : 0;
+
+    // IMPORTANT: Set score element to startIQ immediately, before animation starts
+    // This ensures the animation always starts from the correct value
+    scoreElement.textContent = String(startIQ);
+
+    // Determine starting color
+    // If oldIQ is -1 (no previous score), start from loading color
+    // Otherwise, start from current background color (or loading color if none)
+    let startColorRgb;
+    if (oldIQ < 0) {
+      // First update - start from loading color and reset badge color
+      startColorRgb = parseColor(loadingColor);
+      badge.style.setProperty('background-color', loadingColor, 'important');
+    } else {
+      // Subsequent update - start from current background color
+      const currentBgColor = badge.style.backgroundColor || loadingColor;
+      startColorRgb = parseColor(currentBgColor);
+    }
+
+    const finalColorRgb = parseColor(iqColor);
+
+    // Initialize current IQ for animation
+    let currentIQ = startIQ;
+
+    // Mark as animating (prevents duplicate animations)
+    badge.setAttribute('data-iq-animating', 'true');
+
+    const duration = 800; // Slightly faster for real-time updates
+    const startTime = performance.now();
+    let lastDisplayedIQ = startIQ;
+
+    function updateNumber() {
+      const now = performance.now();
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Ease-out cubic function
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+      // Calculate target IQ
+      const iqDiff = newIQ - startIQ;
+      const targetIQ = startIQ + Math.floor(easedProgress * iqDiff);
+
+      // Smooth increment to avoid jumps
+      const maxIncrement = Math.max(1, Math.ceil(Math.abs(iqDiff) / 30));
+
+      if (progress >= 1) {
+        currentIQ = newIQ;
+      } else {
+        const difference = targetIQ - currentIQ;
+        if (Math.abs(difference) > maxIncrement) {
+          currentIQ += difference > 0 ? maxIncrement : -maxIncrement;
+        } else {
+          currentIQ = targetIQ;
+        }
+      }
+
+      // Clamp IQ
+      if ((iqDiff > 0 && currentIQ > newIQ) || (iqDiff < 0 && currentIQ < newIQ)) {
+        currentIQ = newIQ;
+      }
+
+      // Always update color based on progress (smooth color transition)
+      const currentColor = interpolateRgbColor(
+        startColorRgb,
+        finalColorRgb,
+        easedProgress
+      );
+      badge.style.setProperty('background-color', currentColor, 'important');
+
+      // Update number display if it changed
+      if (currentIQ !== lastDisplayedIQ) {
+        scoreElement.textContent = Math.max(0, Math.round(currentIQ));
+        lastDisplayedIQ = currentIQ;
+      }
+
+      // Continue or finish
+      if (progress < 1 || lastDisplayedIQ !== newIQ) {
+        // Continue animation if not complete OR if we haven't reached final IQ
+        badge._animationFrameId = requestAnimationFrame(updateNumber);
+      } else {
+        // Animation complete - ensure final values are set
+        scoreElement.textContent = newIQ;
+        badge.style.setProperty('background-color', iqColor, 'important');
+        badge.removeAttribute('data-iq-animating');
+        badge.setAttribute('data-iq-animated', 'true');
+
+        // Clean up animation frame reference
+        badge._animationFrameId = null;
+
+        // Small pulse animation
+        setTimeout(() => {
+          triggerPulseAnimation(badge, iqColor);
+        }, 100);
+      }
+    }
+
+    // Start animation immediately (force first frame)
+    // Use a small timeout to ensure the badge is ready and visible
+    requestAnimationFrame(() => {
+      updateNumber();
+    });
+  }
+
+  /**
+   * Update real-time badge with new IQ score
+   */
+  async function updateRealtimeBadge(inputElement, badge, container) {
+    // CRITICAL: Always reapply height constraints to prevent badge from growing
+    badge.style.setProperty('height', 'auto', 'important');
+    badge.style.setProperty('max-height', 'none', 'important');
+    badge.style.setProperty('flex-shrink', '0', 'important');
+    badge.style.setProperty('flex-grow', '0', 'important');
+    badge.style.setProperty('align-self', 'flex-start', 'important');
+
+    const text = getInputText(inputElement).trim();
+
+    // If text is too short or empty, show loading state
+    if (!text || text.length < 10) {
+      const darkerRed = '#b71c1c';
+      const rgb = hexToRgb(darkerRed);
+      const desat = desaturateColor(rgb, 0.5);
+      const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+      badge.style.setProperty('background-color', loadingColor, 'important');
+      const scoreElement = badge.querySelector('.iq-score');
+      if (scoreElement) {
+        scoreElement.textContent = '0';
+      }
+      badge.removeAttribute('data-iq-score');
+      return;
+    }
+
+    // Validate text
+    const validation = validateTweetText(text);
+    if (!validation.isValid) {
+      // Show invalid state (gray)
+      badge.style.setProperty('background-color', '#9e9e9e', 'important');
+      const scoreElement = badge.querySelector('.iq-score');
+      if (scoreElement) {
+        scoreElement.textContent = '✕';
+      }
+      badge.removeAttribute('data-iq-score');
+      // Cancel any ongoing animation
+      if (badge._animationFrameId) {
+        cancelAnimationFrame(badge._animationFrameId);
+        badge._animationFrameId = null;
+      }
+      badge.removeAttribute('data-iq-animating');
+      badge.removeAttribute('data-iq-animated');
+      return;
+    }
+
+    try {
+      // Calculate IQ
+      const result = await iqEstimator.estimate(text);
+
+      if (result.is_valid && result.iq_estimate !== null) {
+        const newIQ = Math.round(result.iq_estimate);
+
+        // IMPORTANT: Read oldIQ BEFORE setting new data attribute
+        // We want to determine if there was a previous valid score to animate from
+        const scoreElement = badge.querySelector('.iq-score');
+        let oldIQ = -1;
+
+        // CRITICAL: Check if badge currently shows "✕" (invalid state)
+        // If so, we're transitioning from invalid to valid - reset to start from 0
+        const isTransitioningFromInvalid = scoreElement && scoreElement.textContent.trim() === '✕';
+
+        if (isTransitioningFromInvalid) {
+          // Transitioning from invalid to valid - start fresh from 0
+          oldIQ = -1;
+          // Clear the X and reset to 0 before animation
+          scoreElement.textContent = '0';
+          // Also clear any stale data attributes
+          badge.removeAttribute('data-iq-score');
+        } else {
+          // Not transitioning from invalid - check for previous valid score
+          // First check data attribute (most reliable)
+          if (badge.hasAttribute('data-iq-score')) {
+            const dataScore = parseInt(badge.getAttribute('data-iq-score'), 10);
+            if (!isNaN(dataScore) && dataScore > 0) {
+              oldIQ = dataScore;
+            }
+          }
+
+          // Also check displayed score as secondary source
+          // Only use it if it's different from 0 and ✕ (which indicate loading/invalid states)
+          if (oldIQ < 0 && scoreElement && scoreElement.textContent) {
+            const displayedText = scoreElement.textContent.trim();
+            if (displayedText !== '0' && displayedText !== '✕' && displayedText.length > 0) {
+              const displayedScore = parseInt(displayedText, 10);
+              if (!isNaN(displayedScore) && displayedScore > 0) {
+                oldIQ = displayedScore;
+              }
+            }
+          }
+        }
+
+        // If oldIQ is still -1 or 0, treat as first calculation (animate from 0)
+        // Note: oldIQ of 0 specifically means "animate from 0", while -1 also means that
+        // We'll use -1 to indicate "no previous score" for color purposes
+        if (oldIQ <= 0) {
+          oldIQ = -1; // Will trigger animation from 0 with loading color
+        }
+
+        const iqColor = getIQColor(newIQ);
+
+        // Store confidence if available (before animation, but animation will handle display)
+        const confidence = result.confidence ? Math.round(result.confidence) : null;
+        if (confidence !== null) {
+          badge.setAttribute('data-confidence', confidence);
+        }
+
+        // Animate update (from oldIQ to newIQ)
+        // Animation will update the score element and set the data attribute when complete
+        animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor);
+
+        // Set data attribute AFTER starting animation (animation will ensure correct starting point)
+        badge.setAttribute('data-iq-score', newIQ);
+
+        // Update flip structure if confidence available
+        if (confidence !== null) {
+          updateBadgeWithFlipStructure(badge, newIQ, confidence);
+        }
+      } else {
+        // Invalid result - show loading state
+        const darkerRed = '#b71c1c';
+        const rgb = hexToRgb(darkerRed);
+        const desat = desaturateColor(rgb, 0.5);
+        const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+        badge.style.setProperty('background-color', loadingColor, 'important');
+        const scoreElement = badge.querySelector('.iq-score');
+        if (scoreElement) {
+          scoreElement.textContent = '0';
+        }
+      }
+    } catch (error) {
+      console.error('Error updating real-time IQ badge:', error);
+    }
+  }
+
+  /**
+   * Setup real-time monitoring for an input element
+   */
+  function setupRealtimeMonitoring(inputElement) {
+    if (inputElement.hasAttribute('data-iq-realtime-monitored')) {
+      return; // Already monitoring
+    }
+
+    inputElement.setAttribute('data-iq-realtime-monitored', 'true');
+
+    // Find container for badge - look for compose box wrapper that contains reply settings
+    // Try to find a parent container that would contain "Everyone can reply" text
+    let container = inputElement.closest('[data-testid="toolBar"]') ||
+                    inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement ||
+                    inputElement.closest('[data-testid="tweetButton"]')?.parentElement?.parentElement ||
+                    inputElement.closest('div[style*="flex"]')?.parentElement ||
+                    inputElement.parentElement?.parentElement ||
+                    inputElement.parentElement;
+
+    // Try to find a container that actually has reply visibility text nearby
+    let current = inputElement.parentElement;
+    let bestContainer = container;
+    for (let i = 0; i < 5 && current; i++) {
+      const hasReplyText = Array.from(current.querySelectorAll('*')).some(el => {
+        const text = el.textContent || '';
+        return text.includes('can reply') || (text.includes('Everyone') && text.includes('reply'));
+      });
+      if (hasReplyText) {
+        bestContainer = current;
+        break;
+      }
+      current = current.parentElement;
+    }
+
+    container = bestContainer || container;
+
+    if (!container) {
+      container = inputElement.parentElement;
+    }
+
+    // Create badge
+    const badge = createRealtimeBadge(inputElement, container);
+
+    // Store manager reference
+    const manager = {
+      inputElement,
+      badge,
+      container,
+      lastUpdateTime: 0,
+      updateTimeout: null,
+      lastIQ: -1
+    };
+
+    realtimeBadgeManagers.set(inputElement, manager);
+
+    // Debounced update function (300ms delay)
+    const debouncedUpdate = () => {
+      if (manager.updateTimeout) {
+        clearTimeout(manager.updateTimeout);
+      }
+
+      manager.updateTimeout = setTimeout(async () => {
+        await updateRealtimeBadge(inputElement, badge, container);
+      }, 300);
+    };
+
+    // Monitor input events
+    const eventTypes = ['input', 'keyup', 'paste', 'cut'];
+    eventTypes.forEach(eventType => {
+      inputElement.addEventListener(eventType, debouncedUpdate, { passive: true });
+    });
+
+    // Initial update after a short delay
+    setTimeout(() => {
+      updateRealtimeBadge(inputElement, badge, container);
+    }, 500);
+  }
+
+  /**
+   * Monitor for new compose boxes (posts/comments) and setup real-time IQ tracking
+   */
+  function setupRealtimeComposeObserver() {
+    const observer = new MutationObserver(() => {
+      if (!settings.showIQBadge) return;
+
+      const inputs = findTextInputs();
+      inputs.forEach(input => {
+        setupRealtimeMonitoring(input);
+      });
+    });
+
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also check existing inputs immediately
+    setTimeout(() => {
+      const inputs = findTextInputs();
+      inputs.forEach(input => {
+        setupRealtimeMonitoring(input);
+      });
+    }, 1000);
+
+    return observer;
+  }
+
+  /**
    * Initialize the extension
    */
   function init() {
@@ -2242,11 +2917,13 @@
         // Process immediately - badges should appear as soon as page loads
         processVisibleTweets();
         setupObserver();
+        setupRealtimeComposeObserver();
       });
     } else {
       // Page already loaded - process immediately
       processVisibleTweets();
       setupObserver();
+      setupRealtimeComposeObserver();
     }
 
     // Also process on scroll (for lazy-loaded content) - with minimal delay

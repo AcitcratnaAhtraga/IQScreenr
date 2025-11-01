@@ -37,6 +37,16 @@
   min-height: fit-content;
 }
 
+/* Real-time badges (for compose boxes) - prevent height growth */
+.iq-badge.iq-badge-realtime {
+  height: auto !important;
+  max-height: none !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  align-self: flex-start !important;
+  box-sizing: border-box !important;
+}
+
 .iq-badge.iq-badge-flip .iq-badge-inner {
   min-height: inherit;
 }
