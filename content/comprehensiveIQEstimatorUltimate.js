@@ -475,6 +475,149 @@ class ComprehensiveIQEstimatorUltimate {
   }
 
   /**
+   * Detect gibberish/nonsensical text using multiple heuristics
+   * @param {string} text - The text to check
+   * @param {Array<string>} words - Array of extracted words
+   * @returns {Object} - {isValid: boolean, error: string}
+   */
+  _detectGibberish(text, words) {
+    // Check 1: Excessive character repetition (like "aaaa bbbbb cccc")
+    const repeatRatio = words.filter(word => {
+      if (word.length < 3) return false;
+      const uniqueChars = new Set(word.toLowerCase()).size;
+      // Words with very few unique characters relative to length are suspicious
+      return uniqueChars <= 2;
+    }).length / words.length;
+
+    if (repeatRatio > 0.3) {
+      return {
+        isValid: false,
+        error: 'High character repetition detected'
+      };
+    }
+
+    // Check 2: Low dictionary match rate with AoA dictionary (if loaded)
+    // This is the most effective check for gibberish when the dictionary is available
+    if (this.aoaDictionaryLoaded && words.length >= 10) {
+      let matchedWords = 0;
+      words.forEach(word => {
+        const normalized = this._normalizeWord(word);
+        if (this.aoaDictionary[normalized] || this._fuzzyMatch(normalized)) {
+          matchedWords++;
+        }
+      });
+
+      const matchRate = (matchedWords / words.length) * 100;
+      // If less than 10% of words match common English words, it's likely gibberish
+      // Lowered threshold from 20% to be more aggressive
+      if (matchRate < 10) {
+        return {
+          isValid: false,
+          error: 'Low word recognition rate'
+        };
+      }
+    } else if (!this.aoaDictionaryLoaded && words.length >= 15) {
+      // Fallback: When AoA dictionary is not loaded, use a heuristic based on word structure
+      // Check for very unusual sequences that don't appear in real words
+      let verySuspiciousWords = 0;
+      words.forEach(word => {
+        const lowerWord = word.toLowerCase();
+        const len = lowerWord.length;
+
+        // Skip very short words and common suffixes/prefixes
+        if (len <= 2) return;
+
+        // Check for words with very unusual consonant clusters
+        // Most real English words don't have 3+ consonant clusters in the middle
+        if (/[bcdfghjklmnpqrstvwxz]{4,}[aeiou]/.test(lowerWord) ||
+            /[aeiou][bcdfghjklmnpqrstvwxz]{4,}/.test(lowerWord)) {
+          verySuspiciousWords++;
+        }
+
+        // Check for impossible sequences
+        if (/q[^u]/.test(lowerWord) || /[bcdfghjklmnpqrstvwxz]{5,}/.test(lowerWord)) {
+          verySuspiciousWords++;
+        }
+      });
+
+      const suspiciousRatio = verySuspiciousWords / words.length;
+      // If more than 15% of words have very suspicious patterns, likely gibberish
+      if (suspiciousRatio > 0.15) {
+        return {
+          isValid: false,
+          error: 'Low word recognition rate'
+        };
+      }
+    }
+
+    // Check 3: Consonant-to-vowel ratio (English typically has balanced ratio)
+    const allText = text.toLowerCase().replace(/[^a-z]/g, '');
+    if (allText.length > 20) {
+      const vowels = (allText.match(/[aeiou]/g) || []).length;
+      const consonants = allText.length - vowels;
+      const consonantRatio = consonants / allText.length;
+      // English typically has ~60% consonants, extreme ratios suggest gibberish
+      if (consonantRatio > 0.85 || consonantRatio < 0.35) {
+        return {
+          isValid: false,
+          error: 'Unnatural consonant-vowel pattern'
+        };
+      }
+    }
+
+    // Check 4: Average word length heuristic (English words typically 4-5 chars avg)
+    // Gibberish often has unusual word length patterns
+    const avgWordLength = words.reduce((sum, w) => sum + w.length, 0) / words.length;
+    if (words.length >= 15 && avgWordLength > 8 && !this.aoaDictionaryLoaded) {
+      // Very long average word length without dictionary validation is suspicious
+      return {
+        isValid: false,
+        error: 'Suspicious word length pattern'
+      };
+    }
+
+    // Check 5: Gibberish can still have normal-looking stats but lack real words
+    // Check for suspicious character sequences that don't appear in real English
+    if (words.length >= 20) {
+      let suspiciousWords = 0;
+      words.forEach(word => {
+        const lowerWord = word.toLowerCase();
+
+        // Check for unusual consonant clusters (4+ consonants together, which is very rare in English)
+        // Most English words have max 2-3 consecutive consonants
+        if (/[bcdfghjklmnpqrstvwxz]{4,}/i.test(word)) {
+          suspiciousWords++;
+          return; // Count word once even if multiple patterns match
+        }
+
+        // Check for unusual vowel clusters (5+ vowels together)
+        if (/[aeiou]{5,}/i.test(word)) {
+          suspiciousWords++;
+          return;
+        }
+
+        // Check for impossible letter combinations in English
+        const hasImpossibleCombo = /([bcdfghjklmnpqrstvwxz]{2,}q[^u])|(zx[^a])|(xq)|(jx)|(q[^u][bcdfghjklmnpqrstvwxz])/i.test(word);
+        if (hasImpossibleCombo) {
+          suspiciousWords++;
+        }
+      });
+
+      const suspiciousRatio = suspiciousWords / words.length;
+      // If more than 25% of words have suspicious patterns, likely gibberish
+      // Relaxed threshold to avoid false positives
+      if (suspiciousRatio > 0.25) {
+        return {
+          isValid: false,
+          error: 'Suspicious letter patterns detected'
+        };
+      }
+    }
+
+    return { isValid: true, error: null };
+  }
+
+  /**
    * Main estimation method (async version with real dependency parsing)
    */
   async estimate(text) {
@@ -496,6 +639,18 @@ class ComprehensiveIQEstimatorUltimate {
         confidence: Math.max(0, words.length * 10),
         is_valid: false,
         error: `Too few words (${words.length}, minimum 5 required)`,
+        word_count: words.length
+      };
+    }
+
+    // Detect gibberish/nonsensical text
+    const gibberishCheck = this._detectGibberish(textWithoutEmoji, words);
+    if (!gibberishCheck.isValid) {
+      return {
+        iq_estimate: null,
+        confidence: 0,
+        is_valid: false,
+        error: gibberishCheck.error,
         word_count: words.length
       };
     }
@@ -571,6 +726,18 @@ class ComprehensiveIQEstimatorUltimate {
         confidence: Math.max(0, words.length * 10),
         is_valid: false,
         error: `Too few words (${words.length}, minimum 5 required)`,
+        word_count: words.length
+      };
+    }
+
+    // Detect gibberish/nonsensical text
+    const gibberishCheck = this._detectGibberish(textWithoutEmoji, words);
+    if (!gibberishCheck.isValid) {
+      return {
+        iq_estimate: null,
+        confidence: 0,
+        is_valid: false,
+        error: gibberishCheck.error,
         word_count: words.length
       };
     }

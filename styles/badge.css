@@ -39,12 +39,18 @@
 
 /* Real-time badges (for compose boxes) - prevent height growth */
 .iq-badge.iq-badge-realtime {
-  height: auto !important;
-  max-height: none !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
   align-self: flex-start !important;
   box-sizing: border-box !important;
+  /* CRITICAL: Ensure consistent vertical alignment */
+  vertical-align: middle !important;
+  /* Prevent padding/margin issues */
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+  /* height, max-height, and min-height will be set inline via JS */
 }
 
 .iq-badge.iq-badge-flip .iq-badge-inner {
@@ -54,8 +60,16 @@
 .iq-badge-inner {
   position: relative;
   width: 100%;
+  height: 100%;
   transition: transform 0.6s;
   transform-style: preserve-3d;
+  /* CRITICAL: Ensure no padding/margin that causes vertical shift */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .iq-badge-front,
@@ -67,6 +81,9 @@
   align-items: center;
   justify-content: center;
   gap: 1px;
+  /* CRITICAL: Remove any padding/margin that could cause vertical shift */
+  margin: 0;
+  padding: 0;
 }
 
 /* Front maintains normal flow for height calculation */
@@ -74,6 +91,10 @@
   position: relative;
   transform: rotateY(0deg);
   backface-visibility: hidden;
+  /* Ensure no vertical offset */
+  top: 0;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 /* Back is absolutely positioned for flip - initially rotated 180deg so it's hidden */
@@ -84,10 +105,18 @@
   height: 100%;
   transform: rotateY(180deg);
   backface-visibility: hidden;
+  /* Ensure no vertical offset */
+  margin-top: 0;
+  padding-top: 0;
 }
 
 /* Only enable flip animation if badge has confidence data (indicated by flip structure) */
-.iq-badge:hover .iq-badge-inner {
+/* CRITICAL: Ensure flip starts at 0deg (front visible) */
+.iq-badge.iq-badge-flip .iq-badge-inner {
+  transform: rotateY(0deg) !important;
+}
+
+.iq-badge.iq-badge-flip:hover .iq-badge-inner {
   transform: rotateY(180deg);
 }
 
@@ -117,6 +146,9 @@
   display: block;
   line-height: 1;
   letter-spacing: 0.5px;
+  /* CRITICAL: Prevent vertical shift */
+  margin: 0;
+  padding: 0;
 }
 
 .iq-score {
@@ -125,6 +157,9 @@
   display: block;
   white-space: nowrap;
   line-height: 1;
+  /* CRITICAL: Prevent vertical shift */
+  margin: 0;
+  padding: 0;
 }
 
 /* Breakdown tooltip */

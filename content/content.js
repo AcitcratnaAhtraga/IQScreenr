@@ -1286,6 +1286,29 @@
       if (backScore) {
         backScore.textContent = confidence;
       }
+
+      // CRITICAL: Ensure flip inner stays at 0deg (front visible) after update
+      const inner = badge.querySelector('.iq-badge-inner');
+      if (inner) {
+        inner.style.transform = 'rotateY(0deg)';
+        inner.style.transformStyle = 'preserve-3d';
+        inner.style.margin = '0';
+        inner.style.padding = '0';
+      }
+
+      // Ensure front and back maintain consistent positioning
+      const front = badge.querySelector('.iq-badge-front');
+      const back = badge.querySelector('.iq-badge-back');
+      if (front) {
+        front.style.margin = '0';
+        front.style.padding = '0';
+        front.style.top = '0';
+      }
+      if (back) {
+        back.style.margin = '0';
+        back.style.padding = '0';
+        back.style.top = '0';
+      }
       return;
     }
 
@@ -1297,7 +1320,7 @@
 
     // Create flip structure
     badge.innerHTML = `
-      <div class="iq-badge-inner">
+      <div class="iq-badge-inner" style="transform: rotateY(0deg);">
         <div class="iq-badge-front">
           <span class="iq-label">${labelText}</span>
           <span class="iq-score">${scoreText}</span>
@@ -1311,6 +1334,29 @@
 
     // Add class to indicate this badge has flip functionality
     badge.classList.add('iq-badge-flip');
+
+    // CRITICAL: Ensure flip inner starts at 0deg (front visible)
+    const inner = badge.querySelector('.iq-badge-inner');
+    if (inner) {
+      inner.style.transform = 'rotateY(0deg)';
+      inner.style.transformStyle = 'preserve-3d';
+      inner.style.margin = '0';
+      inner.style.padding = '0';
+    }
+
+    // Ensure front and back maintain consistent positioning
+    const front = badge.querySelector('.iq-badge-front');
+    const back = badge.querySelector('.iq-badge-back');
+    if (front) {
+      front.style.margin = '0';
+      front.style.padding = '0';
+      front.style.top = '0';
+    }
+    if (back) {
+      back.style.margin = '0';
+      back.style.padding = '0';
+      back.style.top = '0';
+    }
   }
 
   /**
@@ -2384,8 +2430,29 @@
       }
 
       // CRITICAL: Reapply height constraints to prevent growth
-      badge.style.setProperty('height', 'auto', 'important');
-      badge.style.setProperty('max-height', 'none', 'important');
+      // Use cached natural height if available, otherwise preserve existing height
+      const cachedNaturalHeight = badge.getAttribute('data-natural-height');
+      if (cachedNaturalHeight) {
+        const heightValue = `${cachedNaturalHeight}px`;
+        badge.style.setProperty('height', heightValue, 'important');
+        badge.style.setProperty('max-height', heightValue, 'important');
+        badge.style.setProperty('min-height', heightValue, 'important');
+        debugLog('[Real-time Badge] Found existing badge - using cached natural height:', cachedNaturalHeight);
+      } else {
+        // Fallback: preserve existing height if it's a valid pixel value
+        const existingHeightValue = badge.style.height;
+        if (existingHeightValue && existingHeightValue !== 'auto' && existingHeightValue.endsWith('px')) {
+          const heightNum = parseFloat(existingHeightValue);
+          if (!isNaN(heightNum) && heightNum > 0) {
+            // Preserve the existing height by setting all three properties
+            badge.style.setProperty('height', existingHeightValue, 'important');
+            badge.style.setProperty('max-height', existingHeightValue, 'important');
+            badge.style.setProperty('min-height', existingHeightValue, 'important');
+            // Also cache it
+            badge.setAttribute('data-natural-height', heightNum.toString());
+          }
+        }
+      }
       badge.style.setProperty('flex-shrink', '0', 'important');
       badge.style.setProperty('flex-grow', '0', 'important');
       badge.style.setProperty('align-self', 'flex-start', 'important');
@@ -2419,6 +2486,47 @@
         <span class="iq-label">IQ</span>
         <span class="iq-score">0</span>
       `;
+
+      // CRITICAL: Measure and cache natural height immediately after creation
+      // This prevents the shrinking feedback loop
+      setTimeout(() => {
+        const scoreElement = badge.querySelector('.iq-score');
+        const labelElement = badge.querySelector('.iq-label');
+        if (scoreElement && labelElement && !badge.getAttribute('data-natural-height')) {
+          // Clone without any constraints to get true natural size
+          // Keep classes and CSS styling but remove inline height constraints
+          const clone = badge.cloneNode(true);
+          // Remove only height-related inline styles, keep other styling
+          clone.style.height = '';
+          clone.style.maxHeight = '';
+          clone.style.minHeight = '';
+          clone.style.position = 'absolute';
+          clone.style.visibility = 'hidden';
+          clone.style.top = '-9999px';
+          clone.style.left = '-9999px';
+          // Ensure box-sizing includes padding
+          clone.style.boxSizing = 'border-box';
+          document.body.appendChild(clone);
+
+          // Force layout
+          clone.offsetHeight;
+
+          // Use offsetHeight which includes padding, or getBoundingClientRect
+          const naturalHeight = Math.max(
+            clone.getBoundingClientRect().height,
+            clone.offsetHeight
+          );
+          document.body.removeChild(clone);
+
+          if (naturalHeight > 0) {
+            badge.setAttribute('data-natural-height', naturalHeight.toString());
+            badge.style.setProperty('height', `${naturalHeight}px`, 'important');
+            badge.style.setProperty('max-height', `${naturalHeight}px`, 'important');
+            badge.style.setProperty('min-height', `${naturalHeight}px`, 'important');
+            debugLog('[Real-time Badge] Initial natural height measured and cached:', naturalHeight);
+          }
+        }
+      }, 100); // Small delay to ensure badge is rendered
 
       // Find "Everyone can reply" element or similar reply visibility text
       // Look for elements containing "Everyone", "can reply", or similar text
@@ -2489,14 +2597,77 @@
         }
       }
 
-      // If we found the reply visibility element, insert badge before it
-      if (replyVisibilityElement && replyVisibilityElement.parentElement) {
+      // PRIORITY 1: Look for toolbar with comment buttons (image, GIF, poll, emoji, location icons)
+      // This is the row of buttons at the bottom of comment boxes
+      const toolbarSelectors = [
+        '[data-testid="toolBar"]',
+        'div[role="toolbar"]',
+        'div[data-testid*="toolbar"]',
+        // Look for containers with multiple button icons (image, GIF, etc.)
+        'div[role="group"]'
+      ];
+
+      let toolbarElement = null;
+      let firstButtonInToolbar = null;
+
+      for (const selector of toolbarSelectors) {
+        toolbarElement = container.querySelector(selector);
+        if (toolbarElement) {
+          // Check if this toolbar has buttons (image, GIF icons, etc.)
+          // Look for buttons with aria-label containing image, gif, poll, emoji, location
+          const buttons = toolbarElement.querySelectorAll('button, div[role="button"]');
+          if (buttons.length > 0) {
+            // Check if buttons have relevant labels/icons
+            let hasRelevantButtons = false;
+            for (const btn of buttons) {
+              const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+              const testId = (btn.getAttribute('data-testid') || '').toLowerCase();
+              if (label.includes('image') || label.includes('photo') ||
+                  label.includes('gif') || label.includes('poll') ||
+                  label.includes('emoji') || label.includes('location') ||
+                  testId.includes('image') || testId.includes('gif') ||
+                  testId.includes('poll') || testId.includes('emoji')) {
+                hasRelevantButtons = true;
+                if (!firstButtonInToolbar) {
+                  firstButtonInToolbar = btn;
+                }
+                break;
+              }
+            }
+
+            // If we found relevant buttons, use this toolbar
+            if (hasRelevantButtons && firstButtonInToolbar) {
+              break;
+            }
+          }
+
+          // If toolbar has buttons but we didn't check labels, use first button anyway
+          if (buttons.length > 0 && !firstButtonInToolbar) {
+            firstButtonInToolbar = buttons[0];
+          }
+        }
+      }
+
+      // If we found the toolbar with buttons, place badge before the first button
+      if (toolbarElement && firstButtonInToolbar && firstButtonInToolbar.parentElement) {
+        firstButtonInToolbar.parentElement.insertBefore(badge, firstButtonInToolbar);
+        debugLog('[Real-time Badge] Placed badge before toolbar buttons');
+      } else if (replyVisibilityElement && replyVisibilityElement.parentElement) {
+        // PRIORITY 2: Insert before reply visibility element
         replyVisibilityElement.parentElement.insertBefore(badge, replyVisibilityElement);
+        debugLog('[Real-time Badge] Placed badge before reply visibility');
+      } else if (toolbarElement) {
+        // PRIORITY 3: Insert at start of toolbar
+        const firstChild = toolbarElement.firstElementChild;
+        if (firstChild) {
+          toolbarElement.insertBefore(badge, firstChild);
+        } else {
+          toolbarElement.appendChild(badge);
+        }
+        debugLog('[Real-time Badge] Placed badge in toolbar');
       } else {
         // Fallback: look for common compose box footer structure
-        // Twitter/X often has a footer with reply settings and character count
         const footerSelectors = [
-          '[data-testid="toolBar"]',
           'div[role="group"]',
           '.css-1dbjc4n[style*="flex"]'
         ];
@@ -2505,7 +2676,6 @@
         for (const selector of footerSelectors) {
           footerElement = container.querySelector(selector);
           if (footerElement && footerElement !== badge.parentElement) {
-            // Try to find a good spot in the footer (before character count or buttons)
             const firstChild = footerElement.firstElementChild;
             if (firstChild) {
               footerElement.insertBefore(badge, firstChild);
@@ -2666,12 +2836,136 @@
    * Update real-time badge with new IQ score
    */
   async function updateRealtimeBadge(inputElement, badge, container) {
+    // DEBUG: Log badge dimensions before update
+    const beforeRect = badge.getBoundingClientRect();
+    const beforeHeight = badge.style.height || getComputedStyle(badge).height;
+    debugLog('[Real-time Badge] Before update:', {
+      height: beforeHeight,
+      computedHeight: beforeRect.height,
+      clientHeight: badge.clientHeight,
+      offsetHeight: badge.offsetHeight,
+      parent: badge.parentElement?.tagName,
+      parentDisplay: badge.parentElement ? getComputedStyle(badge.parentElement).display : 'N/A'
+    });
+
     // CRITICAL: Always reapply height constraints to prevent badge from growing
-    badge.style.setProperty('height', 'auto', 'important');
-    badge.style.setProperty('max-height', 'none', 'important');
+    // Don't set to 'auto' - keep the existing fixed height if it exists
+    const existingHeight = badge.style.height;
+    if (!existingHeight || existingHeight === 'auto') {
+      badge.style.setProperty('height', 'auto', 'important');
+    }
+    // max-height will be set after natural height measurement
     badge.style.setProperty('flex-shrink', '0', 'important');
     badge.style.setProperty('flex-grow', '0', 'important');
     badge.style.setProperty('align-self', 'flex-start', 'important');
+    badge.style.setProperty('line-height', '1', 'important');
+    badge.style.setProperty('overflow', 'visible', 'important');
+
+    // Force specific height calculation - use natural content height
+    // IMPORTANT: Only measure if we don't have a cached natural height
+    // This prevents the shrinking feedback loop
+    const scoreElement = badge.querySelector('.iq-score');
+    const labelElement = badge.querySelector('.iq-label');
+
+    // Check if badge has a cached natural height (set during creation)
+    let naturalHeight = badge.getAttribute('data-natural-height');
+    if (naturalHeight) {
+      naturalHeight = parseFloat(naturalHeight);
+    } else {
+      // Only measure if we don't have a cached value
+      if (scoreElement && labelElement) {
+        // Measure natural height by cloning badge in isolation (removes flex container influence)
+        // IMPORTANT: Reset all constraints on clone to get true natural size
+        const clone = badge.cloneNode(true);
+        clone.style.position = 'absolute';
+        clone.style.visibility = 'hidden';
+        clone.style.height = '';
+        clone.style.maxHeight = '';
+        clone.style.minHeight = '';
+        clone.style.width = 'auto';
+        clone.style.top = '-9999px';
+        clone.style.left = '-9999px';
+        clone.style.flexGrow = '';
+        clone.style.flexShrink = '';
+        clone.style.alignSelf = '';
+        // Remove only height constraints, keep other styling for accurate measurement
+        clone.style.height = '';
+        clone.style.maxHeight = '';
+        clone.style.minHeight = '';
+        clone.style.position = 'absolute';
+        clone.style.visibility = 'hidden';
+        clone.style.top = '-9999px';
+        clone.style.left = '-9999px';
+        // Ensure box-sizing includes padding
+        clone.style.boxSizing = 'border-box';
+
+        document.body.appendChild(clone);
+
+        // Force layout recalculation
+        clone.offsetHeight;
+
+        // Use offsetHeight which includes padding and borders
+        naturalHeight = Math.max(
+          clone.getBoundingClientRect().height,
+          clone.offsetHeight
+        );
+        document.body.removeChild(clone);
+
+        // Cache the natural height on the badge
+        if (naturalHeight > 0) {
+          badge.setAttribute('data-natural-height', naturalHeight.toString());
+        }
+      }
+    }
+
+    // Apply the height (use cached value if available)
+    if (naturalHeight && naturalHeight > 0) {
+      // CRITICAL: Set both height AND max-height to prevent parent flex from stretching
+      badge.style.setProperty('height', `${naturalHeight}px`, 'important');
+      badge.style.setProperty('max-height', `${naturalHeight}px`, 'important');
+      badge.style.setProperty('min-height', `${naturalHeight}px`, 'important');
+      debugLog('[Real-time Badge] Set fixed height/max-height/min-height:', naturalHeight, '(cached:', badge.hasAttribute('data-natural-height'), ')');
+    } else {
+      // Fallback: use a reasonable default based on content (shouldn't happen after first measurement)
+      const estimatedHeight = 24; // Approximate height for label + score
+      badge.style.setProperty('height', `${estimatedHeight}px`, 'important');
+      badge.style.setProperty('max-height', `${estimatedHeight}px`, 'important');
+      badge.style.setProperty('min-height', `${estimatedHeight}px`, 'important');
+      badge.setAttribute('data-natural-height', estimatedHeight.toString());
+      debugLog('[Real-time Badge] Set estimated fixed height:', estimatedHeight);
+    }
+
+    // DEBUG: Log badge dimensions after style application
+    const afterRect = badge.getBoundingClientRect();
+    const computedStyle = getComputedStyle(badge);
+    debugLog('[Real-time Badge] After style application:', {
+      inlineHeight: badge.style.height,
+      inlineMaxHeight: badge.style.maxHeight,
+      inlineMinHeight: badge.style.minHeight,
+      computedHeight: computedStyle.height,
+      computedMaxHeight: computedStyle.maxHeight,
+      computedMinHeight: computedStyle.minHeight,
+      actualHeight: afterRect.height,
+      clientHeight: badge.clientHeight,
+      offsetHeight: badge.offsetHeight,
+      heightChanged: afterRect.height !== beforeRect.height,
+      heightMatchesInline: afterRect.height === parseFloat(badge.style.height || '0')
+    });
+
+    // If height still doesn't match, force it one more time with requestAnimationFrame
+    if (badge.style.height && badge.style.height !== 'auto') {
+      const expectedHeight = parseFloat(badge.style.height);
+      if (Math.abs(afterRect.height - expectedHeight) > 1) {
+        debugLog('[Real-time Badge] Height mismatch detected - forcing fix on next frame');
+        requestAnimationFrame(() => {
+          badge.style.setProperty('height', badge.style.height, 'important');
+          badge.style.setProperty('max-height', badge.style.maxHeight || badge.style.height, 'important');
+          badge.style.setProperty('min-height', badge.style.minHeight || badge.style.height, 'important');
+          const finalHeight = badge.getBoundingClientRect().height;
+          debugLog('[Real-time Badge] After forced fix - height:', finalHeight);
+        });
+      }
+    }
 
     const text = getInputText(inputElement).trim();
 
@@ -2695,10 +2989,33 @@
     if (!validation.isValid) {
       // Show invalid state (gray)
       badge.style.setProperty('background-color', '#9e9e9e', 'important');
-      const scoreElement = badge.querySelector('.iq-score');
+
+      // Find score element - could be in flip structure or direct
+      let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
+                         badge.querySelector('.iq-score');
       if (scoreElement) {
         scoreElement.textContent = '✕';
       }
+
+      // CRITICAL: Ensure consistent padding/margin when showing invalid state
+      badge.style.setProperty('padding-top', '3px', 'important');
+      badge.style.setProperty('padding-bottom', '3px', 'important');
+      badge.style.setProperty('margin-top', '0', 'important');
+      badge.style.setProperty('margin-bottom', '0', 'important');
+
+      // Reset flip structure positioning if exists
+      const inner = badge.querySelector('.iq-badge-inner');
+      if (inner) {
+        inner.style.margin = '0';
+        inner.style.padding = '0';
+      }
+      const front = badge.querySelector('.iq-badge-front');
+      if (front) {
+        front.style.margin = '0';
+        front.style.padding = '0';
+        front.style.top = '0';
+      }
+
       badge.removeAttribute('data-iq-score');
       // Cancel any ongoing animation
       if (badge._animationFrameId) {
@@ -2781,6 +3098,31 @@
         // Update flip structure if confidence available
         if (confidence !== null) {
           updateBadgeWithFlipStructure(badge, newIQ, confidence);
+
+          // CRITICAL: Ensure flip inner is reset to show front (IQ), not back (confidence)
+          const inner = badge.querySelector('.iq-badge-inner');
+          if (inner) {
+            inner.style.transform = 'rotateY(0deg)';
+            inner.style.transformStyle = 'preserve-3d';
+            // Ensure no padding/margin that causes vertical shift
+            inner.style.margin = '0';
+            inner.style.padding = '0';
+            debugLog('[Real-time Badge] Reset flip to show front (IQ)');
+          }
+
+          // Ensure front and back have consistent styling
+          const front = badge.querySelector('.iq-badge-front');
+          const back = badge.querySelector('.iq-badge-back');
+          if (front) {
+            front.style.margin = '0';
+            front.style.padding = '0';
+            front.style.top = '0';
+          }
+          if (back) {
+            back.style.margin = '0';
+            back.style.padding = '0';
+            back.style.top = '0';
+          }
         }
       } else {
         // Invalid result - show loading state
@@ -2842,6 +3184,83 @@
     // Create badge
     const badge = createRealtimeBadge(inputElement, container);
 
+    // DEBUG: Monitor badge height changes
+    let initialHeight = badge.getBoundingClientRect().height;
+    let lastLoggedHeight = initialHeight;
+    debugLog('[Real-time Badge] Initial badge height:', initialHeight);
+
+    const heightObserver = new MutationObserver(() => {
+      const currentHeight = badge.getBoundingClientRect().height;
+      if (Math.abs(currentHeight - lastLoggedHeight) > 1) { // More than 1px change
+        const oldHeight = lastLoggedHeight;
+        debugLog('[Real-time Badge] Height changed:', {
+          from: oldHeight,
+          to: currentHeight,
+          delta: currentHeight - oldHeight,
+          computedStyles: {
+            height: getComputedStyle(badge).height,
+            maxHeight: getComputedStyle(badge).maxHeight,
+            flexGrow: getComputedStyle(badge).flexGrow,
+            flexShrink: getComputedStyle(badge).flexShrink,
+            alignSelf: getComputedStyle(badge).alignSelf,
+            parentHeight: badge.parentElement ? getComputedStyle(badge.parentElement).height : 'N/A',
+            parentDisplay: badge.parentElement ? getComputedStyle(badge.parentElement).display : 'N/A',
+            parentAlignItems: badge.parentElement ? getComputedStyle(badge.parentElement).alignItems : 'N/A'
+          }
+        });
+
+        // Auto-fix if height grew unexpectedly (more than 3px from initial)
+        // OR if height shrunk significantly (more than 2px below initial - indicates measurement error)
+        if (currentHeight > initialHeight + 3 || currentHeight < initialHeight - 2) {
+          debugLog('[Real-time Badge] Height changed significantly - attempting auto-fix:', {
+            current: currentHeight,
+            initial: initialHeight,
+            direction: currentHeight > initialHeight ? 'increased' : 'decreased'
+          });
+
+          // Use cached natural height if available, otherwise use initial height
+          const cachedNaturalHeight = badge.getAttribute('data-natural-height');
+          let targetHeight;
+
+          if (cachedNaturalHeight) {
+            targetHeight = parseFloat(cachedNaturalHeight);
+            debugLog('[Real-time Badge] Using cached natural height:', targetHeight);
+          } else {
+            targetHeight = initialHeight;
+            debugLog('[Real-time Badge] Using initial height as fallback:', targetHeight);
+          }
+
+          // Only fix if current height is significantly different from target
+          if (Math.abs(currentHeight - targetHeight) > 2) {
+            // CRITICAL: Set height, max-height, and min-height to prevent stretching/shrinking
+            badge.style.setProperty('height', `${targetHeight}px`, 'important');
+            badge.style.setProperty('max-height', `${targetHeight}px`, 'important');
+            badge.style.setProperty('min-height', `${targetHeight}px`, 'important');
+            debugLog('[Real-time Badge] Fixed height from', currentHeight, 'to', targetHeight);
+          }
+        }
+
+        lastLoggedHeight = badge.getBoundingClientRect().height; // Update after potential fix
+      }
+    });
+
+    // Observe badge and parent for changes
+    heightObserver.observe(badge, {
+      attributes: true,
+      attributeFilter: ['style', 'class'],
+      childList: false,
+      subtree: false
+    });
+
+    if (badge.parentElement) {
+      heightObserver.observe(badge.parentElement, {
+        attributes: true,
+        attributeFilter: ['style', 'class'],
+        childList: true,
+        subtree: false
+      });
+    }
+
     // Store manager reference
     const manager = {
       inputElement,
@@ -2849,7 +3268,8 @@
       container,
       lastUpdateTime: 0,
       updateTimeout: null,
-      lastIQ: -1
+      lastIQ: -1,
+      heightObserver
     };
 
     realtimeBadgeManagers.set(inputElement, manager);
