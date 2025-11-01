@@ -22,7 +22,12 @@
     maxIQ: 145
   };
 
-  // Load settings from storage
+  // IQ cache for storing calculated scores to avoid recalculation
+  const iqCache = new Map();
+  const CACHE_KEY_PREFIX = 'iq_cache_';
+  const MAX_CACHE_SIZE = 1000; // Limit to prevent excessive storage usage
+
+  // Load settings and cache from storage
   chrome.storage.sync.get(['showIQBadge', 'minIQ', 'maxIQ'], (result) => {
     Object.assign(settings, result);
     if (result.showIQBadge !== undefined) {
@@ -34,6 +39,22 @@
     if (result.maxIQ !== undefined) {
       settings.maxIQ = result.maxIQ;
     }
+  });
+
+  // Load IQ cache from local storage
+  chrome.storage.local.get(null, (items) => {
+    let loadedCount = 0;
+    for (const [key, value] of Object.entries(items)) {
+      if (key.startsWith(CACHE_KEY_PREFIX)) {
+        const tweetHash = key.replace(CACHE_KEY_PREFIX, '');
+        iqCache.set(tweetHash, value);
+        loadedCount++;
+      }
+    }
+    // Note: debugLog is defined later, so we'll just silently load the cache
+    // if (loadedCount > 0) {
+    //   debugLog(`Loaded ${loadedCount} cached IQ scores from storage`);
+    // }
   });
 
   // Listen for settings changes
@@ -108,6 +129,63 @@
 
     // Tweet is truncated if it has "show more" button and NO "show less" button
     return !!showMoreButton && !showLessButton;
+  }
+
+  /**
+   * Generate a hash for tweet text to use as cache key
+   * Uses a robust hash function to minimize collisions
+   */
+  function hashTweetText(text) {
+    if (!text) return '';
+
+    // Normalize the text for hashing (remove extra whitespace, lowercase)
+    const normalized = text.trim().toLowerCase().replace(/\s+/g, ' ');
+
+    // Create a numeric hash using the entire normalized text
+    // This provides good collision resistance while being efficient
+    let numHash = 0;
+    for (let i = 0; i < normalized.length; i++) {
+      const char = normalized.charCodeAt(i);
+      numHash = ((numHash << 5) - numHash) + char;
+      numHash = numHash & numHash; // Convert to 32bit integer
+    }
+
+    // Combine with length to add more uniqueness
+    return `${numHash}_${normalized.length}`;
+  }
+
+  /**
+   * Get cached IQ result for tweet text
+   */
+  function getCachedIQ(tweetText) {
+    const hash = hashTweetText(tweetText);
+    return iqCache.get(hash);
+  }
+
+  /**
+   * Store IQ result in cache for tweet text
+   */
+  function cacheIQ(tweetText, result) {
+    const hash = hashTweetText(tweetText);
+
+    // Check cache size and prune old entries if necessary
+    if (iqCache.size >= MAX_CACHE_SIZE) {
+      // Remove oldest 20% of entries (simple FIFO)
+      const keysToRemove = Array.from(iqCache.keys()).slice(0, Math.floor(MAX_CACHE_SIZE * 0.2));
+      keysToRemove.forEach(key => {
+        iqCache.delete(key);
+        chrome.storage.local.remove(CACHE_KEY_PREFIX + key, () => {});
+      });
+      debugLog(`Pruned cache, removed ${keysToRemove.length} old entries`);
+    }
+
+    // Store in memory cache
+    iqCache.set(hash, result);
+
+    // Store in persistent storage
+    const cacheData = {};
+    cacheData[CACHE_KEY_PREFIX + hash] = result;
+    chrome.storage.local.set(cacheData, () => {});
   }
 
   /**
@@ -1336,10 +1414,12 @@
     badge.classList.add('iq-badge-flip');
 
     // CRITICAL: Ensure flip inner starts at 0deg (front visible)
+    // Let CSS handle transform via .iq-badge-flip .iq-badge-inner rule
     const inner = badge.querySelector('.iq-badge-inner');
     if (inner) {
-      inner.style.transform = 'rotateY(0deg)';
-      inner.style.transformStyle = 'preserve-3d';
+      // Remove inline transform to allow CSS hover to work properly
+      inner.style.removeProperty('transform');
+      inner.style.setProperty('transform-style', 'preserve-3d', 'important');
       inner.style.margin = '0';
       inner.style.padding = '0';
     }
@@ -1984,8 +2064,22 @@
         }
       }
 
-      // Calculate IQ using the comprehensive client-side estimator (async with real dependency parsing)
-      const result = await iqEstimator.estimate(tweetText);
+      // Check cache first to avoid recalculation
+      let result = getCachedIQ(tweetText);
+      let fromCache = false;
+
+      if (!result) {
+        // Calculate IQ using the comprehensive client-side estimator (async with real dependency parsing)
+        result = await iqEstimator.estimate(tweetText);
+
+        // Cache the result if valid
+        if (result.is_valid && result.iq_estimate !== null) {
+          cacheIQ(tweetText, result);
+        }
+      } else {
+        fromCache = true;
+        debugLog('Using cached IQ result for tweet');
+      }
 
       // Only show badge if estimation was successful
       if (result.is_valid && result.iq_estimate !== null && settings.showIQBadge) {
@@ -2311,35 +2405,115 @@
 
   /**
    * Find text input elements for new posts or comments
+   * Prioritizes active/focused compose boxes, especially those in modals
    */
   function findTextInputs() {
     const inputs = [];
+    const prioritizedInputs = [];
+
+    // Helper to check if element is in a modal/overlay (higher priority)
+    function isInModal(element) {
+      let parent = element.parentElement;
+      let depth = 0;
+      while (parent && depth < 10) {
+        const style = window.getComputedStyle(parent);
+        const zIndex = parseInt(style.zIndex) || 0;
+        // Modals typically have high z-index
+        if (zIndex > 1000 ||
+            parent.getAttribute('role') === 'dialog' ||
+            parent.classList.contains('r-') && style.position === 'fixed') {
+          return true;
+        }
+        parent = parent.parentElement;
+        depth++;
+      }
+      return false;
+    }
+
+    // Helper to check if element is visible and not hidden
+    function isVisible(element) {
+      const style = window.getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return style.display !== 'none' &&
+             style.visibility !== 'hidden' &&
+             style.opacity !== '0' &&
+             rect.width > 0 &&
+             rect.height > 0;
+    }
 
     // Find textareas (used in some Twitter/X interfaces)
     const textareas = document.querySelectorAll('textarea[data-testid="tweetTextarea_0"], textarea[data-testid*="tweetTextarea"]');
     textareas.forEach(textarea => {
-      if (!textarea.hasAttribute('data-iq-realtime-monitored')) {
-        inputs.push(textarea);
+      if (!textarea.hasAttribute('data-iq-realtime-monitored') && isVisible(textarea)) {
+        // Check if it's focused or in a modal - prioritize these
+        if (document.activeElement === textarea ||
+            textarea === document.activeElement?.closest('form')?.querySelector('textarea') ||
+            isInModal(textarea)) {
+          prioritizedInputs.push(textarea);
+        } else {
+          inputs.push(textarea);
+        }
       }
     });
 
     // Find contenteditable divs (main Twitter/X compose box)
+    // Use broader selectors to catch all compose contexts
     const contentEditables = document.querySelectorAll(
       'div[data-testid="tweetTextarea_0"], ' +
+      'div[data-testid*="tweetTextarea"], ' +
       'div[role="textbox"][contenteditable="true"]'
     );
     contentEditables.forEach(div => {
       // Make sure it's actually a compose box, not just any contenteditable
-      const isComposeBox = div.closest('[data-testid="toolBar"]') ||
-                          div.closest('[data-testid="tweetButton"]') ||
-                          div.getAttribute('data-testid')?.includes('tweetTextarea') ||
-                          div.getAttribute('data-testid')?.includes('tweet');
-      if (isComposeBox && !div.hasAttribute('data-iq-realtime-monitored')) {
-        inputs.push(div);
+      // Check for multiple indicators - compose boxes typically have:
+      // 1. Toolbar nearby (with tweet/post button, media buttons, etc.)
+      // 2. Tweet button nearby
+      // 3. Specific data-testid attributes
+      // 4. Location in a compose/post page (URL check)
+      // 5. Contains media/gif/poll buttons nearby
+      const hasToolbar = div.closest('[data-testid="toolBar"]');
+      const hasTweetButton = div.closest('[data-testid="tweetButton"]') ||
+                            div.closest('button[data-testid*="tweetButton"]') ||
+                            document.querySelector('button[data-testid*="tweetButton"]')?.closest('div')?.contains(div);
+      const hasTestId = div.getAttribute('data-testid')?.includes('tweetTextarea') ||
+                       div.getAttribute('data-testid')?.includes('tweet');
+      const hasComposeIndicators = div.closest('[aria-label*="Tweet"], [aria-label*="Post"]') ||
+                                  div.closest('div[data-testid*="toolBar"]') ||
+                                  div.parentElement?.querySelector('button[data-testid*="tweetButton"], button[aria-label*="Tweet"], button[aria-label*="Post"]');
+
+      // Check if we're on a compose/post page
+      const isComposePage = window.location.pathname.includes('/compose/') ||
+                           window.location.pathname === '/compose/post' ||
+                           window.location.href.includes('/compose/post');
+
+      // If on compose page, any visible contenteditable textbox is likely a compose box
+      const isComposeBox = hasToolbar ||
+                          hasTweetButton ||
+                          hasTestId ||
+                          hasComposeIndicators ||
+                          (isComposePage && isVisible(div));
+
+      if (isComposeBox && !div.hasAttribute('data-iq-realtime-monitored') && isVisible(div)) {
+        // Check if it's focused, contains focused element, or in a modal - prioritize these
+        const isFocused = document.activeElement === div ||
+                         div.contains(document.activeElement);
+        const inModal = isInModal(div);
+
+        // Also check if this input is in a visible modal/dialog that's currently active
+        // and hide badges in other non-modal contexts when a modal is active
+        const parentModal = div.closest('[role="dialog"], [data-testid*="modal"]');
+        const hasActiveModal = parentModal && isVisible(parentModal);
+
+        if (isFocused || inModal || hasActiveModal) {
+          prioritizedInputs.push(div);
+        } else {
+          inputs.push(div);
+        }
       }
     });
 
-    return inputs;
+    // Return prioritized inputs first, then others
+    return [...prioritizedInputs, ...inputs];
   }
 
   /**
@@ -2437,7 +2611,6 @@
         badge.style.setProperty('height', heightValue, 'important');
         badge.style.setProperty('max-height', heightValue, 'important');
         badge.style.setProperty('min-height', heightValue, 'important');
-        debugLog('[Real-time Badge] Found existing badge - using cached natural height:', cachedNaturalHeight);
       } else {
         // Fallback: preserve existing height if it's a valid pixel value
         const existingHeightValue = badge.style.height;
@@ -2523,7 +2696,6 @@
             badge.style.setProperty('height', `${naturalHeight}px`, 'important');
             badge.style.setProperty('max-height', `${naturalHeight}px`, 'important');
             badge.style.setProperty('min-height', `${naturalHeight}px`, 'important');
-            debugLog('[Real-time Badge] Initial natural height measured and cached:', naturalHeight);
           }
         }
       }, 100); // Small delay to ensure badge is rendered
@@ -2720,9 +2892,17 @@
     const desat = desaturateColor(rgb, 0.5);
     const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
 
-    // Find score element
-    const scoreElement = badge.querySelector('.iq-score');
-    if (!scoreElement) return;
+    // Find score element - could be in flip structure (front) or direct
+    let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
+                       badge.querySelector('.iq-score');
+    if (!scoreElement) {
+      debugLog('[Real-time Badge Animation] ERROR: Could not find score element!', {
+        hasFlip: badge.classList.contains('iq-badge-flip'),
+        hasInner: !!badge.querySelector('.iq-badge-inner'),
+        badgeHTML: badge.innerHTML.substring(0, 200)
+      });
+      return;
+    }
 
     // CRITICAL: Always reset score element to starting value BEFORE animation
     // Determine starting IQ - if oldIQ is -1, we start from 0 (first calculation)
@@ -2799,9 +2979,26 @@
       badge.style.setProperty('background-color', currentColor, 'important');
 
       // Update number display if it changed
+      // CRITICAL: Re-find score element in case structure changed (flip added/removed)
+      let currentScoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
+                                 badge.querySelector('.iq-score');
+
       if (currentIQ !== lastDisplayedIQ) {
-        scoreElement.textContent = Math.max(0, Math.round(currentIQ));
-        lastDisplayedIQ = currentIQ;
+        if (currentScoreElement) {
+          currentScoreElement.textContent = Math.max(0, Math.round(currentIQ));
+          lastDisplayedIQ = currentIQ;
+          // Update the reference in case element changed
+          scoreElement = currentScoreElement;
+        } else {
+          debugLog('[Real-time Badge Animation] WARNING: Score element lost during animation!');
+          // Try to find it again
+          scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
+                         badge.querySelector('.iq-score');
+          if (scoreElement) {
+            scoreElement.textContent = Math.max(0, Math.round(currentIQ));
+            lastDisplayedIQ = currentIQ;
+          }
+        }
       }
 
       // Continue or finish
@@ -2810,7 +3007,20 @@
         badge._animationFrameId = requestAnimationFrame(updateNumber);
       } else {
         // Animation complete - ensure final values are set
-        scoreElement.textContent = newIQ;
+        // CRITICAL: Re-find score element in case structure changed
+        const finalScoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
+                                  badge.querySelector('.iq-score');
+        if (finalScoreElement) {
+          finalScoreElement.textContent = newIQ;
+        } else {
+          debugLog('[Real-time Badge Animation] ERROR: Could not find score element for final update!');
+          // Fallback: try direct query again
+          const fallbackScore = badge.querySelector('.iq-score');
+          if (fallbackScore) {
+            fallbackScore.textContent = newIQ;
+          }
+        }
+
         badge.style.setProperty('background-color', iqColor, 'important');
         badge.removeAttribute('data-iq-animating');
         badge.setAttribute('data-iq-animated', 'true');
@@ -2836,18 +3046,6 @@
    * Update real-time badge with new IQ score
    */
   async function updateRealtimeBadge(inputElement, badge, container) {
-    // DEBUG: Log badge dimensions before update
-    const beforeRect = badge.getBoundingClientRect();
-    const beforeHeight = badge.style.height || getComputedStyle(badge).height;
-    debugLog('[Real-time Badge] Before update:', {
-      height: beforeHeight,
-      computedHeight: beforeRect.height,
-      clientHeight: badge.clientHeight,
-      offsetHeight: badge.offsetHeight,
-      parent: badge.parentElement?.tagName,
-      parentDisplay: badge.parentElement ? getComputedStyle(badge.parentElement).display : 'N/A'
-    });
-
     // CRITICAL: Always reapply height constraints to prevent badge from growing
     // Don't set to 'auto' - keep the existing fixed height if it exists
     const existingHeight = badge.style.height;
@@ -2924,7 +3122,6 @@
       badge.style.setProperty('height', `${naturalHeight}px`, 'important');
       badge.style.setProperty('max-height', `${naturalHeight}px`, 'important');
       badge.style.setProperty('min-height', `${naturalHeight}px`, 'important');
-      debugLog('[Real-time Badge] Set fixed height/max-height/min-height:', naturalHeight, '(cached:', badge.hasAttribute('data-natural-height'), ')');
     } else {
       // Fallback: use a reasonable default based on content (shouldn't happen after first measurement)
       const estimatedHeight = 24; // Approximate height for label + score
@@ -2932,37 +3129,17 @@
       badge.style.setProperty('max-height', `${estimatedHeight}px`, 'important');
       badge.style.setProperty('min-height', `${estimatedHeight}px`, 'important');
       badge.setAttribute('data-natural-height', estimatedHeight.toString());
-      debugLog('[Real-time Badge] Set estimated fixed height:', estimatedHeight);
     }
-
-    // DEBUG: Log badge dimensions after style application
-    const afterRect = badge.getBoundingClientRect();
-    const computedStyle = getComputedStyle(badge);
-    debugLog('[Real-time Badge] After style application:', {
-      inlineHeight: badge.style.height,
-      inlineMaxHeight: badge.style.maxHeight,
-      inlineMinHeight: badge.style.minHeight,
-      computedHeight: computedStyle.height,
-      computedMaxHeight: computedStyle.maxHeight,
-      computedMinHeight: computedStyle.minHeight,
-      actualHeight: afterRect.height,
-      clientHeight: badge.clientHeight,
-      offsetHeight: badge.offsetHeight,
-      heightChanged: afterRect.height !== beforeRect.height,
-      heightMatchesInline: afterRect.height === parseFloat(badge.style.height || '0')
-    });
 
     // If height still doesn't match, force it one more time with requestAnimationFrame
     if (badge.style.height && badge.style.height !== 'auto') {
+      const afterRect = badge.getBoundingClientRect();
       const expectedHeight = parseFloat(badge.style.height);
       if (Math.abs(afterRect.height - expectedHeight) > 1) {
-        debugLog('[Real-time Badge] Height mismatch detected - forcing fix on next frame');
         requestAnimationFrame(() => {
           badge.style.setProperty('height', badge.style.height, 'important');
           badge.style.setProperty('max-height', badge.style.maxHeight || badge.style.height, 'important');
           badge.style.setProperty('min-height', badge.style.minHeight || badge.style.height, 'important');
-          const finalHeight = badge.getBoundingClientRect().height;
-          debugLog('[Real-time Badge] After forced fix - height:', finalHeight);
         });
       }
     }
@@ -3036,7 +3213,9 @@
 
         // IMPORTANT: Read oldIQ BEFORE setting new data attribute
         // We want to determine if there was a previous valid score to animate from
-        const scoreElement = badge.querySelector('.iq-score');
+        // CRITICAL: Check both flip structure and direct structure
+        let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
+                           badge.querySelector('.iq-score');
         let oldIQ = -1;
 
         // CRITICAL: Check if badge currently shows "✕" (invalid state)
@@ -3088,26 +3267,23 @@
           badge.setAttribute('data-confidence', confidence);
         }
 
-        // Animate update (from oldIQ to newIQ)
-        // Animation will update the score element and set the data attribute when complete
-        animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor);
-
-        // Set data attribute AFTER starting animation (animation will ensure correct starting point)
+        // Set data attribute before animation
         badge.setAttribute('data-iq-score', newIQ);
 
-        // Update flip structure if confidence available
+        // Update flip structure BEFORE animation if confidence available
+        // This ensures the score element is in the right place when animation starts
         if (confidence !== null) {
           updateBadgeWithFlipStructure(badge, newIQ, confidence);
 
           // CRITICAL: Ensure flip inner is reset to show front (IQ), not back (confidence)
           const inner = badge.querySelector('.iq-badge-inner');
           if (inner) {
-            inner.style.transform = 'rotateY(0deg)';
-            inner.style.transformStyle = 'preserve-3d';
+            // Remove inline transform to allow CSS hover to work properly
+            inner.style.removeProperty('transform');
+            inner.style.setProperty('transform-style', 'preserve-3d', 'important');
             // Ensure no padding/margin that causes vertical shift
             inner.style.margin = '0';
             inner.style.padding = '0';
-            debugLog('[Real-time Badge] Reset flip to show front (IQ)');
           }
 
           // Ensure front and back have consistent styling
@@ -3124,6 +3300,10 @@
             back.style.top = '0';
           }
         }
+
+        // Animate update (from oldIQ to newIQ)
+        // Animation will update the score element - structure should already be set above
+        animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor);
       } else {
         // Invalid result - show loading state
         const darkerRed = '#b71c1c';
@@ -3145,20 +3325,135 @@
    * Setup real-time monitoring for an input element
    */
   function setupRealtimeMonitoring(inputElement) {
+    // If already monitoring, ensure badge is attached to this input (not a stale one)
     if (inputElement.hasAttribute('data-iq-realtime-monitored')) {
+      // Find existing badge and verify it's still in the correct container
+      const existingBadges = document.querySelectorAll('.iq-badge-realtime');
+      for (const badge of existingBadges) {
+        const badgeInput = badge.closest('[data-testid="toolBar"]')?._iqInputElement ||
+                          badge.closest('div[role="textbox"]')?.parentElement?.parentElement?._iqInputElement;
+        // If this badge is associated with a different input in the same container,
+        // we might need to reassign it
+        if (badgeInput && badgeInput !== inputElement) {
+          const container = inputElement.closest('[data-testid="toolBar"]') ||
+                           inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement;
+          if (container && badge.parentElement === container) {
+            // Badge is in the right container but attached to wrong input - reassign
+            container._iqInputElement = inputElement;
+            debugLog('[Real-time Badge] Reassigned badge to focused input');
+          }
+        }
+      }
       return; // Already monitoring
     }
 
     inputElement.setAttribute('data-iq-realtime-monitored', 'true');
 
+    // Add focus handler to ensure badge follows the focused input
+    inputElement.addEventListener('focus', () => {
+      // Check if this input is in a modal/dialog
+      const parentModal = inputElement.closest('[role="dialog"], [data-testid*="modal"], [data-testid*="Dialog"]');
+      const isInModal = !!parentModal;
+
+      // Find container for this input - prefer modal containers
+      let container = inputElement.closest('[data-testid="toolBar"]') ||
+                     inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement ||
+                     inputElement.closest('[data-testid="tweetButton"]')?.parentElement?.parentElement;
+
+      // If in a modal, try to find the modal's toolbar/container
+      if (isInModal && parentModal) {
+        const modalToolbar = parentModal.querySelector('[data-testid="toolBar"]');
+        if (modalToolbar) {
+          container = modalToolbar;
+        } else {
+          // Fallback: use a container within the modal
+          const modalContainer = parentModal.querySelector('div[role="group"], div[style*="flex"]');
+          if (modalContainer) {
+            container = modalContainer;
+          }
+        }
+      }
+
+      if (container) {
+        // First, hide badges in other containers (especially non-modal when modal is active)
+        const allBadges = document.querySelectorAll('.iq-badge-realtime');
+        allBadges.forEach(badge => {
+          const badgeContainer = badge.closest('[data-testid="toolBar"]') ||
+                               badge.closest('div[role="textbox"]')?.parentElement?.parentElement ||
+                               badge.closest('[data-testid="tweetButton"]')?.parentElement?.parentElement;
+          const badgeModal = badge.closest('[role="dialog"], [data-testid*="modal"], [data-testid*="Dialog"]');
+
+          // Hide badge if:
+          // 1. It's in a different container and that container's input is not focused
+          // 2. This input is in a modal but badge is NOT in a modal (hide inline badges when modal opens)
+          // 3. Badge is in a different modal
+          if (badgeContainer && badgeContainer !== container) {
+            const badgeInput = badgeContainer._iqInputElement;
+            const badgeInputFocused = badgeInput && (document.activeElement === badgeInput || badgeInput.contains(document.activeElement));
+
+            if (!badgeInputFocused) {
+              if (isInModal && !badgeModal) {
+                // Hide inline badges when modal compose is active
+                badge.style.setProperty('display', 'none', 'important');
+              } else if (badgeModal && badgeModal !== parentModal) {
+                // Hide badges from other modals
+                badge.style.setProperty('display', 'none', 'important');
+              } else if (!isInModal && badgeModal) {
+                // This shouldn't happen often, but hide modal badges when inline is focused
+                // Actually, don't hide - keep both visible unless conflicting
+              } else {
+                // Different non-modal containers - hide if not focused
+                badge.style.setProperty('display', 'none', 'important');
+              }
+            }
+          }
+        });
+
+        // Show and ensure badge is attached to this input
+        const existingBadge = container.querySelector('.iq-badge-realtime');
+        if (existingBadge) {
+          // Reassign badge to this input and make sure it's visible
+          container._iqInputElement = inputElement;
+          existingBadge.style.removeProperty('display'); // Show if it was hidden
+          // Update badge to reflect current text in this input
+          const badge = existingBadge;
+          updateRealtimeBadge(inputElement, badge, container);
+        } else {
+          // No badge in this container, create one
+          createRealtimeBadge(inputElement, container);
+        }
+      } else {
+        // No container found - try to create badge anyway
+        // This handles edge cases where container detection fails
+        const fallbackContainer = inputElement.parentElement?.parentElement || inputElement.parentElement;
+        if (fallbackContainer) {
+          createRealtimeBadge(inputElement, fallbackContainer);
+        }
+      }
+    }, { capture: true });
+
     // Find container for badge - look for compose box wrapper that contains reply settings
     // Try to find a parent container that would contain "Everyone can reply" text
-    let container = inputElement.closest('[data-testid="toolBar"]') ||
-                    inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement ||
-                    inputElement.closest('[data-testid="tweetButton"]')?.parentElement?.parentElement ||
-                    inputElement.closest('div[style*="flex"]')?.parentElement ||
-                    inputElement.parentElement?.parentElement ||
-                    inputElement.parentElement;
+    // First check if we're in a modal/dialog - prioritize modal containers
+    const parentModalForContainer = inputElement.closest('[role="dialog"], [data-testid*="modal"], [data-testid*="Dialog"]');
+    let container = null;
+
+    if (parentModalForContainer) {
+      // In a modal - look for toolbar in modal first
+      container = parentModalForContainer.querySelector('[data-testid="toolBar"]') ||
+                  parentModalForContainer.querySelector('div[role="group"]') ||
+                  inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement;
+    }
+
+    // Fallback to standard container detection
+    if (!container) {
+      container = inputElement.closest('[data-testid="toolBar"]') ||
+                  inputElement.closest('div[role="textbox"]')?.parentElement?.parentElement ||
+                  inputElement.closest('[data-testid="tweetButton"]')?.parentElement?.parentElement ||
+                  inputElement.closest('div[style*="flex"]')?.parentElement ||
+                  inputElement.parentElement?.parentElement ||
+                  inputElement.parentElement;
+    }
 
     // Try to find a container that actually has reply visibility text nearby
     let current = inputElement.parentElement;
@@ -3184,50 +3479,24 @@
     // Create badge
     const badge = createRealtimeBadge(inputElement, container);
 
-    // DEBUG: Monitor badge height changes
+    // Monitor badge height changes to prevent growth/shrinking
     let initialHeight = badge.getBoundingClientRect().height;
     let lastLoggedHeight = initialHeight;
-    debugLog('[Real-time Badge] Initial badge height:', initialHeight);
 
     const heightObserver = new MutationObserver(() => {
       const currentHeight = badge.getBoundingClientRect().height;
       if (Math.abs(currentHeight - lastLoggedHeight) > 1) { // More than 1px change
-        const oldHeight = lastLoggedHeight;
-        debugLog('[Real-time Badge] Height changed:', {
-          from: oldHeight,
-          to: currentHeight,
-          delta: currentHeight - oldHeight,
-          computedStyles: {
-            height: getComputedStyle(badge).height,
-            maxHeight: getComputedStyle(badge).maxHeight,
-            flexGrow: getComputedStyle(badge).flexGrow,
-            flexShrink: getComputedStyle(badge).flexShrink,
-            alignSelf: getComputedStyle(badge).alignSelf,
-            parentHeight: badge.parentElement ? getComputedStyle(badge.parentElement).height : 'N/A',
-            parentDisplay: badge.parentElement ? getComputedStyle(badge.parentElement).display : 'N/A',
-            parentAlignItems: badge.parentElement ? getComputedStyle(badge.parentElement).alignItems : 'N/A'
-          }
-        });
-
         // Auto-fix if height grew unexpectedly (more than 3px from initial)
         // OR if height shrunk significantly (more than 2px below initial - indicates measurement error)
         if (currentHeight > initialHeight + 3 || currentHeight < initialHeight - 2) {
-          debugLog('[Real-time Badge] Height changed significantly - attempting auto-fix:', {
-            current: currentHeight,
-            initial: initialHeight,
-            direction: currentHeight > initialHeight ? 'increased' : 'decreased'
-          });
-
           // Use cached natural height if available, otherwise use initial height
           const cachedNaturalHeight = badge.getAttribute('data-natural-height');
           let targetHeight;
 
           if (cachedNaturalHeight) {
             targetHeight = parseFloat(cachedNaturalHeight);
-            debugLog('[Real-time Badge] Using cached natural height:', targetHeight);
           } else {
             targetHeight = initialHeight;
-            debugLog('[Real-time Badge] Using initial height as fallback:', targetHeight);
           }
 
           // Only fix if current height is significantly different from target
@@ -3236,7 +3505,6 @@
             badge.style.setProperty('height', `${targetHeight}px`, 'important');
             badge.style.setProperty('max-height', `${targetHeight}px`, 'important');
             badge.style.setProperty('min-height', `${targetHeight}px`, 'important');
-            debugLog('[Real-time Badge] Fixed height from', currentHeight, 'to', targetHeight);
           }
         }
 
@@ -3305,7 +3573,24 @@
       if (!settings.showIQBadge) return;
 
       const inputs = findTextInputs();
-      inputs.forEach(input => {
+      // Prioritize focused or modal inputs - process them first
+      const prioritized = inputs.filter(input => {
+        const isFocused = document.activeElement === input || input.contains(document.activeElement);
+        // Check if in modal (high z-index parent or role="dialog")
+        let parent = input.parentElement;
+        for (let i = 0; i < 10 && parent; i++) {
+          const style = window.getComputedStyle(parent);
+          if (parseInt(style.zIndex) > 1000 || parent.getAttribute('role') === 'dialog') {
+            return true;
+          }
+          parent = parent.parentElement;
+        }
+        return isFocused;
+      });
+      const others = inputs.filter(input => !prioritized.includes(input));
+
+      // Process prioritized first (focused/modal), then others
+      [...prioritized, ...others].forEach(input => {
         setupRealtimeMonitoring(input);
       });
     });
@@ -3319,10 +3604,76 @@
     // Also check existing inputs immediately
     setTimeout(() => {
       const inputs = findTextInputs();
-      inputs.forEach(input => {
+      // Prioritize focused or modal inputs
+      const prioritized = inputs.filter(input => {
+        const isFocused = document.activeElement === input || input.contains(document.activeElement);
+        let parent = input.parentElement;
+        for (let i = 0; i < 10 && parent; i++) {
+          const style = window.getComputedStyle(parent);
+          if (parseInt(style.zIndex) > 1000 || parent.getAttribute('role') === 'dialog') {
+            return true;
+          }
+          parent = parent.parentElement;
+        }
+        return isFocused;
+      });
+      const others = inputs.filter(input => !prioritized.includes(input));
+
+      [...prioritized, ...others].forEach(input => {
         setupRealtimeMonitoring(input);
       });
     }, 1000);
+
+    // Also listen for focus events on the document to catch when user switches between inputs
+    document.addEventListener('focusin', (e) => {
+      if (!settings.showIQBadge) return;
+      const target = e.target;
+      // Check if it's a text input we care about - use broader detection
+      const isTextarea = target.tagName === 'TEXTAREA' && (
+        target.getAttribute('data-testid')?.includes('tweetTextarea') ||
+        target.closest('[data-testid="toolBar"]') ||
+        target.closest('[data-testid*="tweetButton"]')
+      );
+      const isContentEditable = (target.getAttribute('role') === 'textbox' || target.tagName === 'DIV') &&
+                                target.getAttribute('contenteditable') === 'true';
+
+      if (isTextarea || isContentEditable) {
+        // Use the same compose box detection logic as findTextInputs
+        const hasComposeIndicators = target.closest('[data-testid="toolBar"]') ||
+                                    target.closest('[data-testid*="tweetButton"]') ||
+                                    target.getAttribute('data-testid')?.includes('tweetTextarea') ||
+                                    target.getAttribute('data-testid')?.includes('tweet');
+        const isComposePage = window.location.pathname.includes('/compose/') ||
+                             window.location.href.includes('/compose/post');
+
+        if (hasComposeIndicators || isComposePage) {
+          setupRealtimeMonitoring(target);
+        }
+      }
+    }, true);
+
+    // Listen for URL changes (for SPA navigation to compose pages)
+    let lastUrl = window.location.href;
+    const urlCheckInterval = setInterval(() => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        // URL changed - check for compose boxes (might have navigated to compose page)
+        if (currentUrl.includes('/compose/')) {
+          setTimeout(() => {
+            const inputs = findTextInputs();
+            inputs.forEach(input => {
+              setupRealtimeMonitoring(input);
+            });
+          }, 500);
+        }
+      }
+    }, 1000);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+      clearInterval(urlCheckInterval);
+    });
 
     return observer;
   }
