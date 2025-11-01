@@ -1202,12 +1202,41 @@
       let lastDisplayedIQ = -1;
       let animationFrameId = null;
       let lastUpdateTime = startTime;
+      let freezeDetectionTime = startTime; // Track when we last updated to detect freezes
+      const FREEZE_THRESHOLD = 150; // If no update for 150ms, consider it frozen
+      let isShowingSpinner = false; // Track if we're currently showing the spinner
+      let frozenAtIQ = -1; // Track the IQ value when we froze
 
 
       function updateNumber() {
         const now = performance.now();
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
+
+        // Freeze detection: if too much time has passed since last update, we're frozen
+        // Only detect freezes after we've displayed at least one number (lastDisplayedIQ >= 0)
+        const timeSinceLastUpdate = now - freezeDetectionTime;
+        const isFrozen = timeSinceLastUpdate > FREEZE_THRESHOLD && lastDisplayedIQ >= 0 && lastDisplayedIQ < finalIQ && !isShowingSpinner;
+
+        // If frozen and we're not already showing the spinner, show it
+        if (isFrozen && !isShowingSpinner) {
+          frozenAtIQ = lastDisplayedIQ;
+          isShowingSpinner = true;
+          // Replace the number with the loading spinner
+          scoreElement.innerHTML = '<span class="iq-loading-spinner">↻</span>';
+        }
+
+        // If we were frozen but now we're updating again (unfrozen), resume from next number
+        if (!isFrozen && isShowingSpinner) {
+          isShowingSpinner = false;
+          // Resume from the next number after where we froze
+          const resumeIQ = Math.min(frozenAtIQ + 1, finalIQ);
+          lastDisplayedIQ = resumeIQ;
+          frozenAtIQ = -1; // Reset
+          // Remove spinner and show the number
+          scoreElement.textContent = resumeIQ;
+          freezeDetectionTime = now; // Reset freeze detection
+        }
 
         // Ease-out cubic function: fast start, slow end
         // f(t) = 1 - (1 - t)^3
@@ -1237,11 +1266,12 @@
         }
 
         // Force update if we haven't updated in a while (prevents stalling)
-        const timeSinceLastUpdate = now - lastUpdateTime;
-        const shouldForceUpdate = timeSinceLastUpdate > 50; // Force update every 50ms minimum
+        const timeSinceLastUpdate2 = now - lastUpdateTime;
+        const shouldForceUpdate = timeSinceLastUpdate2 > 50; // Force update every 50ms minimum
 
         // Always update if IQ changed OR if we need to force update OR if we're near the end
-        if (currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95) {
+        // But don't update if we're currently showing the spinner (we're frozen)
+        if ((currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95) && !isShowingSpinner) {
           // If we're near the end and not at final, force progress
           if (progress >= 0.95 && currentIQ < finalIQ - 1) {
             currentIQ = Math.min(currentIQ + 1, finalIQ);
@@ -1255,13 +1285,21 @@
           // Only update if it actually changed or we're forcing it
           const willUpdate = currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95;
           if (willUpdate) {
-
             scoreElement.textContent = currentIQ;
             lastDisplayedIQ = currentIQ;
             lastUpdateTime = now;
+            freezeDetectionTime = now; // Update freeze detection time when we successfully update
           }
 
           // Always update color smoothly (this helps with visual smoothness)
+          const currentColor = interpolateRgbColor(
+            parseColor(loadingColor),
+            finalColorRgb,
+            easedProgress
+          );
+          badge.style.setProperty('background-color', currentColor, 'important');
+        } else if (isShowingSpinner) {
+          // Even when frozen, update the color smoothly
           const currentColor = interpolateRgbColor(
             parseColor(loadingColor),
             finalColorRgb,
@@ -1279,6 +1317,15 @@
           animationFrameId = requestAnimationFrame(updateNumber);
         } else {
           // Animation complete - we've reached the final IQ
+
+          // Remove spinner if it's still showing
+          if (isShowingSpinner) {
+            isShowingSpinner = false;
+            const spinner = scoreElement.querySelector('.iq-loading-spinner');
+            if (spinner) {
+              spinner.remove();
+            }
+          }
 
           // Ensure final number and color are shown (should already be set, but just in case)
           scoreElement.textContent = finalIQ;
