@@ -22,7 +22,7 @@
     0 0 0 1px rgba(0, 0, 0, 0.3),
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 3px 6px rgba(0, 0, 0, 0.15);
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease;
   position: relative;
   z-index: 10;
   line-height: 1;
@@ -224,4 +224,34 @@ article[data-iq-analyzed] {
 .iq-badge {
   animation: badgeAppear 0.3s ease;
 }
+
+/* Ensure loading badge is always visible */
+.iq-badge-loading {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+}
+
+/* Override badge appearance animation for loading badges */
+.iq-badge.iq-badge-loading {
+  animation: none !important; /* Don't animate loading badge appearance */
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.iq-loading-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  font-size: 10px;
+  line-height: 1;
+}
+
 
