@@ -24,7 +24,7 @@ class ComprehensiveIQEstimatorUltimate {
     this.aoaDictionary = null;
     this.aoaDictionaryKeys = null; // Cached keys for faster fuzzy matching
     this.aoaDictionaryLoaded = false;
-    this.aoaDictionaryPath = options.aoaDictionaryPath || 'data/aoa_dictionary.json';
+    this.aoaDictionaryPath = options.aoaDictionaryPath || 'content/data/aoa_dictionary.json';
 
     // Calibrated dependency depth coefficients
     this.depDepthCalibration = {
@@ -32,7 +32,7 @@ class ComprehensiveIQEstimatorUltimate {
       punctuation_coefficient: 0.3,  // Fallback to original
       clause_coefficient: 0.2
     };
-    this.calibrationPath = options.calibrationPath || 'data/dependency_depth_calibration.json';
+    this.calibrationPath = options.calibrationPath || 'content/data/dependency_depth_calibration.json';
 
     // spaCy dependency parser (enhanced approximation method)
     this.spacyParser = null;
@@ -62,19 +62,33 @@ class ComprehensiveIQEstimatorUltimate {
   async _loadResources() {
     try {
       if (typeof fetch !== 'undefined') {
+        // Use chrome.runtime.getURL for extension context, fallback to relative path
+        const getResourceURL = (path) => {
+          if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+            return chrome.runtime.getURL(path);
+          }
+          return path;
+        };
+
         try {
-          const response = await fetch(this.aoaDictionaryPath);
+          const aoaUrl = getResourceURL(this.aoaDictionaryPath);
+          const response = await fetch(aoaUrl);
           if (response.ok) {
             this.aoaDictionary = await response.json();
             this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
             this.aoaDictionaryLoaded = true;
+            console.debug('[IQEstimator] AoA dictionary loaded successfully');
+          } else {
+            console.warn('[IQEstimator] Failed to load AoA dictionary:', response.status, aoaUrl);
           }
         } catch (e) {
+          console.warn('[IQEstimator] Error loading AoA dictionary:', e.message, 'Path:', this.aoaDictionaryPath);
           // Silent fail, will use approximation
         }
 
         try {
-          const response = await fetch(this.calibrationPath);
+          const calUrl = getResourceURL(this.calibrationPath);
+          const response = await fetch(calUrl);
           if (response.ok) {
             const calibration = await response.json();
             this.depDepthCalibration = {
@@ -84,8 +98,12 @@ class ComprehensiveIQEstimatorUltimate {
               clause_coefficient: Math.abs(calibration.clause_coefficient) > 0.01
                 ? calibration.clause_coefficient : 0.2
             };
+            console.debug('[IQEstimator] Dependency depth calibration loaded successfully');
+          } else {
+            console.warn('[IQEstimator] Failed to load calibration:', response.status, calUrl);
           }
         } catch (e) {
+          console.warn('[IQEstimator] Error loading calibration:', e.message, 'Path:', this.calibrationPath);
           // Silent fail, use defaults
         }
       }
@@ -725,10 +743,16 @@ class ComprehensiveIQEstimatorUltimate {
       sentence_variance: sentenceVariance,
       ttr: this._computeTTR(tokens),
       msttr: this._computeMSTTR(tokens),
+      mtld: this._computeMTLD(tokens),
+      yules_k: this._computeYulesK(tokens),
       avg_word_length: this._avgWordLength(tokens),
       avg_syllables: this._avgSyllables(tokens),
       punctuation_complexity: this._punctuationComplexity(normalizedText, sentences),
+      punctuation_entropy: this._computePunctuationEntropy(normalizedText),
       subordinate_clauses: this._countSubordinateClauses(normalizedText, sentences),
+      lexical_overlap: this._computeLexicalOverlap(sentences),
+      connective_density: this._computeConnectiveDensity(normalizedText, tokens),
+      readability: this._computeReadability(normalizedText, sentences, tokens),
       vocabulary_sophistication: this._vocabularySophistication(tokens),
       mean_aoa: meanAoa,
       pct_advanced: aoaFeatures.pct_advanced,
