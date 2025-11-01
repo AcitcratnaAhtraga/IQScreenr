@@ -54,45 +54,504 @@
   });
 
   /**
+   * Check if a tweet is truncated (has a "show more" button)
+   */
+  function isTweetTruncated(tweetElement) {
+    // Look for various patterns of "show more" buttons
+    const showMoreButton = tweetElement.querySelector('span[data-testid="expand-text"]') ||
+                           tweetElement.querySelector('button[data-testid="show-more"]') ||
+                           tweetElement.querySelector('[data-testid="app-text-transition-container"] span[role="button"]') ||
+                           Array.from(tweetElement.querySelectorAll('span[role="button"]')).find(span => {
+                             const text = span.textContent.trim().toLowerCase();
+                             return text === 'show more' || text === 'read more' || text === 'show' || text === 'read' ||
+                                    text.includes('show') && text.includes('more');
+                           });
+    return !!showMoreButton;
+  }
+
+  /**
+   * Expand truncated tweets by clicking "show more" button if present
+   * Returns a promise that resolves when expansion is complete
+   */
+  function expandTruncatedTweet(tweetElement) {
+    return new Promise((resolve) => {
+      // Look for "Show more" button using various possible selectors
+      const showMoreButton = tweetElement.querySelector('span[data-testid="expand-text"]') ||
+                             tweetElement.querySelector('button[data-testid="show-more"]') ||
+                             tweetElement.querySelector('[data-testid="app-text-transition-container"] span[role="button"]') ||
+                             Array.from(tweetElement.querySelectorAll('span[role="button"]')).find(span => {
+                               const text = span.textContent.trim().toLowerCase();
+                               return text === 'show more' || text === 'read more' || text === 'show' || text === 'read' ||
+                                      text.includes('show') && text.includes('more');
+                             });
+
+      if (showMoreButton) {
+        // Click the button to expand the tweet
+        showMoreButton.click();
+        // Wait a short time for the expansion to occur
+        setTimeout(resolve, 150);
+      } else {
+        // No expansion needed, resolve immediately
+        resolve();
+      }
+    });
+  }
+
+  /**
    * Extract tweet text from a tweet article element
+   * Excludes usernames, metadata, quoted tweets, and other non-content text
    */
   function extractTweetText(tweetElement) {
-    // Try multiple selectors to find tweet text
-    const selectors = [
-      'div[lang]',
-      '[data-testid="tweetText"]',
-      '.tweet-text',
-      '[dir="auto"] span',
-      'div[dir="auto"]'
-    ];
+    // DEBUG MODE: Enable by setting window.DEBUG_IQ_EXTRACTION = true in console
+    // Or check the console - basic info is always logged
+    const DEBUG = window.DEBUG_IQ_EXTRACTION === true;
 
-    for (const selector of selectors) {
-      const element = tweetElement.querySelector(selector);
-      if (element) {
-        const text = element.innerText || element.textContent || '';
-        if (text.trim().length > 0) {
-          return text.trim();
+    // Strategy: The main tweet text is typically the FIRST occurrence and shallower in the DOM
+    // Quoted tweets are nested deeper and come later in the DOM tree
+    // On single tweet pages, we need to be extra careful to exclude quoted content
+
+    // Check if we're on a single tweet page (not feed)
+    const isSingleTweetPage = /\/status\/\d+/.test(window.location.pathname);
+
+    // First, find the main tweet container (the top-level article or div with tweet data-testid)
+    const mainTweetContainer = tweetElement.querySelector('[data-testid="tweet"]') ||
+                                (tweetElement.getAttribute('data-testid') === 'tweet' ? tweetElement : null) ||
+                                tweetElement;
+
+    // Find ALL tweetText elements in this article (main tweet + any quoted tweets)
+    const allTweetTextElements = Array.from(tweetElement.querySelectorAll('[data-testid="tweetText"]'));
+
+    if (DEBUG) {
+      console.group('🔍 [IQGuessr] EXTRACT TWEET TEXT DEBUG');
+      console.log('Page type:', isSingleTweetPage ? 'Single Tweet Page' : 'Feed/Timeline');
+      console.log('Tweet element:', tweetElement);
+      console.log('Main container:', mainTweetContainer);
+      console.log('Found tweetText elements:', allTweetTextElements.length);
+      allTweetTextElements.forEach((el, i) => {
+        const text = (el.innerText || el.textContent || '').substring(0, 50);
+        const depth = getElementDepth(el, mainTweetContainer);
+        const isQuoted = isInsideQuotedTweet(el, tweetElement);
+        console.log(`  [${i}] Text: "${text}..." | Depth: ${depth} | IsQuoted: ${isQuoted}`);
+      });
+    }
+
+    if (allTweetTextElements.length === 0) {
+      if (DEBUG) {
+        console.log('❌ No tweet text found');
+        console.groupEnd();
+      }
+      return null;
+    }
+
+    // If there's only one, use it (but verify it's not a quoted tweet)
+    // On single tweet pages, be extra cautious - if it's the only one and looks quoted, return null
+    if (allTweetTextElements.length === 1) {
+      const textElement = allTweetTextElements[0];
+      const depth = getElementDepth(textElement, mainTweetContainer);
+
+      // CRITICAL: On single tweet pages with "Quote" visible, if there's only ONE tweetText,
+      // it MUST be the quoted tweet's text (since the main tweet has no text - just an image/GIF)
+      if (isSingleTweetPage) {
+        const hasQuoteLabel = tweetElement.textContent.includes('Quote') ||
+                             tweetElement.querySelector('span')?.textContent?.includes('Quote');
+
+        if (hasQuoteLabel) {
+          // This is a quote tweet page, and the only text found is from the quoted tweet
+          // The main tweet (PunishedAbammon) has no text - just a GIF
+          if (DEBUG) {
+            console.log('❌ Single tweet page with Quote label: Only text found is from quoted tweet, returning null');
+            console.groupEnd();
+          }
+          return null;
+        }
+      }
+
+      const isQuoted = isInsideQuotedTweet(textElement, tweetElement);
+
+      if (DEBUG) {
+        console.log('Only one tweetText found:', {
+          text: (textElement.innerText || textElement.textContent || '').substring(0, 50),
+          isQuoted: isQuoted,
+          depth: depth,
+          isSingleTweetPage: isSingleTweetPage
+        });
+      }
+
+      // On single tweet pages, if the only text is very deep (>10), it might be quoted content
+      // Check if there's a quoted tweet container - if so, this might be the quoted text
+      if (isSingleTweetPage && depth > 10) {
+        const hasQuotedContainer = tweetElement.querySelector('[data-testid="quotedTweet"]') ||
+                                   tweetElement.querySelector('[data-testid="quoteTweet"]') ||
+                                   tweetElement.querySelectorAll('article').length > 1;
+
+        if (hasQuotedContainer) {
+          if (DEBUG) {
+            console.log('❌ Single tweet page: Only text found is likely quoted (deep + quoted container exists), returning null');
+            console.groupEnd();
+          }
+          return null; // Likely quoted content, main tweet has no text
+        }
+      }
+
+      // Check if it's inside a quoted tweet container
+      if (!isQuoted) {
+        let text = textElement.innerText || textElement.textContent || '';
+        text = text.trim();
+        if (text.length > 0) {
+          if (DEBUG) {
+            console.log('✅ Returning main tweet text');
+            console.groupEnd();
+          }
+          return text;
+        }
+      } else {
+        if (DEBUG) {
+          console.log('❌ Only text found is in quoted tweet, returning null');
+          console.groupEnd();
+        }
+      }
+      return null;
+    }
+
+    // If multiple tweetText elements exist, find the one that's:
+    // 1. Not inside a quoted tweet container
+    // 2. Closest to the root (shallower in DOM)
+    // 3. Comes first in document order
+
+    let mainTextElement = null;
+    let shallowestDepth = Infinity;
+    let firstNonQuotedIndex = -1;
+
+    if (DEBUG) {
+      console.log('Multiple tweetText elements found, analyzing each:');
+    }
+
+    for (let i = 0; i < allTweetTextElements.length; i++) {
+      const textElement = allTweetTextElements[i];
+      const isQuoted = isInsideQuotedTweet(textElement, tweetElement);
+      const depth = getElementDepth(textElement, mainTweetContainer);
+
+      if (DEBUG) {
+        const text = (textElement.innerText || textElement.textContent || '').substring(0, 50);
+        console.log(`  [${i}] "${text}..." | Depth: ${depth} | IsQuoted: ${isQuoted}`);
+      }
+
+      // Skip if inside a quoted tweet
+      if (isQuoted) {
+        if (DEBUG) {
+          console.log(`    ⏭️  Skipped (quoted)`);
+        }
+        continue;
+      }
+
+      // Prefer the shallowest AND earliest in document order
+      if (depth < shallowestDepth || (depth === shallowestDepth && firstNonQuotedIndex === -1)) {
+        shallowestDepth = depth;
+        mainTextElement = textElement;
+        firstNonQuotedIndex = i;
+        if (DEBUG) {
+          console.log(`    ✅ Selected as candidate (depth: ${depth})`);
         }
       }
     }
 
-    // Fallback: collect all text nodes
-    const walker = document.createTreeWalker(
-      tweetElement,
-      NodeFilter.SHOW_TEXT,
-      null,
-      false
-    );
+    // Safety check: If we found a main text element, verify it's not suspiciously deep
+    // Main tweet text should be relatively shallow (depth < 10 typically)
+    if (mainTextElement && shallowestDepth > 12) {
+      if (DEBUG) {
+        console.log(`⚠️  Found element but depth ${shallowestDepth} is suspicious, rechecking...`);
+      }
+      // This might actually be a quoted tweet that we didn't detect
+      // Check if there's a shallower element we might have missed
+      const previousElement = mainTextElement;
+      mainTextElement = null;
+      shallowestDepth = Infinity;
 
-    let text = '';
-    let node;
-    while (node = walker.nextNode()) {
-      if (node.textContent && node.textContent.trim()) {
-        text += node.textContent + ' ';
+      // Try again with stricter depth limit
+      for (let i = 0; i < allTweetTextElements.length; i++) {
+        const textElement = allTweetTextElements[i];
+        if (!isInsideQuotedTweet(textElement, tweetElement)) {
+          const depth = getElementDepth(textElement, mainTweetContainer);
+          if (depth < shallowestDepth && depth <= 10) {
+            shallowestDepth = depth;
+            mainTextElement = textElement;
+            if (DEBUG) {
+              console.log(`    ✅ Found shallower element at depth ${depth}`);
+            }
+          }
+        }
+      }
+
+      if (!mainTextElement && DEBUG) {
+        console.log(`    ⚠️  No shallower element found, but keeping original`);
+        mainTextElement = previousElement;
       }
     }
 
-    return text.trim();
+    if (mainTextElement) {
+      let text = mainTextElement.innerText || mainTextElement.textContent || '';
+      text = text.trim();
+      if (text.length > 0) {
+        if (DEBUG) {
+          console.log(`✅ Returning: "${text.substring(0, 80)}..."`);
+          console.groupEnd();
+        }
+        return text;
+      }
+    }
+
+    if (DEBUG) {
+      console.log('❌ No valid main tweet text found');
+      console.groupEnd();
+    }
+
+    // Fallback: If no tweetText elements worked, try other selectors but exclude quoted
+    const textCandidates = tweetElement.querySelectorAll('div[lang], div[dir="auto"]');
+    for (const candidate of textCandidates) {
+      if (!isInsideQuotedTweet(candidate, tweetElement)) {
+        const depth = getElementDepth(candidate, mainTweetContainer);
+        if (depth <= 6) { // Main tweet text is usually shallow
+          let text = candidate.innerText || candidate.textContent || '';
+          text = text.trim();
+
+          if (text.length > 5 &&
+              !text.match(/^@\w+/) &&
+              !text.match(/^\d+[h|m|d|w]?$/)) {
+            return text;
+          }
+        }
+      }
+    }
+
+    // If no meaningful text found in main tweet, return null
+    return null;
+  }
+
+  /**
+   * Check if an element is inside a quoted tweet container
+   */
+  function isInsideQuotedTweet(element, tweetElement) {
+    const DEBUG = window.DEBUG_IQ_EXTRACTION === true;
+    const isSingleTweetPage = /\/status\/\d+/.test(window.location.pathname);
+
+    // Check if element is inside any known quoted tweet containers
+    const quotedSelectors = [
+      '[data-testid="quotedTweet"]',
+      '[data-testid="quoteTweet"]',
+    ];
+
+    // First, check if we're inside any explicitly marked quoted tweet
+    for (const selector of quotedSelectors) {
+      try {
+        const quotedContainer = tweetElement.querySelector(selector);
+        if (quotedContainer && quotedContainer.contains(element)) {
+          if (DEBUG) {
+            console.log(`      🔍 isInsideQuotedTweet: TRUE (found ${selector})`);
+          }
+          return true;
+        }
+      } catch (e) {
+        // Ignore selector errors
+      }
+    }
+
+    // NEW: Look for visual/hierarchical indicators of quoted content
+    // On single tweet pages, check if there's a "Quote" label or quoted tweet structure
+    if (isSingleTweetPage) {
+      // Check if there's a "Quote" text/label in the tweet (indicates this is a quote tweet page)
+      const hasQuoteLabel = tweetElement.textContent.includes('Quote') ||
+                           tweetElement.querySelector('[data-testid="quoteTweet"]') ||
+                           tweetElement.querySelector('div[dir="auto"]')?.textContent?.includes('Quote');
+
+      // Check if the element is in a section that appears after the main content
+      // Quoted tweets are usually in a distinct visual block
+      let current = element;
+      let foundQuoteIndicator = false;
+
+      // Walk up the DOM tree looking for quoted tweet indicators
+      while (current && current !== tweetElement) {
+        // Check if current or parent has quote-related attributes/classes
+        const parentText = current.parentElement?.textContent || '';
+
+        // Look for nested structure that indicates quoted content
+        // Quoted tweets often have the quoted author's info nearby
+        if (current.closest('[data-testid="tweet"]') !== tweetElement.querySelector('[data-testid="tweet"]:first-of-type')) {
+          foundQuoteIndicator = true;
+          break;
+        }
+
+        // Check for nested divs with specific structure (quoted tweets often in nested divs)
+        if (current.tagName === 'DIV') {
+          const siblings = Array.from(current.parentElement?.children || []);
+          // If we're in a div that has a "Quote" text sibling or parent
+          if (siblings.some(sib => sib.textContent?.includes('Quote'))) {
+            foundQuoteIndicator = true;
+            break;
+          }
+        }
+
+        current = current.parentElement;
+        if (!current) break;
+      }
+
+      // If we found quote indicators AND we're not in the main tweet text area, it's quoted
+      if (hasQuoteLabel && foundQuoteIndicator) {
+        if (DEBUG) {
+          console.log(`      🔍 isInsideQuotedTweet: TRUE (single tweet page, quote indicators found)`);
+        }
+        return true;
+      }
+    }
+
+    // Check for nested articles - quoted tweets are nested articles
+    let current = element;
+    let articleCount = 0;
+    const articles = [];
+
+    while (current && current !== tweetElement) {
+      // Count articles we encounter
+      if (current.tagName === 'ARTICLE') {
+        articleCount++;
+        articles.push(current);
+
+        // On single tweet pages, be more aggressive: any nested article is likely quoted
+        if (isSingleTweetPage && articleCount > 1) {
+          if (DEBUG) {
+            console.log(`      🔍 isInsideQuotedTweet: TRUE (single tweet page, nested article, count: ${articleCount})`);
+          }
+          return true;
+        }
+
+        // If we're inside a nested article (second+ article), it's likely a quoted tweet
+        if (articleCount > 1) {
+          // Double-check: see if this article is nested inside another article or tweet container
+          let parent = current.parentElement;
+          while (parent && parent !== tweetElement) {
+            if (parent.tagName === 'ARTICLE' ||
+                parent.getAttribute('data-testid') === 'tweet' ||
+                parent.querySelector('[data-testid="tweet"]')) {
+              if (DEBUG) {
+                console.log(`      🔍 isInsideQuotedTweet: TRUE (nested article, count: ${articleCount})`);
+              }
+              return true; // Nested article = quoted tweet
+            }
+            parent = parent.parentElement;
+          }
+        }
+      }
+
+      current = current.parentElement;
+      if (!current) break;
+    }
+
+    // Also check depth - if the element is very deep, it might be in a quoted tweet
+    // Main tweet text is usually at depth 4-8, quoted tweets are usually 10+
+    const mainContainer = tweetElement.querySelector('[data-testid="tweet"]') || tweetElement;
+    const depth = getElementDepth(element, mainContainer);
+
+    // On single tweet pages with quote tweets, check if there's a "Quote" text visible
+    // AND if this element is in a visually distinct section
+    if (isSingleTweetPage) {
+      // Check if there's any "Quote" text in the tweet (indicates it's a quote tweet)
+      const tweetHasQuoteLabel = tweetElement.textContent.includes('Quote') ||
+                                 tweetElement.querySelector('span')?.textContent?.includes('Quote');
+
+      if (tweetHasQuoteLabel) {
+        // If depth > 8 on a quote tweet page, it's likely quoted content
+        if (depth > 8) {
+          if (DEBUG) {
+            console.log(`      🔍 isInsideQuotedTweet: TRUE (single tweet page with Quote label, depth ${depth})`);
+          }
+          return true;
+        }
+
+        // Additional check: if the element is not directly under the main tweet container
+        // and there's a Quote label, it's likely quoted
+        const mainTweetContainer = tweetElement.querySelector('[data-testid="tweet"]');
+        if (mainTweetContainer && !mainTweetContainer.contains(element)) {
+          if (DEBUG) {
+            console.log(`      🔍 isInsideQuotedTweet: TRUE (element outside main tweet container on quote tweet page)`);
+          }
+          return true;
+        }
+      }
+    }
+
+    // If depth > 12 and we're not sure, be cautious - likely quoted
+    if (depth > 12) {
+      // Check if there's a shallower tweetText element (which would be the main tweet)
+      const allTexts = tweetElement.querySelectorAll('[data-testid="tweetText"]');
+      for (const otherText of allTexts) {
+        if (otherText !== element) {
+          const otherDepth = getElementDepth(otherText, mainContainer);
+          if (otherDepth < depth - 2) {
+            // There's a much shallower text element, so this one is likely quoted
+            if (DEBUG) {
+              console.log(`      🔍 isInsideQuotedTweet: TRUE (deep element, depth ${depth} vs ${otherDepth})`);
+            }
+            return true;
+          }
+        }
+      }
+    }
+
+    if (DEBUG && articleCount > 0) {
+      console.log(`      🔍 isInsideQuotedTweet: FALSE (article count: ${articleCount}, depth: ${depth})`);
+    }
+    return false;
+  }
+
+  /**
+   * Calculate DOM depth of an element relative to a parent
+   */
+  function getElementDepth(element, root) {
+    let depth = 0;
+    let current = element;
+    while (current && current !== root && depth < 50) {
+      current = current.parentElement;
+      depth++;
+      if (!current) break;
+    }
+    return depth;
+  }
+
+  /**
+   * Validate text before processing
+   * Returns {isValid: boolean, reason: string}
+   */
+  function validateTweetText(text) {
+    if (!text || text.trim().length === 0) {
+      return { isValid: false, reason: 'Empty text' };
+    }
+
+    // Remove emojis and check if there are actual words
+    const textWithoutEmoji = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
+
+    if (textWithoutEmoji.length === 0) {
+      return { isValid: false, reason: 'Emoji-only content' };
+    }
+
+    // Extract actual words (excluding emojis, symbols)
+    const words = textWithoutEmoji.match(/\b[a-zA-Z]{2,}\b/g) || [];
+
+    if (words.length < 5) {
+      return {
+        isValid: false,
+        reason: `Too few words (${words.length}, minimum 5 required)`
+      };
+    }
+
+    // Check if it's mostly just metadata/username
+    const isLikelyMetadata =
+      text.match(/^@\w+/) ||  // Starts with @username
+      text.match(/^\d+[h|m|d|w|s]?\s*$/) ||  // Just time/date
+      words.length < textWithoutEmoji.split(/\s+/).length * 0.3;  // Less than 30% actual words
+
+    if (isLikelyMetadata) {
+      return { isValid: false, reason: 'Appears to be metadata, not tweet content' };
+    }
+
+    return { isValid: true, reason: null };
   }
 
   /**
@@ -312,10 +771,14 @@
 
     // Re-extract features for detailed view (or use stored if available)
     const normalizedText = text
-      .replace(/https?:\/\/[^\s]+/g, '')
-      .replace(/@\w+/g, '')
-      .replace(/#\w+/g, '')
-      .replace(/[^\w\s.,!?;:()'-]/g, ' ')
+      .replace(/https?:\/\/[^\s]+/g, '') // Remove HTTP/HTTPS URLs
+      .replace(/\bwww\.[^\s]+/g, '') // Remove www links
+      .replace(/\b(x\.com|twitter\.com)[^\s]*/g, '') // Remove X/Twitter links
+      .replace(/\bt\.co\/[a-zA-Z0-9]+/g, '') // Remove t.co shortened links
+      .replace(/\b[a-zA-Z0-9-]+\.(com|org|net|io|co|edu|gov)[^\s]*/g, '') // Remove domain links
+      .replace(/@\w+/g, '') // Remove mentions
+      .replace(/#\w+/g, '') // Remove hashtags
+      .replace(/[^\w\s.,!?;:()'-]/g, ' ') // Keep punctuation
       .replace(/\s+/g, ' ')
       .trim();
 
@@ -408,7 +871,7 @@
   /**
    * Process a single tweet
    */
-  function processTweet(tweetElement) {
+  async function processTweet(tweetElement) {
     // Skip if already processed
     if (tweetElement.hasAttribute('data-iq-analyzed')) {
       return;
@@ -420,15 +883,31 @@
       return;
     }
 
-    // Extract text
-    const tweetText = extractTweetText(tweetElement);
+    // Mark as processing to avoid double-processing
+    tweetElement.setAttribute('data-iq-processing', 'true');
 
-    if (!tweetText || tweetText.length < 3) {
-      return; // Skip tweets that are too short
+    // Check if tweet is truncated and expand it
+    if (isTweetTruncated(tweetElement)) {
+      await expandTruncatedTweet(tweetElement);
+      // Wait a bit more to ensure DOM has updated
+      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
-    // Mark as processing to avoid duplicate calculations
-    tweetElement.setAttribute('data-iq-processing', 'true');
+    // Extract text (now it should be the full text)
+    const tweetText = extractTweetText(tweetElement);
+
+    // Validate text before processing
+    if (!tweetText) {
+      tweetElement.removeAttribute('data-iq-processing');
+      return; // Skip if no text extracted
+    }
+
+    const validation = validateTweetText(tweetText);
+    if (!validation.isValid) {
+      tweetElement.removeAttribute('data-iq-processing');
+      // Skip invalid tweets (emoji-only, too short, metadata, etc.)
+      return;
+    }
 
     try {
       // Calculate IQ using the comprehensive client-side estimator
@@ -459,6 +938,7 @@
 
         processedTweets.add(tweetElement);
         tweetElement.setAttribute('data-iq-analyzed', 'true');
+        tweetElement.removeAttribute('data-iq-processing');
       }
     } catch (error) {
       console.error('Error processing tweet:', error);
@@ -490,10 +970,12 @@
       tweets = document.querySelectorAll('article');
     }
 
-    tweets.forEach(tweet => {
-      if (tweet && !tweet.hasAttribute('data-iq-analyzed') && !tweet.hasAttribute('data-iq-processing')) {
-        processTweet(tweet);
-      }
+    const newTweets = Array.from(tweets).filter(tweet =>
+      tweet && !tweet.hasAttribute('data-iq-analyzed') && !tweet.hasAttribute('data-iq-processing')
+    );
+
+    newTweets.forEach(tweet => {
+      processTweet(tweet);
     });
   }
 
@@ -556,4 +1038,6 @@
   // Start the extension
   init();
 })();
+
+
 
