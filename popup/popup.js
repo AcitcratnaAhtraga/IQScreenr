@@ -38,6 +38,26 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.storage.sync.set({ showRealtimeBadge: false });
       }
     }
+
+    // Update legend display based on confidence color setting
+    updateLegendDisplay();
+  }
+
+  // Helper function to update legend display
+  function updateLegendDisplay() {
+    const useConfidenceForColor = document.getElementById('useConfidenceForColor');
+    const showIQBadge = document.getElementById('showIQBadge');
+    const iqLegend = document.getElementById('iqLegend');
+    const confidenceLegend = document.getElementById('confidenceLegend');
+
+    // Show the appropriate legend based on settings
+    if (showIQBadge.checked && useConfidenceForColor.checked) {
+      iqLegend.style.display = 'none';
+      confidenceLegend.style.display = 'block';
+    } else {
+      iqLegend.style.display = 'block';
+      confidenceLegend.style.display = 'none';
+    }
   }
 
   // Initialize defaults if not set
@@ -85,6 +105,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showStatus('Settings saved', 'success');
       }
     });
+    // Update legend display when confidence color toggle changes
+    updateLegendDisplay();
   });
 
   document.getElementById('showRealtimeBadge').addEventListener('change', (e) => {
