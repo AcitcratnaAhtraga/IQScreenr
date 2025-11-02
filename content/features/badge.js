@@ -676,7 +676,15 @@ function logDebugInfo(debugData) {
 
   console.group('%c📝 Original Text', 'color: #FF9800; font-weight: bold;');
   console.log('%c' + text, 'color: #333; font-family: monospace; background: #FFF9C4; padding: 8px; border-left: 3px solid #FFC107;');
-  console.log(`Length: ${text.length} characters, ${text.split(/\s+/).length} words`);
+
+  // Use the same word counting method as the IQ estimator
+  // Remove emojis first (same as estimator does)
+  const textWithoutEmoji = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
+  // Count words: only letters, minimum 2 characters (matches /\b[a-zA-Z]{2,}\b/g)
+  const words = textWithoutEmoji.match(/\b[a-zA-Z]{2,}\b/g) || [];
+  const wordCount = words.length;
+
+  console.log(`Length: ${text.length} characters, ${wordCount} words`);
   console.groupEnd();
 
   console.group('%c🎯 Final IQ Estimate', 'color: #9C27B0; font-weight: bold;');

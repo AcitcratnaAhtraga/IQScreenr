@@ -7,6 +7,65 @@
   'use strict';
 
 /**
+ * Remove URLs (especially image URLs) from extracted text
+ * This ensures URLs don't affect IQ calculation
+ */
+function removeUrlsFromText(text) {
+  if (!text || typeof text !== 'string') {
+    return text;
+  }
+
+  let cleaned = text;
+
+  // Step 1: Handle concatenated URLs (like "https://pic.x.com/xyzhttps://pic.x.com/xyz")
+  // by adding a space before http/https when it's not preceded by a space
+  cleaned = cleaned.replace(/([^\s])(https?:\/\/)/gi, '$1 $2');
+
+  // Step 2: Remove all URLs (handling spaces in various positions)
+  // Pattern to match URLs, including:
+  // - pic.x.com/imageId (with or without spaces after "https://")
+  // - pic.twitter.com/imageId
+  // - pbs.twimg.com (Twitter media)
+  // - Any https:// or http:// URL
+
+  const urlPatterns = [
+    // Image URLs from X/Twitter - handles "https:// pic.x.com/xyz" or "https://pic.x.com/xyz"
+    // Matches: https:// followed by zero or more spaces, then pic.x.com/pic.twitter.com/pbs.twimg.com
+    /https?:\/\/\s*(pic\.(x\.com|twitter\.com)|pbs\.twimg\.com)\/\S*/gi,
+    // More aggressive: any URL pattern that might have spaces
+    // Matches "https:// domain.com/path" or "https://domain.com/path"
+    /\bhttps?:\/\/\s*[^\s]+\.[^\s]+(?:\/[^\s]*)?/gi,
+    // Standard URLs (no spaces after protocol)
+    /\bhttps?:\/\/[^\s]+/gi,
+    // Catch any remaining "https://" or "http://" followed by space and domain
+    /https?:\/\/\s+[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\/[^\s]*)?/gi
+  ];
+
+  // Apply patterns multiple times to catch all URLs (including nested/concatenated ones)
+  let previousCleaned = '';
+  let iterations = 0;
+  while (previousCleaned !== cleaned && iterations < 10) {
+    previousCleaned = cleaned;
+    for (const pattern of urlPatterns) {
+      cleaned = cleaned.replace(pattern, '').trim();
+    }
+    iterations++;
+  }
+
+  // Step 3: Remove any remaining URL fragments or standalone domains with paths
+  // Catch standalone "pic.x.com/xyz" patterns (without protocol)
+  cleaned = cleaned.replace(/\b(pic\.(x\.com|twitter\.com)|pbs\.twimg\.com)\/\S*/gi, '');
+
+  // Step 4: Remove any remaining "http://" or "https://" fragments followed by whitespace
+  cleaned = cleaned.replace(/\bhttps?:\/\/\s*/gi, '');
+
+  // Step 5: Clean up any remaining artifacts like double spaces or trailing/leading spaces
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+  return cleaned;
+}
+
+/**
  * Check if a tweet is truncated (has a "show more" button and is NOT already expanded)
  */
 function isTweetTruncated(tweetElement) {
@@ -144,6 +203,8 @@ function extractTweetText(tweetElement) {
     // Extract and return the text if it exists
     let text = textElement.innerText || textElement.textContent || '';
     text = text.trim();
+    // Remove URLs from extracted text
+    text = removeUrlsFromText(text);
     if (text.length > 0) {
       return text;
     }
@@ -206,6 +267,8 @@ function extractTweetText(tweetElement) {
   if (mainTextElement) {
     let text = mainTextElement.innerText || mainTextElement.textContent || '';
     text = text.trim();
+    // Remove URLs from extracted text
+    text = removeUrlsFromText(text);
     if (text.length > 0) {
       return text;
     }
@@ -219,6 +282,8 @@ function extractTweetText(tweetElement) {
       if (depth <= 6) { // Main tweet text is usually shallow
         let text = candidate.innerText || candidate.textContent || '';
         text = text.trim();
+        // Remove URLs from extracted text
+        text = removeUrlsFromText(text);
 
         if (text.length > 5 &&
             !text.match(/^@\w+/) &&
@@ -247,7 +312,8 @@ function tryExtractFullTextWithoutExpanding(tweetElement) {
   // Method 0: Check if we already stored the full text in a data attribute
   const storedFullText = tweetElement.getAttribute('data-iq-full-text');
   if (storedFullText && storedFullText.length > 50) {
-    return storedFullText;
+    // Ensure URLs are removed even from stored text (in case it was stored before URL removal was implemented)
+    return removeUrlsFromText(storedFullText);
   }
 
   // Method 0.5: Check React Fiber or internal state (if accessible)
@@ -257,10 +323,10 @@ function tryExtractFullTextWithoutExpanding(tweetElement) {
     const ariaLabel = span.getAttribute('aria-label');
     const title = span.getAttribute('title');
     if (ariaLabel && ariaLabel.length > 200) {
-      return ariaLabel.trim();
+      return removeUrlsFromText(ariaLabel.trim());
     }
     if (title && title.length > 200) {
-      return title.trim();
+      return removeUrlsFromText(title.trim());
     }
   }
 
@@ -294,6 +360,8 @@ function tryExtractFullTextWithoutExpanding(tweetElement) {
 
     // Remove any remaining "Show more" text that might be embedded
     fullText = fullText.replace(/\bshow\s+more\b/gi, '').trim();
+    // Remove URLs from extracted text
+    fullText = removeUrlsFromText(fullText);
 
     if (fullText.length > 50) {
       return fullText;
@@ -310,6 +378,8 @@ function tryExtractFullTextWithoutExpanding(tweetElement) {
 
     // Remove "Show more" button text if present
     let cleanedText = fullTextFromHTML.replace(/show\s+more/gi, '').replace(/\s+/g, ' ').trim();
+    // Remove URLs from extracted text
+    cleanedText = removeUrlsFromText(cleanedText);
 
     if (cleanedText.length > 50) {
       return cleanedText;
@@ -324,7 +394,7 @@ function tryExtractFullTextWithoutExpanding(tweetElement) {
                     (elem.textContent || '');
 
     if (dataText.length > 50 && !dataText.toLowerCase().includes('show more')) {
-      return dataText.trim();
+      return removeUrlsFromText(dataText.trim());
     }
   }
 
@@ -342,7 +412,7 @@ function tryExtractFullTextWithoutExpanding(tweetElement) {
   }
 
   if (longestText.length > 50) {
-    return longestText;
+    return removeUrlsFromText(longestText);
   }
 
   return null;
@@ -396,7 +466,8 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
         const currentText = extractTweetText(tweetElement);
         if (currentText && currentText.length > baselineLength + 50 && !expansionDetected) {
           expansionDetected = true;
-          fullText = currentText;
+          // extractTweetText already removes URLs, but ensure it's cleaned
+          fullText = removeUrlsFromText(currentText);
 
           // Immediately stop observing
           observer.disconnect();
@@ -499,8 +570,10 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
           observer.disconnect();
           const currentText = extractTweetText(tweetElement);
           if (currentText && currentText.length > capturedBaselineLength + 50) {
-            tweetElement.setAttribute('data-iq-full-text', currentText);
-            resolve(currentText);
+            // extractTweetText already removes URLs, but ensure it's cleaned
+            const cleanedText = removeUrlsFromText(currentText);
+            tweetElement.setAttribute('data-iq-full-text', cleanedText);
+            resolve(cleanedText);
           } else {
             resolve(null);
           }
@@ -710,7 +783,8 @@ if (typeof window !== 'undefined') {
     extractFullTextWithoutVisualExpansion,
     expandTruncatedTweet,
     getInputText,
-    extractTweetHandle
+    extractTweetHandle,
+    removeUrlsFromText
   };
 }
 
