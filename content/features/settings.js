@@ -9,7 +9,8 @@
 const defaultSettings = {
   showIQBadge: true,
   minIQ: 60,
-  maxIQ: 145
+  maxIQ: 145,
+  useConfidenceForColor: false
 };
 
 const settings = { ...defaultSettings };
@@ -18,7 +19,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'minIQ', 'maxIQ'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -27,6 +28,9 @@ function loadSettings() {
     }
     if (result.maxIQ !== undefined) {
       settings.maxIQ = result.maxIQ;
+    }
+    if (result.useConfidenceForColor !== undefined) {
+      settings.useConfidenceForColor = result.useConfidenceForColor;
     }
   });
 }
@@ -46,6 +50,9 @@ function setupSettingsListener(onChange) {
       if (changes.maxIQ) {
         settings.maxIQ = changes.maxIQ.newValue;
       }
+      if (changes.useConfidenceForColor) {
+        settings.useConfidenceForColor = changes.useConfidenceForColor.newValue;
+      }
 
       if (onChange) {
         onChange();
@@ -64,6 +71,7 @@ if (typeof window !== 'undefined') {
     get showIQBadge() { return settings.showIQBadge; },
     get minIQ() { return settings.minIQ; },
     get maxIQ() { return settings.maxIQ; },
+    get useConfidenceForColor() { return settings.useConfidenceForColor; },
     loadSettings,
     setupSettingsListener,
     // Also export the raw settings object for modules that need it

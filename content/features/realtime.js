@@ -22,7 +22,7 @@ const realtimeBadgeManagers = new Map();
 async function updateRealtimeBadge(inputElement, badge, container) {
   const { getInputText } = getTextExtraction();
   const { validateTweetText } = getTweetDetection();
-  const { getIQColor, animateRealtimeBadgeUpdate, updateBadgeWithFlipStructure, hexToRgb, desaturateColor } = getBadgeManager();
+  const { getIQColor, getConfidenceColor, animateRealtimeBadgeUpdate, updateBadgeWithFlipStructure, hexToRgb, desaturateColor } = getBadgeManager();
   const iqEstimator = window.ComprehensiveIQEstimatorUltimate ? new window.ComprehensiveIQEstimatorUltimate() : null;
 
   if (!iqEstimator) {
@@ -192,9 +192,13 @@ async function updateRealtimeBadge(inputElement, badge, container) {
         oldIQ = -1;
       }
 
-      const iqColor = getIQColor(newIQ);
-
       const confidence = result.confidence ? Math.round(result.confidence) : null;
+      // Use confidence color if setting is enabled, otherwise use IQ color
+      const settings = getSettings();
+      const iqColor = (settings.useConfidenceForColor && confidence !== null)
+        ? getConfidenceColor(confidence)
+        : getIQColor(newIQ);
+
       if (confidence !== null) {
         badge.setAttribute('data-confidence', confidence);
       }

@@ -127,6 +127,61 @@ function getIQColor(iq) {
 }
 
 /**
+ * Get color based on confidence percentage (0-100)
+ * Maps confidence to the same color scale as IQ scores
+ */
+function getConfidenceColor(confidence) {
+  // Map confidence percentage (0-100) with clear color transitions
+  // Darkest red starts at 0% and changes every ~10% to show clear differences
+  let baseColor;
+
+  if (confidence < 10) {
+    baseColor = '#d32f2f'; // Darkest red for very low confidence (0-10%)
+  } else if (confidence < 20) {
+    const t = (confidence - 10) / 10;
+    baseColor = interpolateColor('#d32f2f', '#f57c00', t);
+  } else if (confidence < 30) {
+    const t = (confidence - 20) / 10;
+    baseColor = interpolateColor('#f57c00', '#fb8c00', t);
+  } else if (confidence < 40) {
+    const t = (confidence - 30) / 10;
+    baseColor = interpolateColor('#fb8c00', '#fbc02d', t);
+  } else if (confidence < 50) {
+    const t = (confidence - 40) / 10;
+    baseColor = interpolateColor('#fbc02d', '#fdd835', t);
+  } else if (confidence < 60) {
+    const t = (confidence - 50) / 10;
+    baseColor = interpolateColor('#fdd835', '#c5e1a5', t);
+  } else if (confidence < 70) {
+    const t = (confidence - 60) / 10;
+    baseColor = interpolateColor('#c5e1a5', '#81c784', t);
+  } else if (confidence < 80) {
+    const t = (confidence - 70) / 10;
+    baseColor = interpolateColor('#81c784', '#66bb6a', t);
+  } else if (confidence < 90) {
+    const t = (confidence - 80) / 10;
+    baseColor = interpolateColor('#66bb6a', '#4caf50', t);
+  } else {
+    baseColor = '#2e7d32'; // Darkest green for very high confidence (90-100%)
+  }
+
+  // Desaturate the color for a more elegant appearance
+  let rgb;
+  if (baseColor.startsWith('rgb')) {
+    const match = baseColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (match) {
+      rgb = { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) };
+    } else {
+      rgb = { r: 0, g: 0, b: 0 };
+    }
+  } else {
+    rgb = hexToRgb(baseColor);
+  }
+  const desat = desaturateColor(rgb, 0.5);
+  return `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+}
+
+/**
  * Create loading badge while IQ is being calculated
  */
 function createLoadingBadge() {
@@ -1241,6 +1296,7 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
 if (typeof window !== 'undefined') {
   window.BadgeManager = {
     getIQColor,
+    getConfidenceColor,
     hexToRgb,
     interpolateColor,
     desaturateColor,

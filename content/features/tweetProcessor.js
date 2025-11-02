@@ -34,7 +34,7 @@ async function processTweet(tweetElement) {
     debugLogFn('BadgeManager not available yet');
     return;
   }
-  const { createLoadingBadge, createInvalidBadge, getIQColor, createIQBadge, animateCountUp, updateBadgeWithFlipStructure, logDebugInfo, hexToRgb, desaturateColor } = badgeManager;
+  const { createLoadingBadge, createInvalidBadge, getIQColor, getConfidenceColor, createIQBadge, animateCountUp, updateBadgeWithFlipStructure, logDebugInfo, hexToRgb, desaturateColor } = badgeManager;
   const { getCachedIQ, cacheIQ } = getIQCache();
   const debugLogFn = getDebugLog(); // Get debugLog function (avoid shadowing outer debugLog)
   const iqEstimator = window.ComprehensiveIQEstimatorUltimate ? new window.ComprehensiveIQEstimatorUltimate() : null;
@@ -278,37 +278,49 @@ async function processTweet(tweetElement) {
     // Extract handle and other metadata from tweet
     const handle = extractTweetHandle(actualTweetElement);
 
-    // Try to extract tweet URL if available
-    let tweetUrl = null;
+    // Extract limited metadata (privacy-compliant: no tweet text or URLs)
+    let language = null;
+    let hashtags = null;
+
     try {
-      // Look for links to the tweet status
-      const statusLinks = actualTweetElement.querySelectorAll('a[href*="/status/"]');
-      if (statusLinks.length > 0) {
-        const href = statusLinks[0].getAttribute('href') || '';
-        if (href.startsWith('http')) {
-          tweetUrl = href;
-        } else if (href.startsWith('/')) {
-          tweetUrl = window.location.origin + href;
+      // Extract language from tweet element if available
+      const tweetTextElement = actualTweetElement.querySelector('[data-testid="tweetText"]');
+      if (tweetTextElement) {
+        const langAttr = tweetTextElement.getAttribute('lang');
+        if (langAttr) {
+          language = langAttr;
+        }
+      }
+
+      // Extract hashtags from tweet text (limited metadata - just the hashtag words, not full tweet)
+      if (tweetText) {
+        const hashtagMatches = tweetText.match(/#[\w]+/g);
+        if (hashtagMatches && hashtagMatches.length > 0) {
+          hashtags = hashtagMatches.map(tag => tag.substring(1).toLowerCase()); // Remove # and normalize
         }
       }
     } catch (e) {
-      // Ignore errors in URL extraction
+      // Ignore errors in metadata extraction
     }
 
-    let result = getCachedIQ(tweetText);
+    // Get cached result by handle (not by tweet text)
+    let result = handle ? getCachedIQ(handle) : null;
     let fromCache = false;
 
     if (!result) {
+      // Not in cache, calculate new result
       result = await iqEstimator.estimate(tweetText);
 
-      if (result.is_valid && result.iq_estimate !== null) {
-        // Cache with metadata: handle, timestamp, tweetUrl, and any other useful data
+      if (result.is_valid && result.iq_estimate !== null && handle) {
+        // Cache with metadata: handle, timestamp, language, hashtags
+        // Privacy-compliant: NO tweet text or tweet URLs stored
         const metadata = {
-          handle: handle,
           timestamp: new Date().toISOString(),
-          tweetUrl: tweetUrl
+          language: language,
+          hashtags: hashtags,
+          extensionVersion: chrome.runtime.getManifest().version || null
         };
-        cacheIQ(tweetText, result, metadata);
+        cacheIQ(handle, result, metadata);
       }
     } else {
       fromCache = true;
@@ -318,7 +330,11 @@ async function processTweet(tweetElement) {
       const iq = Math.round(result.iq_estimate);
 
       if (loadingBadge && loadingBadge.parentElement) {
-        const iqColor = getIQColor(iq);
+        const confidence = result.confidence ? Math.round(result.confidence) : null;
+        // Use confidence color if setting is enabled, otherwise use IQ color
+        const iqColor = (settings.useConfidenceForColor && confidence !== null)
+          ? getConfidenceColor(confidence)
+          : getIQColor(iq);
 
         loadingBadge.removeAttribute('data-iq-loading');
         loadingBadge.setAttribute('data-iq-score', iq);
@@ -338,7 +354,6 @@ async function processTweet(tweetElement) {
           timestamp: new Date().toISOString()
         };
 
-        const confidence = result.confidence ? Math.round(result.confidence) : null;
         if (confidence !== null) {
           loadingBadge.setAttribute('data-confidence', confidence);
           updateBadgeWithFlipStructure(loadingBadge, iq, confidence);
@@ -362,7 +377,10 @@ async function processTweet(tweetElement) {
           badge.setAttribute('data-confidence', confidence);
         }
 
-        const iqColor = getIQColor(iq);
+        // Use confidence color if setting is enabled, otherwise use IQ color
+        const iqColor = (settings.useConfidenceForColor && confidence !== null)
+          ? getConfidenceColor(confidence)
+          : getIQColor(iq);
         badge._animationData = {
           finalIQ: iq,
           iqColor: iqColor

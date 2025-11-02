@@ -22,6 +22,13 @@
         </label>
         <p class="setting-desc">Display IQ scores next to tweets as you browse</p>
       </div>
+      <div class="setting-item">
+        <label class="switch-label">
+          <input type="checkbox" id="useConfidenceForColor">
+          <span class="switch-text">Use Confidence for Badge Color</span>
+        </label>
+        <p class="setting-desc">Badge color reflects confidence % instead of IQ score</p>
+      </div>
       <div class="setting-note">
         <span class="note-icon">💡</span>
         <span class="note-text">Hover over any badge and check the browser console (F12) for detailed analysis breakdown</span>
@@ -34,15 +41,21 @@
       <div class="info-content">
         <p>This extension uses a research-based estimator trained on graded samples. It analyzes tweets across 4 key dimensions:</p>
         <ul>
-          <li><strong>Vocabulary Sophistication (35%):</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies</li>
-          <li><strong>Lexical Diversity (25%):</strong> Measures word variety using Type-Token Ratio (TTR)</li>
-          <li><strong>Sentence Complexity (20%):</strong> Analyzes average words per sentence and sentence structure</li>
-          <li><strong>Grammatical Precision (20%):</strong> Evaluates syntax complexity via punctuation patterns and clause usage</li>
+          <li><strong>Vocabulary Sophistication:</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies</li>
+          <li><strong>Lexical Diversity:</strong> Measures word variety using Type-Token Ratio (TTR)</li>
+          <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure</li>
+          <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage</li>
         </ul>
         <div class="privacy-notice">
           <span class="privacy-icon">🔒</span>
           <div class="privacy-text">
             <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
+          </div>
+        </div>
+        <div class="privacy-notice data-notice">
+          <span class="privacy-icon">📋</span>
+          <div class="privacy-text">
+            <strong>Data Collection Notice:</strong> This extension processes publicly available Twitter handles and numerical scores. No tweet text or private information is collected or stored. We only store: IQ scores (numeric), Twitter handles (public usernames), and limited metadata (timestamps, language, hashtags).
           </div>
         </div>
       </div>

@@ -18,20 +18,22 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialize defaults if not set
-  chrome.storage.sync.get(['showIQBadge'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'useConfidenceForColor'], (result) => {
     // Set defaults if this is first run
     if (result.showIQBadge === undefined) {
       chrome.storage.sync.set({
-        showIQBadge: true
+        showIQBadge: true,
+        useConfidenceForColor: false
       }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error loading settings', 'error');
         }
       });
-      result = { showIQBadge: true };
+      result = { showIQBadge: true, useConfidenceForColor: false };
     }
     // Set checkbox states
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
+    document.getElementById('useConfidenceForColor').checked = result.useConfidenceForColor === true; // Default to false
   });
 
   // Handle checkbox changes
@@ -45,11 +47,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  document.getElementById('useConfidenceForColor').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ useConfidenceForColor: e.target.checked }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving setting', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+      }
+    });
+  });
+
   // Handle reset button
   document.getElementById('resetSettings').addEventListener('click', () => {
     if (confirm('Reset all settings to defaults?')) {
       const defaults = {
-        showIQBadge: true
+        showIQBadge: true,
+        useConfidenceForColor: false
       };
 
       chrome.storage.sync.set(defaults, () => {
@@ -58,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           // Update UI
           document.getElementById('showIQBadge').checked = defaults.showIQBadge;
+          document.getElementById('useConfidenceForColor').checked = defaults.useConfidenceForColor;
           showStatus('Settings reset to defaults', 'success');
         }
       });
