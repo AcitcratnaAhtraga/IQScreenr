@@ -18,21 +18,23 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialize defaults if not set
-  chrome.storage.sync.get(['showIQBadge', 'useConfidenceForColor'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor'], (result) => {
     // Set defaults if this is first run
     if (result.showIQBadge === undefined) {
       chrome.storage.sync.set({
         showIQBadge: true,
+        showRealtimeBadge: true,
         useConfidenceForColor: false
       }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error loading settings', 'error');
         }
       });
-      result = { showIQBadge: true, useConfidenceForColor: false };
+      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: false };
     }
     // Set checkbox states
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
+    document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false; // Default to true
     document.getElementById('useConfidenceForColor').checked = result.useConfidenceForColor === true; // Default to false
   });
 
@@ -57,11 +59,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  document.getElementById('showRealtimeBadge').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ showRealtimeBadge: e.target.checked }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving setting', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+      }
+    });
+  });
+
   // Handle reset button
   document.getElementById('resetSettings').addEventListener('click', () => {
     if (confirm('Reset all settings to defaults?')) {
       const defaults = {
         showIQBadge: true,
+        showRealtimeBadge: true,
         useConfidenceForColor: false
       };
 
@@ -71,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           // Update UI
           document.getElementById('showIQBadge').checked = defaults.showIQBadge;
+          document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
           document.getElementById('useConfidenceForColor').checked = defaults.useConfidenceForColor;
           showStatus('Settings reset to defaults', 'success');
         }

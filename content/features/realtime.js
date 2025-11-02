@@ -255,6 +255,10 @@ function setupRealtimeMonitoring(inputElement) {
   const { findTextInputs } = getTweetDetection();
   const settings = getSettings();
 
+  if (!settings.showIQBadge || !settings.showRealtimeBadge) {
+    return;
+  }
+
   if (inputElement.hasAttribute('data-iq-realtime-monitored')) {
     const existingBadges = document.querySelectorAll('.iq-badge-realtime');
     for (const badge of existingBadges) {
@@ -515,7 +519,7 @@ function setupRealtimeComposeObserver() {
   const settings = getSettings();
 
   const observer = new MutationObserver(() => {
-    if (!settings.showIQBadge) return;
+    if (!settings.showIQBadge || !settings.showRealtimeBadge) return;
 
     const inputs = findTextInputs();
     const prioritized = inputs.filter(input => {
@@ -564,7 +568,7 @@ function setupRealtimeComposeObserver() {
   }, 1000);
 
   document.addEventListener('focusin', (e) => {
-    if (!settings.showIQBadge) return;
+    if (!settings.showIQBadge || !settings.showRealtimeBadge) return;
     const target = e.target;
     const isTextarea = target.tagName === 'TEXTAREA' && (
       target.getAttribute('data-testid')?.includes('tweetTextarea') ||
