@@ -254,10 +254,20 @@ class ComprehensiveIQEstimatorUltimate {
     const minLen = Math.max(2, Math.floor(wordLen * 0.7));
     const maxLen = Math.ceil(wordLen * 1.3);
 
+    // Performance optimization: limit candidate checking to avoid hanging on large dictionaries
+    let candidatesChecked = 0;
+    const maxCandidatesToCheck = 500; // Limit to prevent hanging on notifications page
+
     // Search through dictionary for best match (optimized with length filter)
     for (const dictWord of this.aoaDictionaryKeys) {
       // Skip words that are too different in length
       if (dictWord.length < minLen || dictWord.length > maxLen) continue;
+
+      candidatesChecked++;
+      if (candidatesChecked > maxCandidatesToCheck) {
+        // Stop searching after checking enough candidates to prevent performance issues
+        break;
+      }
 
       const similarity = this._letterSimilarity(cleaned, dictWord);
       if (similarity >= 0.8 && similarity > bestSimilarity) {
