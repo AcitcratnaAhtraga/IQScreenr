@@ -17,6 +17,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Helper function to update dependent checkboxes enabled/disabled state
+  function updateDependentCheckboxes() {
+    const showIQBadge = document.getElementById('showIQBadge');
+    const useConfidenceForColor = document.getElementById('useConfidenceForColor');
+    const showRealtimeBadge = document.getElementById('showRealtimeBadge');
+
+    const isEnabled = showIQBadge.checked;
+    useConfidenceForColor.disabled = !isEnabled;
+    showRealtimeBadge.disabled = !isEnabled;
+
+    // If main toggle is off, uncheck dependent options and save
+    if (!isEnabled) {
+      if (useConfidenceForColor.checked) {
+        useConfidenceForColor.checked = false;
+        chrome.storage.sync.set({ useConfidenceForColor: false });
+      }
+      if (showRealtimeBadge.checked) {
+        showRealtimeBadge.checked = false;
+        chrome.storage.sync.set({ showRealtimeBadge: false });
+      }
+    }
+  }
+
   // Initialize defaults if not set
   chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor'], (result) => {
     // Set defaults if this is first run
@@ -36,6 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
     document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false; // Default to true
     document.getElementById('useConfidenceForColor').checked = result.useConfidenceForColor === true; // Default to false
+
+    // Update dependent checkboxes state
+    updateDependentCheckboxes();
   });
 
   // Handle checkbox changes
@@ -47,6 +73,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showStatus('Settings saved', 'success');
       }
     });
+    // Update dependent checkboxes state when main toggle changes
+    updateDependentCheckboxes();
   });
 
   document.getElementById('useConfidenceForColor').addEventListener('change', (e) => {
@@ -86,6 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('showIQBadge').checked = defaults.showIQBadge;
           document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
           document.getElementById('useConfidenceForColor').checked = defaults.useConfidenceForColor;
+          // Update dependent checkboxes state
+          updateDependentCheckboxes();
           showStatus('Settings reset to defaults', 'success');
         }
       });
