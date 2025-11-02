@@ -108,7 +108,21 @@ class ComprehensiveIQEstimatorUltimate {
             console.warn('[IQEstimator] Failed to load AoA dictionary:', response.status, aoaUrl);
           }
         } catch (e) {
-          console.warn('[IQEstimator] Error loading AoA dictionary:', e.message, 'Path:', this.aoaDictionaryPath);
+          // Check if error is due to extension context invalidated (common during hot reload)
+          const isContextInvalidated = e.message && (
+            e.message.includes('Extension context invalidated') ||
+            e.message.includes('message handler closed') ||
+            e.message.includes('Receiving end does not exist')
+          );
+
+          if (isContextInvalidated) {
+            // This is expected during extension reload - silently continue without dictionary
+            // The estimator will work fine without it, using approximations
+            console.debug('[IQEstimator] Extension context invalidated - AoA dictionary not available (this is normal during extension reload)');
+          } else {
+            // Other errors - log with full details
+            console.warn('[IQEstimator] Error loading AoA dictionary:', e.message, 'Path:', this.aoaDictionaryPath);
+          }
           // Silent fail, will use approximation
         }
 
@@ -129,7 +143,20 @@ class ComprehensiveIQEstimatorUltimate {
             console.warn('[IQEstimator] Failed to load calibration:', response.status, calUrl);
           }
         } catch (e) {
-          console.warn('[IQEstimator] Error loading calibration:', e.message, 'Path:', this.calibrationPath);
+          // Check if error is due to extension context invalidated
+          const isContextInvalidated = e.message && (
+            e.message.includes('Extension context invalidated') ||
+            e.message.includes('message handler closed') ||
+            e.message.includes('Receiving end does not exist')
+          );
+
+          if (isContextInvalidated) {
+            // Expected during extension reload - silently continue
+            console.debug('[IQEstimator] Extension context invalidated - Calibration not available (this is normal during extension reload)');
+          } else {
+            // Other errors - log with full details
+            console.warn('[IQEstimator] Error loading calibration:', e.message, 'Path:', this.calibrationPath);
+          }
           // Silent fail, use defaults
         }
       }
