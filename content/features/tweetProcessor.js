@@ -990,6 +990,14 @@ async function processTweet(tweetElement) {
       // Not in cache, calculate new result
       const startTime = performance.now();
 
+      // CRITICAL: Final URL removal pass before estimation to ensure text is clean
+      if (tweetText && removeUrlsFromText) {
+        const cleanedBeforeEstimate = removeUrlsFromText(tweetText);
+        if (cleanedBeforeEstimate !== tweetText) {
+          tweetText = cleanedBeforeEstimate;
+        }
+      }
+
       try {
         result = await iqEstimator.estimate(tweetText);
 
@@ -1039,6 +1047,14 @@ async function processTweet(tweetElement) {
         // Cached result is for different text - recalculate
         fromCache = false;
         const startTime = performance.now();
+
+        // CRITICAL: Final URL removal pass before estimation to ensure text is clean
+        if (tweetText && removeUrlsFromText) {
+          const cleanedBeforeEstimate = removeUrlsFromText(tweetText);
+          if (cleanedBeforeEstimate !== tweetText) {
+            tweetText = cleanedBeforeEstimate;
+          }
+        }
 
         try {
           result = await iqEstimator.estimate(tweetText);

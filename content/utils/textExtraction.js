@@ -56,10 +56,35 @@ function removeUrlsFromText(text) {
   // Catch standalone "pic.x.com/xyz" patterns (without protocol)
   cleaned = cleaned.replace(/\b(pic\.(x\.com|twitter\.com)|pbs\.twimg\.com)\/\S*/gi, '');
 
-  // Step 4: Remove any remaining "http://" or "https://" fragments followed by whitespace
+  // Step 4: Remove standalone domain patterns (without protocol) - like "domain.com/path"
+  // This catches URLs that don't have http:// or https:// prefix
+  cleaned = cleaned.replace(/\b[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\/[^\s]*)?/gi, '');
+
+  // Step 5: Remove academic paper ID patterns (like "as.2414926122", "ev.12272", etc.)
+  // These are often citation formats that look like: "as.1234567890" or similar
+  // Pattern: 1-4 lowercase letters, dot, 5-12 digits (covers most academic IDs)
+  cleaned = cleaned.replace(/\b[a-z]{1,4}\.[0-9]{5,12}\b/gi, '');
+
+  // Step 6: Remove URL path fragments that look like paths
+  // Matches patterns like: "path/to/something", "article-id", etc.
+  // Only match if it contains a slash (indicating it's likely a URL path)
+  cleaned = cleaned.replace(/\b[a-zA-Z0-9-]+\/[a-zA-Z0-9\/\-_]{3,}\b/g, '');
+
+  // Step 7: Remove common URL path indicators that might be fragments
+  // Patterns like numbers followed by paths like "1/cdev.12669"
+  cleaned = cleaned.replace(/\b\d+\/[a-zA-Z0-9\/\-_.]+\b/g, '');
+
+  // Step 7b: Remove standalone path segments starting with slash
+  // But be careful not to remove normal punctuation - only if it looks like a URL path
+  cleaned = cleaned.replace(/\s\/[a-zA-Z0-9\/\-_]{5,}\b/g, ' ');
+
+  // Step 8: Remove any remaining "http://" or "https://" fragments followed by whitespace
   cleaned = cleaned.replace(/\bhttps?:\/\/\s*/gi, '');
 
-  // Step 5: Clean up any remaining artifacts like double spaces or trailing/leading spaces
+  // Step 9: Remove t.co short links (Twitter URL shortener)
+  cleaned = cleaned.replace(/\bt\.co\/[a-zA-Z0-9]+\b/gi, '');
+
+  // Step 10: Clean up any remaining artifacts like double spaces or trailing/leading spaces
   cleaned = cleaned.replace(/\s+/g, ' ').trim();
 
   return cleaned;

@@ -1486,6 +1486,16 @@ class ComprehensiveIQEstimatorUltimate {
       .replace(/\b(x\.com|twitter\.com)[^\s]*/g, '')
       .replace(/\bt\.co\/[a-zA-Z0-9]+/g, '')
       .replace(/\b[a-zA-Z0-9-]+\.(com|org|net|io|co|edu|gov)[^\s]*/g, '')
+      // Remove standalone domain patterns (without protocol)
+      .replace(/\b[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(?:\/[^\s]*)?/gi, '')
+      // Remove academic paper ID patterns (like "as.2414926122", "ev.12272")
+      .replace(/\b[a-z]{1,4}\.[0-9]{5,12}\b/gi, '')
+      // Remove URL path fragments with slashes
+      .replace(/\b[a-zA-Z0-9-]+\/[a-zA-Z0-9\/\-_]{3,}\b/g, '')
+      // Remove numbers followed by paths
+      .replace(/\b\d+\/[a-zA-Z0-9\/\-_.]+\b/g, '')
+      // Remove standalone path segments
+      .replace(/\s\/[a-zA-Z0-9\/\-_]{5,}\b/g, ' ')
       .replace(/@\w+/g, '')
       .replace(/#\w+/g, '')
       .replace(/[^\w\s.,!?;:()'-]/g, ' ')
