@@ -276,16 +276,26 @@ async function processTweet(tweetElement) {
   let actualTweetElement = tweetElement;
   const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
                       tweetElement.querySelector('article[role="article"]');
-  if (nestedTweet && nestedTweet !== tweetElement) {
+  const hasNestedStructure = nestedTweet && nestedTweet !== tweetElement;
+  if (hasNestedStructure) {
     actualTweetElement = nestedTweet;
-    tweetElement.setAttribute('data-iq-analyzed', 'true');
+    // Don't mark outer as analyzed yet - we need to process the nested tweet
+    // Only mark outer as analyzed if nested is already analyzed
+    if (nestedTweet.hasAttribute('data-iq-analyzed')) {
+      tweetElement.setAttribute('data-iq-analyzed', 'true');
+    }
   }
 
   if (actualTweetElement.hasAttribute('data-iq-analyzed')) {
     return;
   }
 
-  const existingBadge = actualTweetElement.querySelector('.iq-badge');
+  // For nested structures, check for badge in both outer wrapper and nested tweet
+  // This fixes the issue where badges are placed in outer wrapper but we only search nested tweet
+  let existingBadge = actualTweetElement.querySelector('.iq-badge');
+  if (!existingBadge && hasNestedStructure) {
+    existingBadge = tweetElement.querySelector('.iq-badge');
+  }
 
   // Check if badge is a valid completed badge (score, invalid, or guess badge)
   const isGuessBadge = existingBadge && (
@@ -355,7 +365,11 @@ async function processTweet(tweetElement) {
     // Silent skip for elements that don't look like tweets
     if (settings.showIQBadge) {
       // Get or transition existing badge instead of creating new one
+      // Check both nested and outer wrapper for nested structures
       let invalidBadge = actualTweetElement.querySelector('.iq-badge');
+      if (!invalidBadge && hasNestedStructure) {
+        invalidBadge = tweetElement.querySelector('.iq-badge');
+      }
 
       if (invalidBadge) {
         // Transition existing badge to invalid state
@@ -432,7 +446,11 @@ async function processTweet(tweetElement) {
   if (!validation.isValid) {
     // Special handling for age-restricted content - remove badge instead of showing invalid
     if (validation.reason === 'Age-restricted content') {
-      const existingBadge = actualTweetElement.querySelector('.iq-badge');
+      // Check both nested and outer wrapper for nested structures
+      let existingBadge = actualTweetElement.querySelector('.iq-badge');
+      if (!existingBadge && hasNestedStructure) {
+        existingBadge = tweetElement.querySelector('.iq-badge');
+      }
       if (existingBadge) {
         existingBadge.remove();
       }
@@ -443,7 +461,11 @@ async function processTweet(tweetElement) {
 
     if (settings.showIQBadge) {
       // Get or transition existing badge instead of creating new one
+      // Check both nested and outer wrapper for nested structures
       let invalidBadge = actualTweetElement.querySelector('.iq-badge');
+      if (!invalidBadge && hasNestedStructure) {
+        invalidBadge = tweetElement.querySelector('.iq-badge');
+      }
 
       if (invalidBadge) {
         // Transition existing badge to invalid state
@@ -467,9 +489,12 @@ async function processTweet(tweetElement) {
         invalidBadge.style.setProperty('color', '#000000', 'important');
         invalidBadge.style.setProperty('cursor', 'help', 'important');
 
-        // Ensure badge is in DOM
+        // Ensure badge is in DOM (use appropriate element based on where badge is)
         if (!invalidBadge.parentElement) {
-          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          const targetElement = hasNestedStructure && !actualTweetElement.contains(invalidBadge)
+            ? tweetElement
+            : actualTweetElement;
+          const engagementBar = targetElement.querySelector('[role="group"]');
           if (engagementBar) {
             const firstChild = engagementBar.firstElementChild;
             if (firstChild) {
@@ -478,20 +503,22 @@ async function processTweet(tweetElement) {
               engagementBar.appendChild(invalidBadge);
             }
           } else {
-            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
-                                actualTweetElement.querySelector('div[lang]') ||
-                                actualTweetElement.firstElementChild;
+            const tweetContent = targetElement.querySelector('div[data-testid="tweetText"]') ||
+                                targetElement.querySelector('div[lang]') ||
+                                targetElement.firstElementChild;
             if (tweetContent && tweetContent.parentElement) {
               tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
             } else {
-              actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+              targetElement.insertBefore(invalidBadge, targetElement.firstChild);
             }
           }
         }
       } else {
         // No existing badge, create new invalid badge
         invalidBadge = createInvalidBadge();
-        const engagementBar = actualTweetElement.querySelector('[role="group"]');
+        // For nested structures on notifications page, use outer wrapper for placement
+        const targetElement = (hasNestedStructure && isNotificationsPage) ? tweetElement : actualTweetElement;
+        const engagementBar = targetElement.querySelector('[role="group"]');
         if (engagementBar) {
           const firstChild = engagementBar.firstElementChild;
           if (firstChild) {
@@ -500,13 +527,13 @@ async function processTweet(tweetElement) {
             engagementBar.appendChild(invalidBadge);
           }
         } else {
-          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
-                              actualTweetElement.querySelector('div[lang]') ||
-                              actualTweetElement.firstElementChild;
+          const tweetContent = targetElement.querySelector('div[data-testid="tweetText"]') ||
+                              targetElement.querySelector('div[lang]') ||
+                              targetElement.firstElementChild;
           if (tweetContent && tweetContent.parentElement) {
             tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
           } else {
-            actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+            targetElement.insertBefore(invalidBadge, targetElement.firstChild);
           }
         }
       }
@@ -518,8 +545,13 @@ async function processTweet(tweetElement) {
 
   let loadingBadge = null;
   if (settings.showIQBadge) {
+    // Check both nested and outer wrapper for nested structures
     loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                    actualTweetElement.querySelector('.iq-badge-loading');
+    if (!loadingBadge && hasNestedStructure) {
+      loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                     tweetElement.querySelector('.iq-badge-loading');
+    }
 
     if (!loadingBadge) {
       loadingBadge = createLoadingBadge();
@@ -527,7 +559,9 @@ async function processTweet(tweetElement) {
       // Special handling for notification page tweets
       if (isNotificationsPage) {
         // Use helper function to find correct placement
-        const placement = findNotificationBadgePlacement(actualTweetElement);
+        // For nested structures, use outer wrapper for placement on notifications page
+        const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+        const placement = findNotificationBadgePlacement(placementTarget);
 
         if (placement) {
           const { targetElement, parentElement } = placement;
@@ -583,17 +617,20 @@ async function processTweet(tweetElement) {
             loadingBadge.style.setProperty('width', '100%', 'important');
           }
         } else {
-          // Last resort: place at start of tweet element
-          actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+          // Last resort: place at start of tweet element (use outer wrapper for nested structures)
+          const fallbackTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+          fallbackTarget.insertBefore(loadingBadge, fallbackTarget.firstChild);
         }
 
         // Verify and fix position if needed - check immediately and after delay
+        // Use outer wrapper for nested structures
+        const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
         requestAnimationFrame(() => {
-          ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+          ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
         });
 
         setTimeout(() => {
-          ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+          ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
         }, 50);
       } else {
         // Normal tweet pages: use engagement bar if available
@@ -619,11 +656,13 @@ async function processTweet(tweetElement) {
 
       // Verify and fix position after initial placement
       if (isNotificationsPage) {
+        // Use outer wrapper for nested structures
+        const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
         // Immediately verify and fix position
-        ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+        ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
         // Check again after DOM updates
         setTimeout(() => {
-          ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+          ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
         }, 10);
       }
     }
@@ -644,7 +683,9 @@ async function processTweet(tweetElement) {
 
     // Ensure badge is in correct position before IQ estimation
     if (isNotificationsPage && loadingBadge) {
-      ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+      // Use outer wrapper for nested structures
+      const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+      ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
     }
   }
 
@@ -652,7 +693,9 @@ async function processTweet(tweetElement) {
     if (!loadingBadge.parentElement) {
       // Re-insert existing badge instead of creating new one
       if (isNotificationsPage) {
-        const placement = findNotificationBadgePlacement(actualTweetElement);
+        // For nested structures, use outer wrapper for placement
+        const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+        const placement = findNotificationBadgePlacement(placementTarget);
         if (placement) {
           const { targetElement, parentElement } = placement;
           if (placement.placement === 'before-tweet-content') {
@@ -664,12 +707,13 @@ async function processTweet(tweetElement) {
               parentElement.appendChild(loadingBadge);
             }
           }
-        } else {
-          actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
-        }
-      } else {
-        // Normal tweet pages: use engagement bar
-        const engagementBar = actualTweetElement.querySelector('[role="group"]');
+            } else {
+              targetElementForPlacement.insertBefore(loadingBadge, targetElementForPlacement.firstChild);
+            }
+          } else {
+            // Normal tweet pages: use engagement bar
+            const targetElement = hasNestedStructure ? tweetElement : actualTweetElement;
+            const engagementBar = targetElement.querySelector('[role="group"]');
         if (engagementBar) {
           const firstChild = engagementBar.firstElementChild;
           if (firstChild) {
@@ -730,7 +774,9 @@ async function processTweet(tweetElement) {
       if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
         // Re-insert existing badge instead of creating new one
         if (isNotificationsPage) {
-          const placement = findNotificationBadgePlacement(actualTweetElement);
+          // For nested structures, use outer wrapper for placement
+          const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+          const placement = findNotificationBadgePlacement(placementTarget);
           if (placement) {
             const { targetElement, parentElement } = placement;
             if (placement.placement === 'before-tweet-content') {
@@ -767,15 +813,22 @@ async function processTweet(tweetElement) {
         }
       } else if (settings.showIQBadge && !loadingBadge) {
         // No loading badge exists, try to find one
+        // Check both nested and outer wrapper for nested structures
         loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                        actualTweetElement.querySelector('.iq-badge-loading');
+        if (!loadingBadge && hasNestedStructure) {
+          loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                         tweetElement.querySelector('.iq-badge-loading');
+        }
         if (!loadingBadge) {
           // Only create new badge if none exists
           loadingBadge = createLoadingBadge();
 
           // Use correct placement logic for notification pages
           if (isNotificationsPage) {
-            const placement = findNotificationBadgePlacement(actualTweetElement);
+            // For nested structures, use outer wrapper for placement
+            const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+            const placement = findNotificationBadgePlacement(placementTarget);
             if (placement) {
               const { targetElement, parentElement } = placement;
               if (placement.placement === 'before-tweet-content') {
@@ -820,7 +873,9 @@ async function processTweet(tweetElement) {
       if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
         // Re-insert existing badge instead of creating new one
         if (isNotificationsPage) {
-          const placement = findNotificationBadgePlacement(actualTweetElement);
+          // For nested structures, use outer wrapper for placement
+          const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+          const placement = findNotificationBadgePlacement(placementTarget);
           if (placement) {
             const { targetElement, parentElement } = placement;
             if (placement.placement === 'before-tweet-content') {
@@ -857,15 +912,22 @@ async function processTweet(tweetElement) {
         }
       } else if (settings.showIQBadge && !loadingBadge) {
         // No loading badge exists, try to find one
+        // Check both nested and outer wrapper for nested structures
         loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                        actualTweetElement.querySelector('.iq-badge-loading');
+        if (!loadingBadge && hasNestedStructure) {
+          loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                         tweetElement.querySelector('.iq-badge-loading');
+        }
         if (!loadingBadge) {
           // Only create new badge if none exists
           loadingBadge = createLoadingBadge();
 
           // Use correct placement logic for notification pages
           if (isNotificationsPage) {
-            const placement = findNotificationBadgePlacement(actualTweetElement);
+            // For nested structures, use outer wrapper for placement
+            const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+            const placement = findNotificationBadgePlacement(placementTarget);
             if (placement) {
               const { targetElement, parentElement } = placement;
               if (placement.placement === 'before-tweet-content') {
@@ -920,11 +982,18 @@ async function processTweet(tweetElement) {
   try {
     if (settings.showIQBadge) {
       if (!loadingBadge) {
+        // Check both nested and outer wrapper for nested structures
         loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                        actualTweetElement.querySelector('.iq-badge-loading');
+        if (!loadingBadge && hasNestedStructure) {
+          loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
+                         tweetElement.querySelector('.iq-badge-loading');
+        }
         if (!loadingBadge) {
           loadingBadge = createLoadingBadge();
-          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          // For nested structures on notifications page, use outer wrapper for placement
+          const targetElement = (hasNestedStructure && isNotificationsPage) ? tweetElement : actualTweetElement;
+          const engagementBar = targetElement.querySelector('[role="group"]');
           if (engagementBar) {
             const firstChild = engagementBar.firstElementChild;
             if (firstChild) {
@@ -933,20 +1002,22 @@ async function processTweet(tweetElement) {
               engagementBar.appendChild(loadingBadge);
             }
           } else {
-            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
-                                actualTweetElement.querySelector('div[lang]') ||
-                                actualTweetElement.firstElementChild;
+            const tweetContent = targetElement.querySelector('div[data-testid="tweetText"]') ||
+                                targetElement.querySelector('div[lang]') ||
+                                targetElement.firstElementChild;
             if (tweetContent && tweetContent.parentElement) {
               tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
             } else {
-              actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+              targetElement.insertBefore(loadingBadge, targetElement.firstChild);
             }
           }
         }
       } else if (!loadingBadge.parentElement) {
         // Badge exists but not in DOM - re-insert it
+        // For nested structures, use appropriate element based on where badge should be
+        const targetElementForPlacement = (hasNestedStructure && isNotificationsPage) ? tweetElement : actualTweetElement;
         if (isNotificationsPage) {
-          const placement = findNotificationBadgePlacement(actualTweetElement);
+          const placement = findNotificationBadgePlacement(targetElementForPlacement);
           if (placement) {
             const { targetElement, parentElement } = placement;
             if (placement.placement === 'before-tweet-content') {
@@ -1110,7 +1181,9 @@ async function processTweet(tweetElement) {
 
       // Ensure badge is in correct position before update
       if (isNotificationsPage && loadingBadge) {
-        ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+        // Use outer wrapper for nested structures
+        const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+        ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
       }
 
       if (loadingBadge && loadingBadge.parentElement) {
@@ -1131,6 +1204,11 @@ async function processTweet(tweetElement) {
           processedTweets.add(actualTweetElement);
           actualTweetElement.setAttribute('data-iq-analyzed', 'true');
           actualTweetElement.removeAttribute('data-iq-processing');
+          // Also mark outer wrapper as analyzed for nested structures
+          if (hasNestedStructure) {
+            tweetElement.setAttribute('data-iq-analyzed', 'true');
+            processedTweets.add(tweetElement);
+          }
         } else {
           // Use confidence color if setting is enabled, otherwise use IQ color
           const iqColor = (settings.useConfidenceForColor && confidence !== null)
@@ -1170,7 +1248,9 @@ async function processTweet(tweetElement) {
             // For notification pages, store the correct position before animation
             let correctPosition = null;
             if (isNotificationsPage) {
-              const placement = findNotificationBadgePlacement(actualTweetElement);
+              // For nested structures, use outer wrapper for placement
+              const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+              const placement = findNotificationBadgePlacement(placementTarget);
               if (placement) {
                 correctPosition = {
                   targetElement: placement.targetElement,
@@ -1189,14 +1269,16 @@ async function processTweet(tweetElement) {
 
             // Immediately after starting animation, ensure position is correct for notification pages
             if (isNotificationsPage && correctPosition) {
+              // Use outer wrapper for nested structures
+              const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
               // Fix position immediately after animation frame
               requestAnimationFrame(() => {
-                ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+                ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
               });
 
               // Also fix after a short delay to catch any layout shifts
               setTimeout(() => {
-                ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+                ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
               }, 50);
             }
 
@@ -1236,26 +1318,33 @@ async function processTweet(tweetElement) {
           processedTweets.add(actualTweetElement);
           actualTweetElement.setAttribute('data-iq-analyzed', 'true');
           actualTweetElement.removeAttribute('data-iq-processing');
+          // Also mark outer wrapper as analyzed for nested structures
+          if (hasNestedStructure) {
+            tweetElement.setAttribute('data-iq-analyzed', 'true');
+            processedTweets.add(tweetElement);
+          }
 
           // Log badge position after update
           if (isNotificationsPage && loadingBadge) {
+            // Use outer wrapper for nested structures
+            const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
             // Immediately fix position
-            ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+            ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
 
             // Use multiple checks to ensure position stays correct during animation
             // Check immediately after next frame
             requestAnimationFrame(() => {
-              ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+              ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
             });
 
             // Check after short delay
             setTimeout(() => {
-              ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+              ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
             }, 50);
 
             // Final check after DOM settles
             setTimeout(() => {
-              ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+              ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
             }, 200);
           }
         }
@@ -1265,7 +1354,9 @@ async function processTweet(tweetElement) {
         if (!loadingBadge.parentElement) {
           // Re-insert badge into DOM before transitioning
           if (isNotificationsPage) {
-            const placement = findNotificationBadgePlacement(actualTweetElement);
+            // For nested structures, use outer wrapper for placement
+            const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+            const placement = findNotificationBadgePlacement(placementTarget);
             if (placement) {
               const { targetElement, parentElement } = placement;
               if (placement.placement === 'before-tweet-content') {
@@ -1278,10 +1369,11 @@ async function processTweet(tweetElement) {
                 }
               }
             } else {
-              actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+              placementTarget.insertBefore(loadingBadge, placementTarget.firstChild);
             }
           } else {
-            const engagementBar = actualTweetElement.querySelector('[role="group"]');
+            const targetElement = hasNestedStructure ? tweetElement : actualTweetElement;
+            const engagementBar = targetElement.querySelector('[role="group"]');
             if (engagementBar) {
               const firstChild = engagementBar.firstElementChild;
               if (firstChild) {
@@ -1290,13 +1382,13 @@ async function processTweet(tweetElement) {
                 engagementBar.appendChild(loadingBadge);
               }
             } else {
-              const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
-                                  actualTweetElement.querySelector('div[lang]') ||
-                                  actualTweetElement.firstElementChild;
+              const tweetContent = targetElement.querySelector('div[data-testid="tweetText"]') ||
+                                  targetElement.querySelector('div[lang]') ||
+                                  targetElement.firstElementChild;
               if (tweetContent && tweetContent.parentElement) {
                 tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
               } else {
-                actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+                targetElement.insertBefore(loadingBadge, targetElement.firstChild);
               }
             }
           }
@@ -1355,11 +1447,13 @@ async function processTweet(tweetElement) {
 
         // Ensure position is correct for notification pages
         if (isNotificationsPage) {
+          // Use outer wrapper for nested structures
+          const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
           requestAnimationFrame(() => {
-            ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+            ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
           });
           setTimeout(() => {
-            ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+            ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
           }, 50);
         }
 
@@ -1392,8 +1486,10 @@ async function processTweet(tweetElement) {
 
         // Final position check for notification pages
         if (isNotificationsPage) {
+          // Use outer wrapper for nested structures
+          const positionCheckTarget = hasNestedStructure ? tweetElement : actualTweetElement;
           setTimeout(() => {
-            ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+            ensureCorrectBadgePosition(loadingBadge, positionCheckTarget, isNotificationsPage);
           }, 100);
         }
       }
