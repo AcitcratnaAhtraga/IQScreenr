@@ -14,9 +14,20 @@ const getTextExtraction = () => window.TextExtraction || {};
 const getDebugLog = () => window.DOMHelpers?.debugLog || (() => {});
 const debugLog = getDebugLog();
 
+// Debug helper: only log for tweets with IQ around 111 or specific tweet ID
+const TARGET_TWEET_ID = '1985253928586416130';
+const TARGET_IQ_MIN = 108;
+const TARGET_IQ_MAX = 115;
+function shouldDebugLog(tweetId, iq) {
+  if (tweetId === TARGET_TWEET_ID) return true;
+  if (iq !== null && iq !== undefined && iq >= TARGET_IQ_MIN && iq <= TARGET_IQ_MAX) return true;
+  return false;
+}
+
 // Game state
 const guessManager = new Map(); // tweetElement -> { guess: number, confidence: number }
 const GUESS_CACHE_PREFIX = 'iq_guess_';
+const REVEALED_CACHE_PREFIX = 'iq_revealed_';
 const GUESS_HISTORY_KEY = 'iqGuessrHistory';
 
 /**
@@ -34,25 +45,123 @@ const persistentGuessCache = new Map();
  * Get cached guess for a tweet ID (async)
  */
 async function getCachedGuess(tweetId) {
-  if (!tweetId) return null;
+  if (!tweetId) {
+    console.log('[IQGuessr Debug] getCachedGuess called without tweetId');
+    return null;
+  }
 
   const key = generateGuessCacheKey(tweetId);
-  if (!key) return null;
+  if (!key) {
+    console.log('[IQGuessr Debug] getCachedGuess: Failed to generate cache key for tweetId:', tweetId);
+    return null;
+  }
 
   // Check memory cache first
   if (persistentGuessCache.has(key)) {
-    return persistentGuessCache.get(key);
+    const cached = persistentGuessCache.get(key);
+    if (shouldDebugLog(tweetId, null)) {
+      console.log(`[IQ111 Debug] getCachedGuess: Found in memory cache for tweet ${tweetId} (key: ${key}):`, cached);
+    }
+    return cached;
   }
 
   // Try to get from chrome storage
   const storageKey = GUESS_CACHE_PREFIX + key;
   return new Promise((resolve) => {
     chrome.storage.local.get([storageKey], (result) => {
+      if (chrome.runtime.lastError) {
+        console.error(`[IQGuessr Debug] getCachedGuess error for tweet ${tweetId}:`, chrome.runtime.lastError);
+        resolve(null);
+        return;
+      }
+
       if (result[storageKey]) {
         persistentGuessCache.set(key, result[storageKey]);
+        console.log(`[IQGuessr Debug] getCachedGuess: Found in storage for tweet ${tweetId} (key: ${key}):`, result[storageKey]);
         resolve(result[storageKey]);
       } else {
+        console.log(`[IQGuessr Debug] getCachedGuess: No cached guess found for tweet ${tweetId} (key: ${key}, storageKey: ${storageKey})`);
+        // Debug: Check what keys exist in storage
+        chrome.storage.local.get(null, (allItems) => {
+          const guessKeys = Object.keys(allItems).filter(k => k.startsWith(GUESS_CACHE_PREFIX));
+          console.log(`[IQGuessr Debug] Found ${guessKeys.length} cached guess keys in storage. Looking for: ${storageKey}`);
+          if (guessKeys.length > 0 && guessKeys.length <= 10) {
+            console.log(`[IQGuessr Debug] Existing guess keys:`, guessKeys);
+          }
+        });
         resolve(null);
+      }
+    });
+  });
+}
+
+/**
+ * Cache that an IQ was revealed for a tweet ID (even without a guess)
+ * This ensures that if IQGuessr mode is re-enabled or page is refreshed,
+ * the IQ stays as calculated instead of reverting to guess badge
+ */
+function cacheRevealedIQ(tweetId) {
+  if (!tweetId) return;
+
+  const key = generateGuessCacheKey(tweetId);
+  if (!key) return;
+
+  const revealedEntry = {
+    revealed: true,
+    timestamp: new Date().toISOString()
+  };
+
+  if (shouldDebugLog(tweetId, null)) {
+    console.log(`[IQ111 Debug] Caching revealed IQ for tweet ${tweetId} (key: ${key})`);
+  }
+
+  // Store in chrome storage
+  const storageKey = REVEALED_CACHE_PREFIX + key;
+  const storageData = {};
+  storageData[storageKey] = revealedEntry;
+  chrome.storage.local.set(storageData, () => {
+    if (chrome.runtime.lastError) {
+      if (shouldDebugLog(tweetId, null)) {
+        console.error('[IQ111 Debug] Error caching revealed IQ:', chrome.runtime.lastError);
+      }
+    } else {
+      if (shouldDebugLog(tweetId, null)) {
+        console.log(`[IQ111 Debug] Successfully cached revealed IQ for tweet ${tweetId}`);
+      }
+    }
+  });
+}
+
+/**
+ * Get cached revealed IQ status for a tweet ID (async)
+ */
+async function getCachedRevealedIQ(tweetId) {
+  if (!tweetId) return null;
+
+  const key = generateGuessCacheKey(tweetId);
+  if (!key) return null;
+
+  const storageKey = REVEALED_CACHE_PREFIX + key;
+  return new Promise((resolve) => {
+    chrome.storage.local.get([storageKey], (result) => {
+      if (chrome.runtime.lastError) {
+        if (shouldDebugLog(tweetId, null)) {
+          console.error(`[IQ111 Debug] getCachedRevealedIQ error for tweet ${tweetId}:`, chrome.runtime.lastError);
+        }
+        resolve(null);
+        return;
+      }
+
+      if (result[storageKey] && result[storageKey].revealed) {
+        if (shouldDebugLog(tweetId, null)) {
+          console.log(`[IQ111 Debug] Found cached revealed IQ for tweet ${tweetId}`);
+        }
+        resolve(true);
+      } else {
+        if (shouldDebugLog(tweetId, null)) {
+          console.log(`[IQ111 Debug] No cached revealed IQ for tweet ${tweetId}`);
+        }
+        resolve(false);
       }
     });
   });
@@ -62,16 +171,26 @@ async function getCachedGuess(tweetId) {
  * Cache a guess for a tweet ID
  */
 function cacheGuess(tweetId, guessData) {
-  if (!tweetId) return;
+  if (!tweetId) {
+    console.warn('[IQGuessr Debug] cacheGuess called without tweetId');
+    return;
+  }
 
   const key = generateGuessCacheKey(tweetId);
-  if (!key) return;
+  if (!key) {
+    console.warn('[IQGuessr Debug] cacheGuess: Failed to generate cache key for tweetId:', tweetId);
+    return;
+  }
 
   const cacheEntry = {
     guess: guessData.guess,
     confidence: guessData.confidence,
     timestamp: new Date().toISOString()
   };
+
+  if (shouldDebugLog(tweetId, null)) {
+    console.log(`[IQ111 Debug] Caching guess for tweet ${tweetId} (key: ${key}):`, cacheEntry);
+  }
 
   // Store in memory
   persistentGuessCache.set(key, cacheEntry);
@@ -80,7 +199,17 @@ function cacheGuess(tweetId, guessData) {
   const storageKey = GUESS_CACHE_PREFIX + key;
   const storageData = {};
   storageData[storageKey] = cacheEntry;
-  chrome.storage.local.set(storageData, () => {});
+  chrome.storage.local.set(storageData, () => {
+      if (chrome.runtime.lastError) {
+        if (shouldDebugLog(tweetId, null)) {
+          console.error('[IQ111 Debug] Error caching guess:', chrome.runtime.lastError);
+        }
+      } else {
+        if (shouldDebugLog(tweetId, null)) {
+          console.log(`[IQ111 Debug] Successfully cached guess for tweet ${tweetId} to storage`);
+        }
+      }
+  });
 }
 
 /**
@@ -210,6 +339,13 @@ async function makeBadgeEditable(badge) {
       submitted = true; // Mark as submitted immediately
       badge.setAttribute('data-iq-guessed', value);
 
+      // Debug: Log when guess is submitted
+      const tweetElementForGuess = badge.closest('article[data-testid="tweet"]') ||
+                                  badge.closest('article[role="article"]') ||
+                                  badge.closest('article');
+      const tweetIdForGuess = tweetElementForGuess?.getAttribute('data-tweet-id');
+      console.log(`[IQGuessr Debug] Tweet ${tweetIdForGuess || 'unknown'} GUESS SUBMITTED: ${value} (waiting for calculation)`);
+
       // Restore score element
       const newScoreElement = document.createElement('span');
       newScoreElement.className = 'iq-score';
@@ -257,6 +393,9 @@ async function makeBadgeEditable(badge) {
         }
 
         if (iqResult) {
+          // Debug: Log state transition from guess to calculated
+          console.log(`[IQGuessr Debug] Tweet ${tweetId || 'unknown'} State shift: GUESS → CALCULATED (guess ${value} submitted, IQ ${iqResult.iq} already calculated, revealing immediately)`);
+
           // Get badge manager to get colors
           const badgeManager = getBadgeManager();
           if (badgeManager && badgeManager.getIQColor) {
@@ -354,6 +493,12 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
   const guessData = tweetElement ? guessManager.get(tweetElement) : null;
   const hasGuess = guessData && guessData.guess !== undefined;
 
+  // Debug: Log state transition from guess to calculated
+  const tweetId = tweetElement?.getAttribute('data-tweet-id');
+  if (hasGuess && guessData) {
+    console.log(`[IQGuessr Debug] Tweet ${tweetId || 'unknown'} State shift: GUESS → CALCULATED (revealing actual IQ ${actualIQ}, guess was ${guessData.guess})`);
+  }
+
   // Add rotating border animation
   badge.classList.add('iq-badge-calculating');
   badge.style.animation = 'rotatingBorder 1s linear infinite';
@@ -406,11 +551,17 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
           addGuessToHistory(tweetId, handle, guessData.guess, actualIQ, guessData.confidence, score);
         }
 
-        // Show score feedback
-        showScoreFeedback(badge, score, guessData.guess, actualIQ);
+      // Show score feedback
+      showScoreFeedback(badge, score, guessData.guess, actualIQ);
+
+      // Store that this IQ was revealed (so it stays calculated after refresh/iqguessr toggle)
+      const tweetIdForReveal = tweetElement ? tweetElement.getAttribute('data-tweet-id') : null;
+      if (tweetIdForReveal) {
+        cacheRevealedIQ(tweetIdForReveal);
       }
     }
-  }, 1500); // 1.5 second loading animation
+  }
+}, 1500); // 1.5 second loading animation
 }
 
 /**
@@ -499,10 +650,22 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
           const { getCachedIQ } = getIQCache();
           const { extractTweetHandle, extractTweetText } = getTextExtraction();
           if (getCachedIQ && extractTweetHandle) {
-            const handle = extractTweetHandle(tweetElement);
+            // Try to get handle from attribute first, then extract if needed
+            let handle = tweetElement.getAttribute('data-handle');
+            if (!handle) {
+              handle = extractTweetHandle(tweetElement);
+              // Cache it for future use
+              if (handle) {
+                tweetElement.setAttribute('data-handle', handle);
+              }
+            }
+
             if (handle) {
               const cachedIQ = getCachedIQ(handle);
               if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+                if (shouldDebugLog(tweetId, cachedIQ.iq_estimate)) {
+                  console.log(`[IQ111 Debug] Tweet ${tweetId || 'unknown'} Found cached IQ (${cachedIQ.iq_estimate}) from handle ${handle}`);
+                }
                 // Extract tweet text for debug data
                 const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
                 // Convert cached IQ format to match expected format
@@ -512,12 +675,25 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
                   confidence: cachedIQ.confidence,
                   text: tweetText
                 };
+              } else {
+                if (shouldDebugLog(tweetId, null)) {
+                  console.log(`[IQ111 Debug] Tweet ${tweetId || 'unknown'} No cached IQ found for handle ${handle}`);
+                }
+              }
+            } else {
+              if (shouldDebugLog(tweetId, null)) {
+                console.log(`[IQ111 Debug] Tweet ${tweetId || 'unknown'} Could not extract handle for IQ cache lookup`);
               }
             }
           }
         }
 
         if (iqResult && iqResult.iq !== undefined && iqResult.result) {
+          // Debug: Log state transition when we have both cached guess and calculated IQ
+          if (shouldDebugLog(tweetId, iqResult?.iq)) {
+            console.log(`[IQ111 Debug] Tweet ${tweetId || 'unknown'} State shift: LOADING → CALCULATED (replacing with IQ badge, cached guess ${cachedGuess.guess} exists)`);
+          }
+
           // We have the actual IQ, show it instead of a guess badge
           const badgeManager = getBadgeManager();
           if (badgeManager && badgeManager.createIQBadge) {
@@ -544,6 +720,11 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
         // We have a guess but no IQ yet, create a regular guess badge with the cached value
         const guessBadge = createGuessBadge();
 
+        // Debug: Log when loading badge is replaced with guess badge (has cached guess)
+        if (shouldDebugLog(tweetId, null)) {
+          console.log(`[IQ111 Debug] Tweet ${tweetId || 'unknown'} State shift: LOADING → GUESS (replaced with guess badge, cached guess ${cachedGuess.guess} exists, waiting for calculation)`);
+        }
+
         // Set the cached guess value
         const scoreElement = guessBadge.querySelector('.iq-score');
         if (scoreElement) {
@@ -568,8 +749,58 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
     }
   }
 
-  // No cached guess, create a new guess badge
+  // No cached guess - but check if there's a cached IQ (from previous calculation)
+  // If IQ was already calculated, we should check if we want to show it directly
+  // In IQGuessr mode: even without a guess, if IQ exists we could show it, but the game mode
+  // requires a guess first, so we'll still create a guess badge.
+  // However, if the tweet element already has the IQ result stored, we should use that.
+
+  const tweetElementForDebug = loadingBadge.closest('article[data-testid="tweet"]') ||
+                               loadingBadge.closest('article[role="article"]') ||
+                               loadingBadge.closest('article');
+  const tweetIdForDebug = tweetElementForDebug?.getAttribute('data-tweet-id');
+
+  // Check if there's already an IQ result on the tweet element (from previous calculation)
+  let iqResult = tweetElementForDebug?._iqResult;
+
+  // Also try to get from IQ cache (for page refresh scenarios)
+  if (!iqResult || !iqResult.iq) {
+    const { getCachedIQ } = getIQCache();
+    const { extractTweetHandle, extractTweetText } = getTextExtraction();
+    if (getCachedIQ && extractTweetHandle && tweetElementForDebug) {
+      const handle = extractTweetHandle(tweetElementForDebug);
+      if (handle) {
+        const cachedIQ = getCachedIQ(handle);
+        if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+          // Extract tweet text for debug data
+          const tweetText = extractTweetText ? extractTweetText(tweetElementForDebug) : null;
+          // Convert cached IQ format to match expected format
+          iqResult = {
+            iq: cachedIQ.iq_estimate,
+            result: cachedIQ,
+            confidence: cachedIQ.confidence,
+            text: tweetText
+          };
+
+          // Store it on the tweet element for future use
+          if (tweetElementForDebug) {
+            tweetElementForDebug._iqResult = iqResult;
+          }
+
+          if (shouldDebugLog(tweetIdForDebug, iqResult.iq)) {
+            console.log(`[IQ111 Debug] Tweet ${tweetIdForDebug || 'unknown'} Found cached IQ (${iqResult.iq}) but no cached guess - storing IQ result for when guess is submitted`);
+          }
+        }
+      }
+    }
+  }
+
+  // Create a new guess badge (no cached guess, but IQ might be cached for later)
   const guessBadge = createGuessBadge();
+
+  if (shouldDebugLog(tweetIdForDebug, iqResult?.iq)) {
+    console.log(`[IQ111 Debug] Tweet ${tweetIdForDebug || 'unknown'} State shift: LOADING → GUESS (replaced loading badge with guess badge${iqResult ? ', IQ already calculated and cached' : ''})`);
+  }
 
   // Insert it in the same position
   if (loadingBadge.parentElement) {
@@ -660,6 +891,8 @@ if (typeof window !== 'undefined') {
     addToGameScore,
     getCachedGuess,
     cacheGuess,
+    cacheRevealedIQ,
+    getCachedRevealedIQ,
     addGuessToHistory,
     getGuessHistory,
     clearGuessHistory

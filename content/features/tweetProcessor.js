@@ -17,6 +17,16 @@ const getSettings = () => window.Settings || {};
 // Local state
 const processedTweets = new Set();
 
+// Debug helper: only log for tweets with IQ around 111 or specific tweet ID
+const TARGET_TWEET_ID = '1985253928586416130';
+const TARGET_IQ_MIN = 108;
+const TARGET_IQ_MAX = 115;
+function shouldDebugLog(tweetId, iq) {
+  if (tweetId === TARGET_TWEET_ID) return true;
+  if (iq !== null && iq !== undefined && iq >= TARGET_IQ_MIN && iq <= TARGET_IQ_MAX) return true;
+  return false;
+}
+
 // Store previous positions to detect changes
 const badgePositions = new Map();
 
@@ -308,8 +318,40 @@ async function processTweet(tweetElement) {
   const isNotLoading = existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
                        !existingBadge.classList.contains('iq-badge-loading');
 
-  // If badge exists and is valid (has score, is invalid, is a guess badge, or is not loading), mark as analyzed
-  if (existingBadge && (hasScore || isInvalid || isGuessBadge || isNotLoading)) {
+  // If badge exists and is a calculated badge (has score), check if we need to restore it in IQGuessr mode
+  if (existingBadge && hasScore) {
+    // In IQGuessr mode, if this is a calculated badge but no cached guess exists, it should stay calculated
+    // (it was calculated when IQGuessr was disabled)
+    const gameManagerForCheck = getGameManager();
+    const isGameModeForCheck = gameManagerForCheck && gameManagerForCheck.isGameModeEnabled && gameManagerForCheck.isGameModeEnabled();
+    if (isGameModeForCheck) {
+      const tweetIdForCheck = actualTweetElement.getAttribute('data-tweet-id');
+      if (tweetIdForCheck) {
+        const cachedGuessForCheck = await gameManagerForCheck.getCachedGuess(tweetIdForCheck);
+        if (!cachedGuessForCheck || cachedGuessForCheck.guess === undefined) {
+          // Calculated badge but no cached guess - keep it as calculated (it was calculated outside IQGuessr mode)
+          if (shouldDebugLog(tweetIdForCheck, null)) {
+            console.log(`[IQ111 Debug] Tweet ${tweetIdForCheck} Has calculated badge but no cached guess - keeping as calculated`);
+          }
+          actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+          return;
+        } else {
+          // Has calculated badge AND cached guess - keep it as calculated
+          if (shouldDebugLog(tweetIdForCheck, null)) {
+            console.log(`[IQ111 Debug] Tweet ${tweetIdForCheck} Has calculated badge with cached guess - keeping as calculated`);
+          }
+          actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+          return;
+        }
+      }
+    }
+    // Not in IQGuessr mode or no tweet ID - normal flow, keep calculated badge
+    actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+    return;
+  }
+
+  // If badge exists and is valid (invalid, is a guess badge, or is not loading), mark as analyzed
+  if (existingBadge && (isInvalid || isGuessBadge || isNotLoading)) {
     // Only skip if badge is completed or a guess badge waiting for input
     // Don't skip if it's stuck in loading state
     if (!existingBadge.hasAttribute('data-iq-loading') &&
@@ -319,18 +361,56 @@ async function processTweet(tweetElement) {
     }
   }
 
+  // Extract tweet ID early - declare it here so it's available throughout the function
+  // This must be done before the early restoration check
+  // NOTE: extractTweetId comes from TextExtraction (already destructured above)
+  let tweetId = actualTweetElement.getAttribute('data-tweet-id');
+
+  // DEBUG: Log tweet ID extraction for target tweet (always log for IQ 111 tweets even if tweetId is null)
+  // Try to detect if this is the target tweet by checking for IQ 111 in the badge or cached IQ
+  let mightBeTarget = false;
+  if (!tweetId) {
+    // Check if there's a badge with IQ around 111
+    if (existingBadge && hasScore) {
+      const scoreValue = existingBadge.getAttribute('data-iq-score');
+      if (scoreValue) {
+        const iqValue = parseInt(scoreValue, 10);
+        if (iqValue >= TARGET_IQ_MIN && iqValue <= TARGET_IQ_MAX) {
+          mightBeTarget = true;
+        }
+      }
+    }
+    if (mightBeTarget || tweetId === TARGET_TWEET_ID) {
+      console.log(`[IQ111 Debug] Tweet ID extraction START: attribute="${tweetId}", extractTweetId=${typeof extractTweetId}`);
+    }
+  }
+
+  if (!tweetId && extractTweetId) {
+    tweetId = extractTweetId(actualTweetElement);
+    if (tweetId) {
+      actualTweetElement.setAttribute('data-tweet-id', tweetId);
+      if (shouldDebugLog(tweetId, null) || mightBeTarget) {
+        console.log(`[IQ111 Debug] Tweet ID extracted successfully: ${tweetId}`);
+      }
+    } else {
+      // Always log failure if we might be looking at target tweet
+      if (mightBeTarget || shouldDebugLog(null, null)) {
+        console.log(`[IQ111 Debug] Tweet ID extraction FAILED - extractTweetId returned null/undefined`);
+      }
+    }
+  } else if (!tweetId) {
+    if (mightBeTarget || shouldDebugLog(null, null)) {
+      console.log(`[IQ111 Debug] Tweet ID extraction FAILED - no attribute, extractTweetId=${typeof extractTweetId}`);
+    }
+  }
+
   actualTweetElement.setAttribute('data-iq-processing', 'true');
   actualTweetElement.setAttribute('data-iq-processing-start', Date.now().toString());
 
-  // Extract handle and tweet ID early for game mode
+  // Extract handle early for game mode
   let handle = extractTweetHandle(actualTweetElement);
   if (handle) {
     actualTweetElement.setAttribute('data-handle', handle);
-  }
-
-  let tweetId = extractTweetId(actualTweetElement);
-  if (tweetId) {
-    actualTweetElement.setAttribute('data-tweet-id', tweetId);
   }
 
   let tweetText = extractTweetText(actualTweetElement);
@@ -552,6 +632,245 @@ async function processTweet(tweetElement) {
     return;
   }
 
+  // FIRST: Check if we should restore a calculated badge (cached guess + cached IQ)
+  // This must happen BEFORE we create or convert any badges
+  // Note: tweetId is already declared above, so we can use it here
+  const gameManager = getGameManager();
+  const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+
+  if (isGameModeEnabled && tweetId && settings.showIQBadge) {
+    const cachedGuess = await gameManager.getCachedGuess(tweetId);
+    const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
+
+    if (shouldDebugLog(tweetId, null)) {
+      console.log(`[IQ111 Debug] Tweet ${tweetId} Early cache lookup (before badge creation): cachedGuess=${cachedGuess ? `guess:${cachedGuess.guess}` : 'null'}, cachedRevealed=${cachedRevealed}`);
+      if (!cachedGuess && !cachedRevealed) {
+        console.log(`[IQ111 Debug] Tweet ${tweetId} NO CACHED GUESS OR REVEALED IQ - will show as guess badge instead of calculated`);
+      }
+    }
+
+    // If IQ was previously revealed (either with or without a guess), show as calculated
+    if (cachedRevealed) {
+      if (shouldDebugLog(tweetId, null)) {
+        console.log(`[IQ111 Debug] Tweet ${tweetId} IQ was previously revealed - checking for cached IQ to restore calculated badge`);
+      }
+
+      // We have revealed IQ - check if we have cached IQ to restore calculated badge
+      const { getCachedIQ } = getIQCache();
+      const { extractTweetHandle, extractTweetText } = getTextExtraction();
+
+      if (getCachedIQ && extractTweetHandle) {
+        let handle = actualTweetElement.getAttribute('data-handle');
+        if (!handle) {
+          handle = extractTweetHandle(actualTweetElement);
+          if (handle) {
+            actualTweetElement.setAttribute('data-handle', handle);
+          }
+        }
+
+        if (handle) {
+          const cachedIQ = getCachedIQ(handle);
+          if (shouldDebugLog(tweetId, cachedIQ?.iq_estimate)) {
+            console.log(`[IQ111 Debug] Tweet ${tweetId} Cached IQ lookup for revealed tweet: handle=${handle}, found=${!!cachedIQ}, iq=${cachedIQ?.iq_estimate}`);
+          }
+          if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+            // We have revealed IQ and cached IQ - restore calculated badge directly
+            if (shouldDebugLog(tweetId, cachedIQ.iq_estimate)) {
+              console.log(`[IQ111 Debug] Tweet ${tweetId} EARLY RESTORATION: Restoring calculated badge (IQ was previously revealed, cached IQ ${cachedIQ.iq_estimate})`);
+            }
+
+            const badgeManager = getBadgeManager();
+            if (badgeManager && badgeManager.createIQBadge) {
+              const iq = Math.round(cachedIQ.iq_estimate);
+              const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
+              const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+
+              const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+
+              // Store IQ result on element for reference
+              actualTweetElement._iqResult = {
+                iq: iq,
+                result: cachedIQ,
+                confidence: confidence,
+                text: tweetText
+              };
+
+              // Check if there's already a badge to replace
+              let existingBadge = actualTweetElement.querySelector('.iq-badge');
+              if (!existingBadge && hasNestedStructure) {
+                existingBadge = tweetElement.querySelector('.iq-badge');
+              }
+
+              // Find where to place the badge (same logic as before)
+              const isNotificationsPage = window.location.href.includes('/notifications');
+              if (isNotificationsPage) {
+                const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+                const placement = findNotificationBadgePlacement(placementTarget);
+                if (placement) {
+                  const { targetElement, parentElement } = placement;
+                  if (placement.placement === 'before-tweet-content') {
+                    parentElement.insertBefore(iqBadge, targetElement);
+                  } else {
+                    if (targetElement.nextSibling) {
+                      parentElement.insertBefore(iqBadge, targetElement.nextSibling);
+                    } else {
+                      parentElement.appendChild(iqBadge);
+                    }
+                  }
+                } else {
+                  actualTweetElement.insertBefore(iqBadge, actualTweetElement.firstChild);
+                }
+              } else {
+                const engagementBar = actualTweetElement.querySelector('[role="group"]');
+                if (engagementBar) {
+                  const firstChild = engagementBar.firstElementChild;
+                  if (firstChild) {
+                    engagementBar.insertBefore(iqBadge, firstChild);
+                  } else {
+                    engagementBar.appendChild(iqBadge);
+                  }
+                } else {
+                  const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                      actualTweetElement.querySelector('div[lang]') ||
+                                      actualTweetElement.firstElementChild;
+                  if (tweetContent && tweetContent.parentElement) {
+                    tweetContent.parentElement.insertBefore(iqBadge, tweetContent);
+                  } else {
+                    actualTweetElement.insertBefore(iqBadge, actualTweetElement.firstChild);
+                  }
+                }
+              }
+
+              // Remove existing badge if it exists
+              if (existingBadge && existingBadge.parentElement) {
+                existingBadge.remove();
+              }
+
+              // Mark as analyzed and return early (skip calculation and all other processing)
+              processedTweets.add(actualTweetElement);
+              actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+              actualTweetElement.removeAttribute('data-iq-processing');
+              actualTweetElement.removeAttribute('data-iq-processing-start');
+              if (hasNestedStructure) {
+                tweetElement.setAttribute('data-iq-analyzed', 'true');
+                processedTweets.add(tweetElement);
+              }
+              return; // Exit early, don't process further
+            }
+          }
+        }
+      }
+    }
+
+    if (cachedGuess && cachedGuess.guess !== undefined) {
+      // We have a cached guess - check if we have cached IQ to restore calculated badge
+      const { getCachedIQ } = getIQCache();
+      const { extractTweetHandle, extractTweetText } = getTextExtraction();
+
+      if (getCachedIQ && extractTweetHandle) {
+        let handle = actualTweetElement.getAttribute('data-handle');
+        if (!handle) {
+          handle = extractTweetHandle(actualTweetElement);
+          if (handle) {
+            actualTweetElement.setAttribute('data-handle', handle);
+          }
+        }
+
+        if (handle) {
+          const cachedIQ = getCachedIQ(handle);
+          if (shouldDebugLog(tweetId, cachedIQ?.iq_estimate)) {
+            console.log(`[IQ111 Debug] Tweet ${tweetId} Cached IQ lookup: handle=${handle}, found=${!!cachedIQ}, iq=${cachedIQ?.iq_estimate}`);
+          }
+          if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+            // We have both cached guess and cached IQ - restore calculated badge directly
+            if (shouldDebugLog(tweetId, cachedIQ.iq_estimate)) {
+              console.log(`[IQ111 Debug] Tweet ${tweetId} EARLY RESTORATION: Restoring calculated badge (cached guess ${cachedGuess.guess}, cached IQ ${cachedIQ.iq_estimate})`);
+            }
+
+            const badgeManager = getBadgeManager();
+            if (badgeManager && badgeManager.createIQBadge) {
+              const iq = Math.round(cachedIQ.iq_estimate);
+              const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
+              const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+
+              const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+
+              // Store IQ result on element for reference (guess is already cached persistently)
+              actualTweetElement._iqResult = {
+                iq: iq,
+                result: cachedIQ,
+                confidence: confidence,
+                text: tweetText
+              };
+
+              // Check if there's already a badge to replace
+              let existingBadge = actualTweetElement.querySelector('.iq-badge');
+              if (!existingBadge && hasNestedStructure) {
+                existingBadge = tweetElement.querySelector('.iq-badge');
+              }
+
+              // Find where to place the badge
+              const isNotificationsPage = window.location.href.includes('/notifications');
+              if (isNotificationsPage) {
+                const placementTarget = hasNestedStructure ? tweetElement : actualTweetElement;
+                const placement = findNotificationBadgePlacement(placementTarget);
+                if (placement) {
+                  const { targetElement, parentElement } = placement;
+                  if (placement.placement === 'before-tweet-content') {
+                    parentElement.insertBefore(iqBadge, targetElement);
+                  } else {
+                    if (targetElement.nextSibling) {
+                      parentElement.insertBefore(iqBadge, targetElement.nextSibling);
+                    } else {
+                      parentElement.appendChild(iqBadge);
+                    }
+                  }
+                } else {
+                  actualTweetElement.insertBefore(iqBadge, actualTweetElement.firstChild);
+                }
+              } else {
+                const engagementBar = actualTweetElement.querySelector('[role="group"]');
+                if (engagementBar) {
+                  const firstChild = engagementBar.firstElementChild;
+                  if (firstChild) {
+                    engagementBar.insertBefore(iqBadge, firstChild);
+                  } else {
+                    engagementBar.appendChild(iqBadge);
+                  }
+                } else {
+                  const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                      actualTweetElement.querySelector('div[lang]') ||
+                                      actualTweetElement.firstElementChild;
+                  if (tweetContent && tweetContent.parentElement) {
+                    tweetContent.parentElement.insertBefore(iqBadge, tweetContent);
+                  } else {
+                    actualTweetElement.insertBefore(iqBadge, actualTweetElement.firstChild);
+                  }
+                }
+              }
+
+              // Remove existing badge if it exists
+              if (existingBadge && existingBadge.parentElement) {
+                existingBadge.remove();
+              }
+
+              // Mark as analyzed and return early (skip calculation and all other processing)
+              processedTweets.add(actualTweetElement);
+              actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+              actualTweetElement.removeAttribute('data-iq-processing');
+              actualTweetElement.removeAttribute('data-iq-processing-start');
+              if (hasNestedStructure) {
+                tweetElement.setAttribute('data-iq-analyzed', 'true');
+                processedTweets.add(tweetElement);
+              }
+              return; // Exit early, don't process further
+            }
+          }
+        }
+      }
+    }
+  }
+
   let loadingBadge = null;
   if (settings.showIQBadge) {
     // Check both nested and outer wrapper for nested structures
@@ -745,10 +1064,12 @@ async function processTweet(tweetElement) {
   }
 
   // If game mode is enabled, replace loading badge with guess badge
+  // (Restoration already handled earlier if cached guess + IQ exist)
   if (loadingBadge && settings.showIQBadge) {
-    const gameManager = getGameManager();
-    if (gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled()) {
-      const guessBadge = await gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
+    const gameManagerForConversion = getGameManager();
+    if (gameManagerForConversion && gameManagerForConversion.isGameModeEnabled && gameManagerForConversion.isGameModeEnabled()) {
+      // No cached guess+IQ combo found earlier, proceed with normal guess badge replacement
+      const guessBadge = await gameManagerForConversion.replaceLoadingBadgeWithGuess(loadingBadge);
       if (guessBadge) {
         loadingBadge = guessBadge;
       }
@@ -1089,6 +1410,40 @@ async function processTweet(tweetElement) {
       // Ignore errors in metadata extraction
     }
 
+    // Check if IQGuessr mode is enabled - if so, don't calculate until user guesses
+    const gameManager = getGameManager();
+    const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+    // tweetId is already declared at function scope, just get it if needed
+    if (!tweetId) {
+      tweetId = actualTweetElement.getAttribute('data-tweet-id');
+    }
+
+    // In IQGuessr mode: only calculate if user already made a guess (cached guess exists)
+    if (isGameModeEnabled && tweetId) {
+      const cachedGuess = await gameManager.getCachedGuess(tweetId);
+      if (shouldDebugLog(tweetId, null)) {
+        console.log(`[IQ111 Debug] Tweet ${tweetId} Check before calculation: cachedGuess=${cachedGuess ? `guess:${cachedGuess.guess}` : 'null'}, isGameMode=${isGameModeEnabled}`);
+      }
+      if (!cachedGuess || cachedGuess.guess === undefined) {
+        // IQGuessr enabled but no guess yet - skip calculation, store IQ result as null
+        // The badge is already a guess badge (converted earlier), so we're done
+        if (shouldDebugLog(tweetId, null)) {
+          console.log(`[IQ111 Debug] Tweet ${tweetId} Skipping IQ calculation (IQGuessr mode, no guess yet)`);
+        }
+        processedTweets.add(actualTweetElement);
+        actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+        actualTweetElement.removeAttribute('data-iq-processing');
+        actualTweetElement.removeAttribute('data-iq-processing-start');
+        // Also mark outer wrapper as analyzed for nested structures
+        if (hasNestedStructure) {
+          tweetElement.setAttribute('data-iq-analyzed', 'true');
+          processedTweets.add(tweetElement);
+        }
+        return; // Exit early, don't calculate
+      }
+      // Has cached guess - continue with calculation (will reveal after calculation)
+    }
+
     // Get cached result by handle (not by tweet text)
     let result = handle ? getCachedIQ(handle) : null;
     let fromCache = false;
@@ -1203,6 +1558,12 @@ async function processTweet(tweetElement) {
         // If it's a guess badge, we should NOT automatically calculate
         // The user needs to click and guess first
         if (isGuessBadge) {
+          // Debug: Log when IQ is calculated but badge is a guess badge (stored for later)
+          const tweetIdForLog = actualTweetElement.getAttribute('data-tweet-id');
+          if (shouldDebugLog(tweetIdForLog, iq)) {
+            console.log(`[IQ111 Debug] Tweet ${tweetIdForLog || 'unknown'} IQ AUTOMATICALLY CALCULATED (${iq}) but stored for later (guess badge, waiting for user guess)`);
+          }
+
           // Store the result on the tweet element for later use when user guesses
           actualTweetElement._iqResult = {
             iq: iq,
@@ -1229,11 +1590,28 @@ async function processTweet(tweetElement) {
           const guessData = gameManager && gameManager.getGuess ? gameManager.getGuess(actualTweetElement) : null;
 
           if (guessData && guessData.guess !== undefined) {
+            // Debug: Log state transition when we have both guess and calculated IQ
+            const tweetIdForLog = actualTweetElement.getAttribute('data-tweet-id');
+            if (shouldDebugLog(tweetIdForLog, iq)) {
+              console.log(`[IQ111 Debug] Tweet ${tweetIdForLog || 'unknown'} State shift: LOADING → CALCULATED (IQ ${iq} calculated, guess ${guessData.guess} exists, revealing)`);
+            }
+
             // We have a guess, use the game manager's reveal function
             if (gameManager && gameManager.revealActualScore) {
               gameManager.revealActualScore(loadingBadge, iq, iqColor, confidence, result, tweetText);
             }
           } else {
+            // Debug: Log when IQ is automatically calculated (no guess)
+            const tweetIdForLog = actualTweetElement.getAttribute('data-tweet-id');
+            if (shouldDebugLog(tweetIdForLog, iq)) {
+              console.log(`[IQ111 Debug] Tweet ${tweetIdForLog || 'unknown'} IQ AUTOMATICALLY CALCULATED (${iq}) - no guess, showing directly`);
+            }
+
+            // Store that this IQ was revealed (so it stays calculated after refresh/iqguessr toggle)
+            if (tweetIdForLog && gameManager && gameManager.cacheRevealedIQ) {
+              gameManager.cacheRevealedIQ(tweetIdForLog);
+            }
+
             // No guess, proceed with normal animation
 
             // CRITICAL: Check if badge is still in DOM before proceeding

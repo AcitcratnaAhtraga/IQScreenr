@@ -18,6 +18,8 @@
   const getRealtimeManager = () => window.RealtimeManager || {};
   const getBadgeManager = () => window.BadgeManager || {};
   const getGameManager = () => window.GameManager || {};
+  const getDebugLog = () => window.DOMHelpers?.debugLog || (() => {});
+  const debugLog = getDebugLog();
 
   /**
    * Apply settings changes immediately
@@ -133,9 +135,12 @@
       const gameManager = getGameManager();
       const badgeManager = getBadgeManager();
 
+      console.log(`[IQGuessr Debug] IQGuessr ${gameModeEnabled ? 'ENABLED' : 'DISABLED'} via settings change`);
+
       if (!gameModeEnabled && badgeManager && badgeManager.createLoadingBadge) {
         // Game mode disabled: convert guess badges back to loading badges
         const guessBadges = document.querySelectorAll('.iq-badge-guess, [data-iq-guess="true"]');
+        console.log(`[IQGuessr Debug] Converting ${guessBadges.length} guess badge(s) back to loading badge(s) (IQGuessr disabled)`);
         guessBadges.forEach(guessBadge => {
           // Only convert badges that haven't been guessed yet
           if (!guessBadge.hasAttribute('data-iq-guessed') && !guessBadge.hasAttribute('data-iq-calculating')) {
@@ -143,6 +148,9 @@
             const tweetElement = guessBadge.closest('article[data-testid="tweet"]') ||
                                 guessBadge.closest('article[role="article"]') ||
                                 guessBadge.closest('article');
+
+            const tweetId = tweetElement?.getAttribute('data-tweet-id');
+            console.log(`[IQGuessr Debug] State shift: GUESS → LOADING for tweet ${tweetId || 'unknown'} (IQGuessr disabled)`);
 
             const loadingBadge = badgeManager.createLoadingBadge();
             if (guessBadge.parentElement) {
@@ -173,17 +181,105 @@
         }
       } else if (gameModeEnabled && gameManager && gameManager.replaceLoadingBadgeWithGuess && settings.showIQBadge) {
         // Game mode enabled: convert loading badges to guess badges
+        // BUT: don't convert badges that are already calculated (they should stay calculated)
         const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
+        const calculatedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
+
+        console.log(`[IQGuessr Debug] Converting ${loadingBadges.length} loading badge(s) to guess badge(s) (IQGuessr enabled)`);
+        console.log(`[IQGuessr Debug] Preserving ${calculatedBadges.length} calculated badge(s) (IQGuessr enabled - keeping as calculated)`);
+
         for (const loadingBadge of loadingBadges) {
           // Only convert badges that are still loading (not yet calculated)
           if (loadingBadge.hasAttribute('data-iq-loading') || loadingBadge.classList.contains('iq-badge-loading')) {
+            const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
+                                loadingBadge.closest('article[role="article"]') ||
+                                loadingBadge.closest('article');
+            const tweetId = tweetElement?.getAttribute('data-tweet-id');
+
             await gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
+
+            console.log(`[IQGuessr Debug] State shift: LOADING → GUESS for tweet ${tweetId || 'unknown'} (IQGuessr enabled)`);
             // replaceLoadingBadgeWithGuess handles the replacement, so we don't need to do anything else
+          }
+        }
+
+        // Check calculated badges - if they have cached guesses, they should stay as calculated
+        // (They're already calculated, so no action needed - just log it)
+        for (const calculatedBadge of calculatedBadges) {
+          const tweetElement = calculatedBadge.closest('article[data-testid="tweet"]') ||
+                              calculatedBadge.closest('article[role="article"]') ||
+                              calculatedBadge.closest('article');
+          if (tweetElement) {
+            const tweetId = tweetElement.getAttribute('data-tweet-id');
+            if (tweetId) {
+              const cachedGuess = await gameManager.getCachedGuess(tweetId);
+              if (cachedGuess && cachedGuess.guess !== undefined) {
+                console.log(`[IQGuessr Debug] Keeping calculated badge for tweet ${tweetId} (has cached guess, staying calculated)`);
+              } else {
+                console.log(`[IQGuessr Debug] Keeping calculated badge for tweet ${tweetId} (already calculated, no cached guess - stays calculated)`);
+              }
+            }
           }
         }
 
         // No need to reprocess - conversion handles all visible badges
         // Reprocessing would only create duplicates for tweets that already have calculated badges
+      }
+    }
+  }
+
+  /**
+   * Apply IQGuessr mode on page load if enabled
+   */
+  async function applyIQGuessrModeOnLoad() {
+    const settings = getSettings();
+    const gameManager = getGameManager();
+    const badgeManager = getBadgeManager();
+
+    if (!settings.showIQBadge) {
+      return;
+    }
+
+    if (settings.enableIQGuessr && gameManager && gameManager.replaceLoadingBadgeWithGuess && badgeManager) {
+      // Game mode enabled on page load - convert loading badges to guess badges
+      const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
+      console.log(`[IQGuessr Debug] IQGuessr enabled on page load, converting ${loadingBadges.length} loading badge(s) to guess badge(s)`);
+      for (const loadingBadge of loadingBadges) {
+        // Only convert badges that are still loading (not yet calculated)
+        if (loadingBadge.hasAttribute('data-iq-loading') || loadingBadge.classList.contains('iq-badge-loading')) {
+          const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
+                              loadingBadge.closest('article[role="article"]') ||
+                              loadingBadge.closest('article');
+          const tweetId = tweetElement?.getAttribute('data-tweet-id');
+
+          await gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
+
+          console.log(`[IQGuessr Debug] State shift: LOADING → GUESS for tweet ${tweetId || 'unknown'} (page load)`);
+        }
+      }
+
+      // Also handle calculated badges that already exist
+      // These should stay as calculated badges (don't convert to guess badges)
+      const calculatedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
+      console.log(`[IQGuessr Debug] Found ${calculatedBadges.length} calculated badge(s) on page load - preserving them`);
+      for (const calculatedBadge of calculatedBadges) {
+        const tweetElement = calculatedBadge.closest('article[data-testid="tweet"]') ||
+                            calculatedBadge.closest('article[role="article"]') ||
+                            calculatedBadge.closest('article');
+        if (tweetElement) {
+          const tweetId = tweetElement.getAttribute('data-tweet-id');
+          if (tweetId) {
+            const cachedGuess = await gameManager.getCachedGuess(tweetId);
+            if (cachedGuess && cachedGuess.guess !== undefined) {
+              // User has a cached guess, calculated badge should remain showing IQ score
+              console.log(`[IQGuessr Debug] Keeping calculated badge for tweet ${tweetId} (has cached guess, stays calculated)`);
+              debugLog('[Content] Keeping calculated badge with cached guess for tweet:', tweetId);
+            } else {
+              // No cached guess but badge is already calculated - keep it as calculated
+              console.log(`[IQGuessr Debug] Keeping calculated badge for tweet ${tweetId} (already calculated, no cached guess - stays calculated)`);
+            }
+          }
+        }
       }
     }
   }
@@ -228,12 +324,18 @@
         processVisibleTweets();
         setupObserver();
         setupRealtimeComposeObserver();
+
+        // Apply IQGuessr mode if enabled on page load
+        applyIQGuessrModeOnLoad();
       });
     } else {
       // Page already loaded - process immediately
       processVisibleTweets();
       setupObserver();
       setupRealtimeComposeObserver();
+
+      // Apply IQGuessr mode if enabled on page load
+      applyIQGuessrModeOnLoad();
     }
 
     // Also process on scroll (for lazy-loaded content) - with minimal delay

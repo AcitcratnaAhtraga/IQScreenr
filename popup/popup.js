@@ -145,7 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle IQ Guessr checkbox
   document.getElementById('enableIQGuessr').addEventListener('change', (e) => {
-    chrome.storage.sync.set({ enableIQGuessr: e.target.checked }, () => {
+    const isEnabled = e.target.checked;
+    console.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
+
+    chrome.storage.sync.set({ enableIQGuessr: isEnabled }, () => {
       if (chrome.runtime.lastError) {
         showStatus('Error saving setting', 'error');
       } else {
