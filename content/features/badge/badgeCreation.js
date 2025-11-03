@@ -456,8 +456,10 @@ function logDebugInfo(debugData) {
  * Create IQ badge element with debug data attached
  */
 function createIQBadge(iq, estimationResult, tweetText) {
-  const { getIQColor } = getColorUtils();
+  const { getIQColor, getConfidenceColor } = getColorUtils();
   const { updateBadgeWithFlipStructure } = window.BadgeAnimations || {};
+  const getSettings = () => window.Settings || {};
+  const settings = getSettings();
 
   const badge = document.createElement('span');
   badge.className = 'iq-badge';
@@ -475,7 +477,11 @@ function createIQBadge(iq, estimationResult, tweetText) {
     timestamp: new Date().toISOString()
   };
 
-  const iqColor = getIQColor(iq);
+  // Use confidence color if setting is enabled, otherwise use IQ color
+  const iqColor = (settings.useConfidenceForColor && confidence !== null)
+    ? getConfidenceColor(confidence)
+    : getIQColor(iq);
+
   badge.style.setProperty('background-color', iqColor, 'important');
   badge.style.setProperty('color', '#000000', 'important');
   badge.style.setProperty('cursor', 'help', 'important');

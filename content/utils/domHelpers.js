@@ -16,7 +16,6 @@ if (typeof window.__IQ_DEBUG__ === 'undefined') {
 
 function debugLog(message, data = null) {
   if (window.__IQ_DEBUG__) {
-    console.log(`[IQ Badge Debug] ${message}`, data || '');
   }
 }
 
