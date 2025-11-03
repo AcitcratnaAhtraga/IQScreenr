@@ -49,27 +49,35 @@ function loadSettings() {
 function setupSettingsListener(onChange) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'sync') {
+      const relevantChanges = {};
+
       if (changes.showIQBadge) {
         settings.showIQBadge = changes.showIQBadge.newValue;
+        relevantChanges.showIQBadge = changes.showIQBadge;
       }
       if (changes.showRealtimeBadge) {
         settings.showRealtimeBadge = changes.showRealtimeBadge.newValue;
+        relevantChanges.showRealtimeBadge = changes.showRealtimeBadge;
       }
       if (changes.minIQ) {
         settings.minIQ = changes.minIQ.newValue;
+        relevantChanges.minIQ = changes.minIQ;
       }
       if (changes.maxIQ) {
         settings.maxIQ = changes.maxIQ.newValue;
+        relevantChanges.maxIQ = changes.maxIQ;
       }
       if (changes.useConfidenceForColor) {
         settings.useConfidenceForColor = changes.useConfidenceForColor.newValue;
+        relevantChanges.useConfidenceForColor = changes.useConfidenceForColor;
       }
       if (changes.enableDebugLogging) {
         settings.enableDebugLogging = changes.enableDebugLogging.newValue;
+        relevantChanges.enableDebugLogging = changes.enableDebugLogging;
       }
 
-      if (onChange) {
-        onChange();
+      if (onChange && Object.keys(relevantChanges).length > 0) {
+        onChange(relevantChanges);
       }
     }
   });

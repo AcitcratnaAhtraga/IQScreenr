@@ -75,7 +75,7 @@ function createInvalidBadge() {
 /**
  * Log comprehensive debug information to console (on hover)
  */
-function logDebugInfo(debugData, badgeElement) {
+function logDebugInfo(debugData) {
   if (!debugData) return;
 
   const { iq, result, text, timestamp } = debugData;
@@ -257,74 +257,6 @@ function logDebugInfo(debugData, badgeElement) {
     `%c⏰ Analyzed at: ${new Date(timestamp).toLocaleTimeString()}`,
     'color: #757575; font-style: italic;'
   );
-
-  // Badge size debugging
-  if (badgeElement) {
-    console.group('%c📏 Badge Size Debug', 'color: #FF5722; font-weight: bold;');
-    try {
-      const rect = badgeElement.getBoundingClientRect();
-      const computedStyle = window.getComputedStyle(badgeElement);
-
-      console.log(`Dimensions: ${rect.width.toFixed(1)}px × ${rect.height.toFixed(1)}px`);
-      console.log(`Classes: ${badgeElement.className}`);
-      console.log(`Has flip structure: ${badgeElement.querySelector('.iq-badge-inner') ? 'Yes' : 'No'}`);
-      console.log(`Has confidence: ${badgeElement.hasAttribute('data-confidence') ? 'Yes' : 'No'}`);
-      if (badgeElement.hasAttribute('data-confidence')) {
-        console.log(`Confidence: ${badgeElement.getAttribute('data-confidence')}`);
-      }
-
-      // Inline styles
-      console.log(`Inline styles:`);
-      console.log(`  display: ${badgeElement.style.display || 'not set'}`);
-      console.log(`  width: ${badgeElement.style.width || 'not set'}`);
-      console.log(`  height: ${badgeElement.style.height || 'not set'}`);
-      console.log(`  min-width: ${badgeElement.style.minWidth || 'not set'}`);
-      console.log(`  min-height: ${badgeElement.style.minHeight || 'not set'}`);
-      console.log(`  max-width: ${badgeElement.style.maxWidth || 'not set'}`);
-      console.log(`  max-height: ${badgeElement.style.maxHeight || 'not set'}`);
-
-      // Computed styles
-      console.log(`Computed styles:`);
-      console.log(`  display: ${computedStyle.display}`);
-      console.log(`  width: ${computedStyle.width}`);
-      console.log(`  height: ${computedStyle.height}`);
-      console.log(`  box-sizing: ${computedStyle.boxSizing}`);
-
-      // Content measurements
-      const labelElement = badgeElement.querySelector('.iq-label');
-      const scoreElement = badgeElement.querySelector('.iq-score');
-      if (labelElement) {
-        const labelRect = labelElement.getBoundingClientRect();
-        console.log(`  Label: ${labelRect.width.toFixed(1)}px × ${labelRect.height.toFixed(1)}px, text: "${labelElement.textContent}"`);
-      }
-      if (scoreElement) {
-        const scoreRect = scoreElement.getBoundingClientRect();
-        console.log(`  Score: ${scoreRect.width.toFixed(1)}px × ${scoreRect.height.toFixed(1)}px, text: "${scoreElement.textContent}"`);
-      }
-
-      // Flip structure details
-      const innerElement = badgeElement.querySelector('.iq-badge-inner');
-      if (innerElement) {
-        const innerRect = innerElement.getBoundingClientRect();
-        console.log(`  Flip inner: ${innerRect.width.toFixed(1)}px × ${innerRect.height.toFixed(1)}px`);
-
-        const frontElement = badgeElement.querySelector('.iq-badge-front');
-        const backElement = badgeElement.querySelector('.iq-badge-back');
-        if (frontElement) {
-          const frontRect = frontElement.getBoundingClientRect();
-          console.log(`  Flip front: ${frontRect.width.toFixed(1)}px × ${frontRect.height.toFixed(1)}px`);
-        }
-        if (backElement) {
-          const backRect = backElement.getBoundingClientRect();
-          console.log(`  Flip back: ${backRect.width.toFixed(1)}px × ${backRect.height.toFixed(1)}px`);
-        }
-      }
-    } catch (e) {
-      console.log(`Error getting badge size: ${e.message}`);
-    }
-    console.groupEnd();
-  }
-
   console.log(
     '%c' + '='.repeat(80),
     'color: #4CAF50; font-weight: bold; font-size: 14px;'
@@ -386,7 +318,7 @@ function createIQBadge(iq, estimationResult, tweetText) {
   // Always add hover event listener for console debug info
   badge.addEventListener('mouseenter', () => {
     if (badge._debugData) {
-      logDebugInfo(badge._debugData, badge);
+      logDebugInfo(badge._debugData);
     }
   });
 

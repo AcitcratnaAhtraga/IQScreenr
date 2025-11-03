@@ -1212,7 +1212,7 @@ async function processTweet(tweetElement) {
             // Always add hover event listener for console debug info
             loadingBadge.addEventListener('mouseenter', () => {
               if (loadingBadge._debugData) {
-                logDebugInfo(loadingBadge._debugData, loadingBadge);
+                logDebugInfo(loadingBadge._debugData);
               }
             });
           }
@@ -1366,7 +1366,7 @@ async function processTweet(tweetElement) {
         // Add hover event listener
         loadingBadge.addEventListener('mouseenter', () => {
           if (loadingBadge._debugData) {
-            logDebugInfo(loadingBadge._debugData, loadingBadge);
+            logDebugInfo(loadingBadge._debugData);
           }
         });
 
