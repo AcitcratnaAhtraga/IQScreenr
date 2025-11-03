@@ -36,6 +36,7 @@
         "content/features/gameManager.js",
         "content/features/tweetProcessor.js",
         "content/features/realtime.js",
+        "content/features/profileBadge.js",
         "content/content.js"
       ],
       "css": [
