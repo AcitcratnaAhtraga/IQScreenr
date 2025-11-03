@@ -158,10 +158,12 @@ function getConfidenceColor(confidence) {
     const t = (confidence - 80) / 10;
     baseColor = interpolateColor('#66bb6a', '#4caf50', t);
   } else {
-    baseColor = '#2e7d32'; // Darkest green for very high confidence (90-100%)
+    // Use maximum vibrant green for 90-100% confidence
+    baseColor = '#4caf50';
   }
 
   // Desaturate the color for a more elegant appearance
+  // Use less desaturation for 100% confidence to show maximum green
   let rgb;
   if (baseColor.startsWith('rgb')) {
     const match = baseColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
@@ -173,7 +175,10 @@ function getConfidenceColor(confidence) {
   } else {
     rgb = hexToRgb(baseColor);
   }
-  const desat = desaturateColor(rgb, 0.5);
+
+  // Use minimal desaturation for 100% confidence to maintain maximum green
+  const desaturationAmount = confidence === 100 ? 0.1 : 0.5;
+  const desat = desaturateColor(rgb, desaturationAmount);
   return `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
 }
 

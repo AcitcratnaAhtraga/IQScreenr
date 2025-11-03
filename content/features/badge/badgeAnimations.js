@@ -352,18 +352,21 @@ function animateCountUp(badge, finalIQ, iqColor) {
 
   observer.observe(badge);
 
-  const rect = badge.getBoundingClientRect();
-  const isVisible = rect.top < window.innerHeight + 50 && rect.bottom > -50;
-  if (isVisible) {
-    observer.disconnect();
-    startAnimation();
-  }
+  // Check visibility after layout is complete
+  requestAnimationFrame(() => {
+    const rect = badge.getBoundingClientRect();
+    const isVisible = rect.top < window.innerHeight + 50 && rect.bottom > -50;
+    if (isVisible) {
+      observer.disconnect();
+      startAnimation();
+    }
+  });
 }
 
 /**
- * Animate real-time badge update (count-up from current to new IQ)
+ * Animate real-time badge update (count-up from current to new IQ and confidence)
  */
-function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
+function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence, newConfidence) {
   if (badge._animationFrameId) {
     cancelAnimationFrame(badge._animationFrameId);
     badge._animationFrameId = null;
@@ -371,14 +374,14 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
 
   const { hexToRgb, desaturateColor, parseColor, interpolateRgbColor } = getColorUtils();
   const getBadgeManager = () => window.BadgeManager || {};
+  const { getIQColor } = getBadgeManager();
 
   badge.removeAttribute('data-iq-animating');
   badge.removeAttribute('data-iq-animated');
 
-  const darkerRed = '#b71c1c';
-  const rgb = hexToRgb(darkerRed);
-  const desat = desaturateColor(rgb, 0.5);
-  const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+  // Use current background color as starting point, or IQ 100 color if badge just initialized
+  const startIQ = oldIQ >= 0 ? oldIQ : 100;
+  const startConfidence = (oldConfidence !== null && oldConfidence !== undefined && oldConfidence >= 0) ? oldConfidence : 100;
 
   let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                      badge.querySelector('.iq-score');
@@ -386,15 +389,28 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
     return;
   }
 
-  const startIQ = oldIQ >= 0 ? oldIQ : 0;
+  // Initialize starting values
   scoreElement.textContent = String(startIQ);
 
+  // Update confidence display if flip structure exists
+  const backScoreElement = badge.querySelector('.iq-badge-back .iq-score');
+  if (backScoreElement && (newConfidence !== null && newConfidence !== undefined)) {
+    backScoreElement.textContent = String(startConfidence);
+  }
+
+  // Get starting color (either current or 100% confidence color for maximum green)
   let startColorRgb;
-  if (oldIQ < 0) {
-    startColorRgb = parseColor(loadingColor);
-    badge.style.setProperty('background-color', loadingColor, 'important');
+  const { getConfidenceColor } = getBadgeManager();
+  if (oldIQ < 0 || oldIQ === 100) {
+    // Starting fresh - use 100% confidence color for maximum green
+    const initialColor = getConfidenceColor ? getConfidenceColor(100) :
+                        (getIQColor ? getIQColor(100) : '#4CAF50');
+    startColorRgb = parseColor(initialColor);
+    badge.style.setProperty('background-color', initialColor, 'important');
   } else {
-    const currentBgColor = badge.style.backgroundColor || loadingColor;
+    const defaultColor = getConfidenceColor ? getConfidenceColor(100) :
+                        (getIQColor ? getIQColor(100) : '#4CAF50');
+    const currentBgColor = badge.style.backgroundColor || defaultColor;
     startColorRgb = parseColor(currentBgColor);
   }
   badge.style.setProperty('color', '#000000', 'important');
@@ -402,11 +418,13 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
   const finalColorRgb = parseColor(iqColor);
 
   let currentIQ = startIQ;
+  let currentConfidence = startConfidence;
   badge.setAttribute('data-iq-animating', 'true');
 
   const duration = 800;
   const startTime = performance.now();
   let lastDisplayedIQ = startIQ;
+  let lastDisplayedConfidence = startConfidence;
 
   function updateNumber() {
     const now = performance.now();
@@ -414,16 +432,18 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
     const progress = Math.min(elapsed / duration, 1);
 
     const easedProgress = 1 - Math.pow(1 - progress, 3);
+
+    // Animate IQ
     const iqDiff = newIQ - startIQ;
     const targetIQ = startIQ + Math.floor(easedProgress * iqDiff);
-    const maxIncrement = Math.max(1, Math.ceil(Math.abs(iqDiff) / 30));
+    const maxIncrementIQ = Math.max(1, Math.ceil(Math.abs(iqDiff) / 30));
 
     if (progress >= 1) {
       currentIQ = newIQ;
     } else {
       const difference = targetIQ - currentIQ;
-      if (Math.abs(difference) > maxIncrement) {
-        currentIQ += difference > 0 ? maxIncrement : -maxIncrement;
+      if (Math.abs(difference) > maxIncrementIQ) {
+        currentIQ += difference > 0 ? maxIncrementIQ : -maxIncrementIQ;
       } else {
         currentIQ = targetIQ;
       }
@@ -433,6 +453,29 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
       currentIQ = newIQ;
     }
 
+    // Animate confidence if provided
+    if (newConfidence !== null && newConfidence !== undefined) {
+      const confidenceDiff = newConfidence - startConfidence;
+      const targetConfidence = startConfidence + Math.floor(easedProgress * confidenceDiff);
+      const maxIncrementConf = Math.max(1, Math.ceil(Math.abs(confidenceDiff) / 30));
+
+      if (progress >= 1) {
+        currentConfidence = newConfidence;
+      } else {
+        const difference = targetConfidence - currentConfidence;
+        if (Math.abs(difference) > maxIncrementConf) {
+          currentConfidence += difference > 0 ? maxIncrementConf : -maxIncrementConf;
+        } else {
+          currentConfidence = targetConfidence;
+        }
+      }
+
+      if ((confidenceDiff > 0 && currentConfidence > newConfidence) || (confidenceDiff < 0 && currentConfidence < newConfidence)) {
+        currentConfidence = newConfidence;
+      }
+    }
+
+    // Interpolate color
     const currentColor = interpolateRgbColor(
       startColorRgb,
       finalColorRgb,
@@ -441,6 +484,7 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
     badge.style.setProperty('background-color', currentColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
 
+    // Update IQ display
     let currentScoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                                badge.querySelector('.iq-score');
 
@@ -459,9 +503,22 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
       }
     }
 
-    if (progress < 1 || lastDisplayedIQ !== newIQ) {
+    // Update confidence display
+    if (newConfidence !== null && newConfidence !== undefined && currentConfidence !== lastDisplayedConfidence) {
+      const currentBackScoreElement = badge.querySelector('.iq-badge-back .iq-score');
+      if (currentBackScoreElement) {
+        currentBackScoreElement.textContent = Math.max(0, Math.round(currentConfidence));
+        lastDisplayedConfidence = currentConfidence;
+      }
+    }
+
+    const iqComplete = (progress >= 1 && lastDisplayedIQ === newIQ);
+    const confidenceComplete = (newConfidence === null || newConfidence === undefined || (progress >= 1 && lastDisplayedConfidence === newConfidence));
+
+    if (!iqComplete || !confidenceComplete) {
       badge._animationFrameId = requestAnimationFrame(updateNumber);
     } else {
+      // Finalize values
       const finalScoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                                 badge.querySelector('.iq-score');
       if (finalScoreElement) {
@@ -473,15 +530,27 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
         }
       }
 
+      if (newConfidence !== null && newConfidence !== undefined) {
+        const finalBackScoreElement = badge.querySelector('.iq-badge-back .iq-score');
+        if (finalBackScoreElement) {
+          finalBackScoreElement.textContent = newConfidence;
+        }
+      }
+
       badge.style.setProperty('background-color', iqColor, 'important');
       badge.style.setProperty('color', '#000000', 'important');
       badge.removeAttribute('data-iq-animating');
       badge.setAttribute('data-iq-animated', 'true');
       badge._animationFrameId = null;
 
-      setTimeout(() => {
-        triggerPulseAnimation(badge, iqColor);
-      }, 100);
+      // Skip pulse animation for real-time badges
+      const isRealtimeBadge = badge.classList.contains('iq-badge-realtime') ||
+                              badge.hasAttribute('data-iq-realtime');
+      if (!isRealtimeBadge) {
+        setTimeout(() => {
+          triggerPulseAnimation(badge, iqColor);
+        }, 100);
+      }
     }
   }
 

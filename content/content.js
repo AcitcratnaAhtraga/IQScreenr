@@ -139,13 +139,38 @@
         guessBadges.forEach(guessBadge => {
           // Only convert badges that haven't been guessed yet
           if (!guessBadge.hasAttribute('data-iq-guessed') && !guessBadge.hasAttribute('data-iq-calculating')) {
+            // Find the tweet element containing this badge
+            const tweetElement = guessBadge.closest('article[data-testid="tweet"]') ||
+                                guessBadge.closest('article[role="article"]') ||
+                                guessBadge.closest('article');
+
             const loadingBadge = badgeManager.createLoadingBadge();
             if (guessBadge.parentElement) {
               guessBadge.parentElement.insertBefore(loadingBadge, guessBadge);
               guessBadge.remove();
             }
+
+            // Mark the tweet for reprocessing if it exists
+            if (tweetElement) {
+              tweetElement.removeAttribute('data-iq-analyzed');
+              tweetElement.removeAttribute('data-iq-processing');
+              tweetElement.removeAttribute('data-iq-processing-start');
+
+              // Remove from processed tweets Set to allow reprocessing
+              const tweetProcessorModule = getTweetProcessor();
+              if (tweetProcessorModule && tweetProcessorModule.processedTweets) {
+                tweetProcessorModule.processedTweets.delete(tweetElement);
+              }
+            }
           }
         });
+
+        // Reprocess visible tweets to trigger IQ calculations for converted badges
+        if (tweetProcessor && tweetProcessor.processVisibleTweets) {
+          setTimeout(() => {
+            tweetProcessor.processVisibleTweets();
+          }, 100);
+        }
       } else if (gameModeEnabled && gameManager && gameManager.replaceLoadingBadgeWithGuess && settings.showIQBadge) {
         // Game mode enabled: convert loading badges to guess badges
         const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
@@ -157,12 +182,8 @@
           }
         }
 
-        // Reprocess visible tweets to apply game mode to new badges
-        if (tweetProcessor && tweetProcessor.processVisibleTweets) {
-          setTimeout(() => {
-            tweetProcessor.processVisibleTweets();
-          }, 100);
-        }
+        // No need to reprocess - conversion handles all visible badges
+        // Reprocessing would only create duplicates for tweets that already have calculated badges
       }
     }
   }

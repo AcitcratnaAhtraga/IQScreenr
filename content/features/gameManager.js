@@ -9,12 +9,15 @@
 // Get dependencies from other modules
 const getSettings = () => window.Settings || {};
 const getBadgeManager = () => window.BadgeManager || {};
+const getIQCache = () => window.IQCache || {};
+const getTextExtraction = () => window.TextExtraction || {};
 const getDebugLog = () => window.DOMHelpers?.debugLog || (() => {});
 const debugLog = getDebugLog();
 
 // Game state
 const guessManager = new Map(); // tweetElement -> { guess: number, confidence: number }
 const GUESS_CACHE_PREFIX = 'iq_guess_';
+const GUESS_HISTORY_KEY = 'iqGuessrHistory';
 
 /**
  * Generate cache key from tweet ID
@@ -396,6 +399,13 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
         const score = calculateGuessScore(guessData.guess, actualIQ, guessData.confidence);
         addToGameScore(score);
 
+        // Add to history
+        const tweetId = tweetElement ? tweetElement.getAttribute('data-tweet-id') : null;
+        const handle = tweetElement ? tweetElement.getAttribute('data-handle') : null;
+        if (tweetId) {
+          addGuessToHistory(tweetId, handle, guessData.guess, actualIQ, guessData.confidence, score);
+        }
+
         // Show score feedback
         showScoreFeedback(badge, score, guessData.guess, actualIQ);
       }
@@ -482,7 +492,31 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
       const cachedGuess = await getCachedGuess(tweetId);
       if (cachedGuess && cachedGuess.guess !== undefined) {
         // We have a cached guess, check if there's an actual IQ calculated
-        const iqResult = tweetElement._iqResult;
+        let iqResult = tweetElement._iqResult;
+
+        // If no IQ result on tweet element, try to get from IQ cache (handles page refresh)
+        if (!iqResult || !iqResult.iq) {
+          const { getCachedIQ } = getIQCache();
+          const { extractTweetHandle, extractTweetText } = getTextExtraction();
+          if (getCachedIQ && extractTweetHandle) {
+            const handle = extractTweetHandle(tweetElement);
+            if (handle) {
+              const cachedIQ = getCachedIQ(handle);
+              if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+                // Extract tweet text for debug data
+                const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
+                // Convert cached IQ format to match expected format
+                iqResult = {
+                  iq: cachedIQ.iq_estimate,
+                  result: cachedIQ,
+                  confidence: cachedIQ.confidence,
+                  text: tweetText
+                };
+              }
+            }
+          }
+        }
+
         if (iqResult && iqResult.iq !== undefined && iqResult.result) {
           // We have the actual IQ, show it instead of a guess badge
           const badgeManager = getBadgeManager();
@@ -560,6 +594,59 @@ function clearGuess(tweetElement) {
   guessManager.delete(tweetElement);
 }
 
+/**
+ * Add a guess to history with full metadata
+ */
+function addGuessToHistory(tweetId, handle, guess, actualIQ, confidence, score) {
+  if (!tweetId) return;
+
+  const historyEntry = {
+    tweetId: tweetId,
+    handle: handle,
+    guess: guess,
+    actualIQ: actualIQ,
+    confidence: confidence,
+    score: score,
+    difference: Math.abs(guess - actualIQ),
+    accuracy: Math.max(0, 100 - (Math.abs(guess - actualIQ) / 90) * 100), // 0-100 based on 90 point range
+    timestamp: new Date().toISOString()
+  };
+
+  // Get existing history
+  chrome.storage.local.get([GUESS_HISTORY_KEY], (result) => {
+    let history = result[GUESS_HISTORY_KEY] || [];
+
+    // Add new entry at the beginning
+    history.unshift(historyEntry);
+
+    // Keep only last 1000 guesses to prevent storage bloat
+    if (history.length > 1000) {
+      history = history.slice(0, 1000);
+    }
+
+    // Save back to storage
+    chrome.storage.local.set({ [GUESS_HISTORY_KEY]: history }, () => {});
+  });
+}
+
+/**
+ * Get all guess history
+ */
+function getGuessHistory(callback) {
+  chrome.storage.local.get([GUESS_HISTORY_KEY], (result) => {
+    callback(result[GUESS_HISTORY_KEY] || []);
+  });
+}
+
+/**
+ * Clear all guess history
+ */
+function clearGuessHistory(callback) {
+  chrome.storage.local.remove([GUESS_HISTORY_KEY], () => {
+    if (callback) callback();
+  });
+}
+
 // Export for use in other modules
 if (typeof window !== 'undefined') {
   window.GameManager = {
@@ -572,7 +659,10 @@ if (typeof window !== 'undefined') {
     calculateGuessScore,
     addToGameScore,
     getCachedGuess,
-    cacheGuess
+    cacheGuess,
+    addGuessToHistory,
+    getGuessHistory,
+    clearGuessHistory
   };
 }
 

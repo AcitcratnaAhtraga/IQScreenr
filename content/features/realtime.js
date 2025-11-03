@@ -102,17 +102,47 @@ async function updateRealtimeBadge(inputElement, badge, container) {
 
   const text = getInputText(inputElement).trim();
 
-  if (!text || text.length < 10) {
-    const darkerRed = '#b71c1c';
-    const rgb = hexToRgb(darkerRed);
-    const desat = desaturateColor(rgb, 0.5);
-    const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
-    badge.style.setProperty('background-color', loadingColor, 'important');
-    const scoreElement = badge.querySelector('.iq-score');
-    if (scoreElement) {
-      scoreElement.textContent = '0';
+  // Count words in the text
+  const wordCount = text.trim() ? text.trim().split(/\s+/).filter(word => word.length > 0).length : 0;
+
+  // Show X badge until 5 words are written
+  if (!text || wordCount < 5) {
+    badge.style.setProperty('background-color', '#000000', 'important');
+    badge.style.setProperty('color', '#9e9e9e', 'important');
+
+    // Remove flip structure if it exists, show simple X
+    const inner = badge.querySelector('.iq-badge-inner');
+    if (inner) {
+      badge.innerHTML = `
+        <span class="iq-label">IQ</span>
+        <span class="iq-score">✕</span>
+      `;
+      badge.classList.remove('iq-badge-flip');
+    } else {
+      let scoreElement = badge.querySelector('.iq-score');
+      if (scoreElement) {
+        scoreElement.textContent = '✕';
+      } else {
+        badge.innerHTML = `
+          <span class="iq-label">IQ</span>
+          <span class="iq-score">✕</span>
+        `;
+      }
     }
+
+    badge.style.setProperty('padding-top', '3px', 'important');
+    badge.style.setProperty('padding-bottom', '3px', 'important');
+    badge.style.setProperty('margin-top', '0', 'important');
+    badge.style.setProperty('margin-bottom', '0', 'important');
+
     badge.removeAttribute('data-iq-score');
+    badge.removeAttribute('data-confidence');
+    if (badge._animationFrameId) {
+      cancelAnimationFrame(badge._animationFrameId);
+      badge._animationFrameId = null;
+    }
+    badge.removeAttribute('data-iq-animating');
+    badge.removeAttribute('data-iq-animated');
     return;
   }
 
@@ -162,18 +192,31 @@ async function updateRealtimeBadge(inputElement, badge, container) {
 
       let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                          badge.querySelector('.iq-score');
-      let oldIQ = -1;
+      let oldIQ = 100; // Default to 100 as starting point
+      let oldConfidence = 100; // Default to 100% as starting point
 
       const isTransitioningFromInvalid = scoreElement && scoreElement.textContent.trim() === '✕';
 
       if (isTransitioningFromInvalid) {
-        oldIQ = -1;
-        scoreElement.textContent = '0';
-        badge.removeAttribute('data-iq-score');
+        oldIQ = 100; // Start from 100 even when transitioning from invalid
+        oldConfidence = 100; // Start from 100% confidence
+
+        // Restore flip structure for smooth transition
+        if (!badge.querySelector('.iq-badge-inner')) {
+          updateBadgeWithFlipStructure(badge, 100, 100);
+        } else {
+          const frontScore = badge.querySelector('.iq-badge-front .iq-score');
+          const backScore = badge.querySelector('.iq-badge-back .iq-score');
+          if (frontScore) frontScore.textContent = '100';
+          if (backScore) backScore.textContent = '100';
+        }
+
+        badge.setAttribute('data-iq-score', '100');
+        badge.setAttribute('data-confidence', '100');
       } else {
         if (badge.hasAttribute('data-iq-score')) {
           const dataScore = parseInt(badge.getAttribute('data-iq-score'), 10);
-          if (!isNaN(dataScore) && dataScore > 0) {
+          if (!isNaN(dataScore) && dataScore >= 0) {
             oldIQ = dataScore;
           }
         }
@@ -182,18 +225,30 @@ async function updateRealtimeBadge(inputElement, badge, container) {
           const displayedText = scoreElement.textContent.trim();
           if (displayedText !== '0' && displayedText !== '✕' && displayedText.length > 0) {
             const displayedScore = parseInt(displayedText, 10);
-            if (!isNaN(displayedScore) && displayedScore > 0) {
+            if (!isNaN(displayedScore) && displayedScore >= 0) {
               oldIQ = displayedScore;
             }
           }
         }
       }
 
-      if (oldIQ <= 0) {
-        oldIQ = -1;
+      // If we still don't have a valid oldIQ, default to 100
+      if (oldIQ < 0) {
+        oldIQ = 100;
       }
 
       const confidence = result.confidence ? Math.round(result.confidence) : null;
+
+      // Get old confidence for smooth transition (only if not transitioning from invalid)
+      if (!isTransitioningFromInvalid) {
+        if (badge.hasAttribute('data-confidence')) {
+          const dataConfidence = parseInt(badge.getAttribute('data-confidence'), 10);
+          if (!isNaN(dataConfidence) && dataConfidence >= 0) {
+            oldConfidence = dataConfidence;
+          }
+        }
+      }
+
       // Use confidence color if setting is enabled, otherwise use IQ color
       const settings = getSettings();
       const iqColor = (settings.useConfidenceForColor && confidence !== null)
@@ -207,7 +262,10 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       badge.setAttribute('data-iq-score', newIQ);
 
       if (confidence !== null) {
-        updateBadgeWithFlipStructure(badge, newIQ, confidence);
+        // Ensure flip structure exists before animating
+        if (!badge.querySelector('.iq-badge-inner')) {
+          updateBadgeWithFlipStructure(badge, oldIQ, oldConfidence);
+        }
 
         const inner = badge.querySelector('.iq-badge-inner');
         if (inner) {
@@ -242,23 +300,43 @@ async function updateRealtimeBadge(inputElement, badge, container) {
         scoreEl.style.setProperty('color', '#000000', 'important');
       }
 
-      animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor);
+      // Animate both IQ and confidence transitions
+      animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence, confidence);
     } else {
-      const darkerRed = '#b71c1c';
-      const rgb = hexToRgb(darkerRed);
-      const desat = desaturateColor(rgb, 0.5);
-      const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
-      badge.style.setProperty('background-color', loadingColor, 'important');
+      // Keep showing 100 IQ and 100% confidence when result is invalid
+      const { getIQColor, getConfidenceColor } = getBadgeManager();
+      // Use confidence color for 100% confidence to show maximum green
+      const initialColor = getConfidenceColor ? getConfidenceColor(100) :
+                          (getIQColor ? getIQColor(100) : '#4CAF50');
+      badge.style.setProperty('background-color', initialColor, 'important');
       badge.style.setProperty('color', '#000000', 'important');
-      const scoreElement = badge.querySelector('.iq-score');
+
+      // Ensure flip structure exists
+      if (!badge.querySelector('.iq-badge-inner')) {
+        const { updateBadgeWithFlipStructure } = getBadgeManager();
+        if (updateBadgeWithFlipStructure) {
+          updateBadgeWithFlipStructure(badge, 100, 100);
+        }
+      }
+
+      const scoreElement = badge.querySelector('.iq-badge-front .iq-score') || badge.querySelector('.iq-score');
       if (scoreElement) {
-        scoreElement.textContent = '0';
+        scoreElement.textContent = '100';
         scoreElement.style.setProperty('color', '#000000', 'important');
       }
-      const labelElement = badge.querySelector('.iq-label');
-      if (labelElement) {
-        labelElement.style.setProperty('color', '#000000', 'important');
+      const backScore = badge.querySelector('.iq-badge-back .iq-score');
+      if (backScore) {
+        backScore.textContent = '100';
+        backScore.style.setProperty('color', '#000000', 'important');
       }
+
+      const labelElements = badge.querySelectorAll('.iq-label');
+      labelElements.forEach(labelElement => {
+        labelElement.style.setProperty('color', '#000000', 'important');
+      });
+
+      badge.setAttribute('data-iq-score', '100');
+      badge.setAttribute('data-confidence', '100');
     }
   } catch (error) {
     console.error('Error updating real-time IQ badge:', error);

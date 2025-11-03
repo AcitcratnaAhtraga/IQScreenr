@@ -615,14 +615,17 @@ function createRealtimeBadge(inputElement, container) {
 
   if (!badge) {
     badge = document.createElement('span');
-    badge.className = 'iq-badge iq-badge-realtime';
+    badge.className = 'iq-badge iq-badge-realtime iq-badge-flip';
     badge.setAttribute('data-iq-realtime', 'true');
+    badge.setAttribute('data-iq-score', '100');
+    badge.setAttribute('data-confidence', '100');
 
-    const darkerRed = '#b71c1c';
-    const rgb = hexToRgb(darkerRed);
-    const desat = desaturateColor(rgb, 0.5);
-    const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
-    badge.style.setProperty('background-color', loadingColor, 'important');
+    // Use confidence color for 100% confidence to show maximum green
+    const { getIQColor, getConfidenceColor } = getColorUtils();
+    const initialColor = getConfidenceColor ? getConfidenceColor(100) :
+                        (getIQColor ? getIQColor(100) : '#4CAF50');
+
+    badge.style.setProperty('background-color', initialColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
     badge.style.setProperty('display', 'inline-flex', 'important');
     badge.style.setProperty('vertical-align', 'middle', 'important');
@@ -632,20 +635,30 @@ function createRealtimeBadge(inputElement, container) {
     badge.style.setProperty('flex-shrink', '0', 'important');
     badge.style.setProperty('flex-grow', '0', 'important');
     badge.style.setProperty('align-self', 'flex-start', 'important');
+
+    // Create flip structure with 100 IQ and 100% confidence
     badge.innerHTML = `
-      <span class="iq-label">IQ</span>
-      <span class="iq-score">0</span>
+      <div class="iq-badge-inner" style="transform: rotateY(0deg); transform-style: preserve-3d;">
+        <div class="iq-badge-front">
+          <span class="iq-label">IQ</span>
+          <span class="iq-score">100</span>
+        </div>
+        <div class="iq-badge-back">
+          <span class="iq-label">%</span>
+          <span class="iq-score">100</span>
+        </div>
+      </div>
     `;
 
     // Ensure color is set on child elements after innerHTML
-    const labelElement = badge.querySelector('.iq-label');
-    const scoreElement = badge.querySelector('.iq-score');
-    if (labelElement) {
-      labelElement.style.setProperty('color', '#000000', 'important');
-    }
-    if (scoreElement) {
-      scoreElement.style.setProperty('color', '#000000', 'important');
-    }
+    const labelElements = badge.querySelectorAll('.iq-label');
+    const scoreElements = badge.querySelectorAll('.iq-score');
+    labelElements.forEach(el => {
+      el.style.setProperty('color', '#000000', 'important');
+    });
+    scoreElements.forEach(el => {
+      el.style.setProperty('color', '#000000', 'important');
+    });
 
     setTimeout(() => {
       const scoreElement = badge.querySelector('.iq-score');
