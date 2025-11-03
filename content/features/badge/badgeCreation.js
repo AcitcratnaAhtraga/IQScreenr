@@ -409,6 +409,17 @@ function createRealtimeBadge(inputElement, container) {
     badge.style.setProperty('flex-shrink', '0', 'important');
     badge.style.setProperty('flex-grow', '0', 'important');
     badge.style.setProperty('align-self', 'flex-start', 'important');
+    badge.style.setProperty('color', '#000000', 'important');
+
+    // Also set color on child elements to ensure it's applied
+    const labelElement = badge.querySelector('.iq-label');
+    const scoreElement = badge.querySelector('.iq-score');
+    if (labelElement) {
+      labelElement.style.setProperty('color', '#000000', 'important');
+    }
+    if (scoreElement) {
+      scoreElement.style.setProperty('color', '#000000', 'important');
+    }
 
     return badge;
   }
@@ -436,6 +447,16 @@ function createRealtimeBadge(inputElement, container) {
       <span class="iq-label">IQ</span>
       <span class="iq-score">0</span>
     `;
+
+    // Ensure color is set on child elements after innerHTML
+    const labelElement = badge.querySelector('.iq-label');
+    const scoreElement = badge.querySelector('.iq-score');
+    if (labelElement) {
+      labelElement.style.setProperty('color', '#000000', 'important');
+    }
+    if (scoreElement) {
+      scoreElement.style.setProperty('color', '#000000', 'important');
+    }
 
     setTimeout(() => {
       const scoreElement = badge.querySelector('.iq-score');

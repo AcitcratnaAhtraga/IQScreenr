@@ -231,6 +231,17 @@ async function updateRealtimeBadge(inputElement, badge, container) {
         }
       }
 
+      badge.style.setProperty('color', '#000000', 'important');
+      // Ensure child elements also have black color
+      const labelEl = badge.querySelector('.iq-label') || badge.querySelector('.iq-badge-front .iq-label');
+      const scoreEl = badge.querySelector('.iq-score') || badge.querySelector('.iq-badge-front .iq-score');
+      if (labelEl) {
+        labelEl.style.setProperty('color', '#000000', 'important');
+      }
+      if (scoreEl) {
+        scoreEl.style.setProperty('color', '#000000', 'important');
+      }
+
       animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor);
     } else {
       const darkerRed = '#b71c1c';
@@ -238,9 +249,15 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       const desat = desaturateColor(rgb, 0.5);
       const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
       badge.style.setProperty('background-color', loadingColor, 'important');
+      badge.style.setProperty('color', '#000000', 'important');
       const scoreElement = badge.querySelector('.iq-score');
       if (scoreElement) {
         scoreElement.textContent = '0';
+        scoreElement.style.setProperty('color', '#000000', 'important');
+      }
+      const labelElement = badge.querySelector('.iq-label');
+      if (labelElement) {
+        labelElement.style.setProperty('color', '#000000', 'important');
       }
     }
   } catch (error) {

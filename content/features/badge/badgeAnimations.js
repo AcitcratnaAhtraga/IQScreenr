@@ -397,6 +397,7 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
     const currentBgColor = badge.style.backgroundColor || loadingColor;
     startColorRgb = parseColor(currentBgColor);
   }
+  badge.style.setProperty('color', '#000000', 'important');
 
   const finalColorRgb = parseColor(iqColor);
 
@@ -438,6 +439,7 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
       easedProgress
     );
     badge.style.setProperty('background-color', currentColor, 'important');
+    badge.style.setProperty('color', '#000000', 'important');
 
     let currentScoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                                badge.querySelector('.iq-score');
@@ -472,6 +474,7 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor) {
       }
 
       badge.style.setProperty('background-color', iqColor, 'important');
+      badge.style.setProperty('color', '#000000', 'important');
       badge.removeAttribute('data-iq-animating');
       badge.setAttribute('data-iq-animated', 'true');
       badge._animationFrameId = null;
@@ -525,12 +528,13 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
       front.style.padding = '0';
       front.style.top = '0';
     }
-    if (back) {
-      back.style.margin = '0';
-      back.style.padding = '0';
-      back.style.top = '0';
-    }
-    return;
+  if (back) {
+    back.style.margin = '0';
+    back.style.padding = '0';
+    back.style.top = '0';
+  }
+  badge.style.setProperty('color', '#000000', 'important');
+  return;
   }
 
   const currentLabel = badge.querySelector('.iq-label');
@@ -600,6 +604,8 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
     back.style.padding = '0';
     back.style.top = '0';
   }
+
+  badge.style.setProperty('color', '#000000', 'important');
 }
 
 // Export for use in other modules
