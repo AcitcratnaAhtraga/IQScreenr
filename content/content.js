@@ -22,7 +22,7 @@
   /**
    * Apply settings changes immediately
    */
-  function applySettingsChanges(changes) {
+  async function applySettingsChanges(changes) {
     const settings = getSettings();
     const tweetProcessor = getTweetProcessor();
     const realtimeManager = getRealtimeManager();
@@ -149,13 +149,13 @@
       } else if (gameModeEnabled && gameManager && gameManager.replaceLoadingBadgeWithGuess && settings.showIQBadge) {
         // Game mode enabled: convert loading badges to guess badges
         const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
-        loadingBadges.forEach(loadingBadge => {
+        for (const loadingBadge of loadingBadges) {
           // Only convert badges that are still loading (not yet calculated)
           if (loadingBadge.hasAttribute('data-iq-loading') || loadingBadge.classList.contains('iq-badge-loading')) {
-            const guessBadge = gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
+            await gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
             // replaceLoadingBadgeWithGuess handles the replacement, so we don't need to do anything else
           }
-        });
+        }
 
         // Reprocess visible tweets to apply game mode to new badges
         if (tweetProcessor && tweetProcessor.processVisibleTweets) {

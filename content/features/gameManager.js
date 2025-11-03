@@ -17,23 +17,23 @@ const guessManager = new Map(); // tweetElement -> { guess: number, confidence: 
 const GUESS_CACHE_PREFIX = 'iq_guess_';
 
 /**
- * Generate cache key from handle
+ * Generate cache key from tweet ID
  */
-function generateGuessCacheKey(handle) {
-  if (!handle) return null;
-  return handle.trim().toLowerCase().replace(/^@/, '');
+function generateGuessCacheKey(tweetId) {
+  if (!tweetId) return null;
+  return String(tweetId).trim();
 }
 
 // Persistent guess cache
 const persistentGuessCache = new Map();
 
 /**
- * Get cached guess for a handle (async)
+ * Get cached guess for a tweet ID (async)
  */
-async function getCachedGuess(handle) {
-  if (!handle) return null;
+async function getCachedGuess(tweetId) {
+  if (!tweetId) return null;
 
-  const key = generateGuessCacheKey(handle);
+  const key = generateGuessCacheKey(tweetId);
   if (!key) return null;
 
   // Check memory cache first
@@ -56,12 +56,12 @@ async function getCachedGuess(handle) {
 }
 
 /**
- * Cache a guess for a handle
+ * Cache a guess for a tweet ID
  */
-function cacheGuess(handle, guessData) {
-  if (!handle) return;
+function cacheGuess(tweetId, guessData) {
+  if (!tweetId) return;
 
-  const key = generateGuessCacheKey(handle);
+  const key = generateGuessCacheKey(tweetId);
   if (!key) return;
 
   const cacheEntry = {
@@ -149,15 +149,15 @@ async function makeBadgeEditable(badge) {
   const scoreElement = badge.querySelector('.iq-score');
   if (!scoreElement) return;
 
-  // Check if there's a cached guess for this handle
+  // Check if there's a cached guess for this tweet
   const tweetElement = badge.closest('article[data-testid="tweet"]') ||
                       badge.closest('article[role="article"]') ||
                       badge.closest('article');
 
   if (tweetElement) {
-    const handle = tweetElement.getAttribute('data-handle');
-    if (handle) {
-      const cachedGuess = await getCachedGuess(handle);
+    const tweetId = tweetElement.getAttribute('data-tweet-id');
+    if (tweetId) {
+      const cachedGuess = await getCachedGuess(tweetId);
       if (cachedGuess && cachedGuess.guess !== undefined) {
         // Already guessed this tweet, don't allow editing
         return;
@@ -247,10 +247,10 @@ async function makeBadgeEditable(badge) {
           confidence: confidence
         });
 
-        // Store the guess persistently using handle
-        const handle = tweetElement.getAttribute('data-handle');
-        if (handle) {
-          cacheGuess(handle, { guess: value, confidence: confidence });
+        // Store the guess persistently using tweet ID
+        const tweetId = tweetElement.getAttribute('data-tweet-id');
+        if (tweetId) {
+          cacheGuess(tweetId, { guess: value, confidence: confidence });
         }
 
         if (iqResult) {
@@ -466,11 +466,75 @@ function showScoreFeedback(badge, score, guess, actual) {
 /**
  * Replace a loading badge with a guess badge if game mode is enabled
  */
-function replaceLoadingBadgeWithGuess(loadingBadge) {
+async function replaceLoadingBadgeWithGuess(loadingBadge) {
   if (!isGameModeEnabled()) {
     return null;
   }
 
+  // Check if we have a cached guess for this tweet
+  const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
+                      loadingBadge.closest('article[role="article"]') ||
+                      loadingBadge.closest('article');
+
+  if (tweetElement) {
+    const tweetId = tweetElement.getAttribute('data-tweet-id');
+    if (tweetId) {
+      const cachedGuess = await getCachedGuess(tweetId);
+      if (cachedGuess && cachedGuess.guess !== undefined) {
+        // We have a cached guess, check if there's an actual IQ calculated
+        const iqResult = tweetElement._iqResult;
+        if (iqResult && iqResult.iq !== undefined && iqResult.result) {
+          // We have the actual IQ, show it instead of a guess badge
+          const badgeManager = getBadgeManager();
+          if (badgeManager && badgeManager.createIQBadge) {
+            const iq = Math.round(iqResult.iq);
+
+            // Create the actual IQ badge with proper parameters
+            const iqBadge = badgeManager.createIQBadge(iq, iqResult.result, iqResult.text);
+
+            // Store the guess in memory for reference
+            guessManager.set(tweetElement, {
+              guess: cachedGuess.guess,
+              confidence: cachedGuess.confidence
+            });
+
+            // Insert it in the same position
+            if (loadingBadge.parentElement) {
+              loadingBadge.parentElement.insertBefore(iqBadge, loadingBadge);
+              loadingBadge.remove();
+            }
+
+            return iqBadge;
+          }
+        }
+        // We have a guess but no IQ yet, create a regular guess badge with the cached value
+        const guessBadge = createGuessBadge();
+
+        // Set the cached guess value
+        const scoreElement = guessBadge.querySelector('.iq-score');
+        if (scoreElement) {
+          scoreElement.textContent = cachedGuess.guess;
+        }
+        guessBadge.setAttribute('data-iq-guessed', cachedGuess.guess);
+
+        // Store in memory
+        guessManager.set(tweetElement, {
+          guess: cachedGuess.guess,
+          confidence: cachedGuess.confidence
+        });
+
+        // Insert it in the same position
+        if (loadingBadge.parentElement) {
+          loadingBadge.parentElement.insertBefore(guessBadge, loadingBadge);
+          loadingBadge.remove();
+        }
+
+        return guessBadge;
+      }
+    }
+  }
+
+  // No cached guess, create a new guess badge
   const guessBadge = createGuessBadge();
 
   // Insert it in the same position

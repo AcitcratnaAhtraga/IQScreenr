@@ -968,6 +968,57 @@ function extractTweetHandle(tweetElement) {
   return null;
 }
 
+/**
+ * Extract tweet ID from a tweet element
+ * Returns the tweet ID (e.g., "1234567890123456789") or null if not found
+ */
+function extractTweetId(tweetElement) {
+  if (!tweetElement) {
+    return null;
+  }
+
+  // Handle nested tweet structures
+  let actualTweetElement = tweetElement;
+  const nestedTweet = tweetElement.querySelector('[data-testid="tweet"]') ||
+                      tweetElement.querySelector('article[role="article"]');
+  if (nestedTweet && nestedTweet !== tweetElement) {
+    actualTweetElement = nestedTweet;
+  }
+
+  // Method 1: Look for links with href containing /status/ pattern
+  const links = actualTweetElement.querySelectorAll('a[href*="/status/"]');
+  for (const link of links) {
+    const href = link.getAttribute('href') || '';
+    // Match patterns like /username/status/1234567890 or /status/1234567890
+    const match = href.match(/\/status\/(\d+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+
+  // Method 2: Look for time links which typically contain status URLs
+  const timeLinks = actualTweetElement.querySelectorAll('a[href*="/status/"] time');
+  for (const timeEl of timeLinks) {
+    const link = timeEl.closest('a[href*="/status/"]');
+    if (link) {
+      const href = link.getAttribute('href') || '';
+      const match = href.match(/\/status\/(\d+)/);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+  }
+
+  // Method 3: Check data attributes on the article element itself
+  const tweetId = actualTweetElement.getAttribute('data-tweet-id') ||
+                  actualTweetElement.closest('[data-tweet-id]')?.getAttribute('data-tweet-id');
+  if (tweetId) {
+    return tweetId;
+  }
+
+  return null;
+}
+
 // Export for use in other modules
 if (typeof window !== 'undefined') {
   window.TextExtraction = {
@@ -978,6 +1029,7 @@ if (typeof window !== 'undefined') {
     expandTruncatedTweet,
     getInputText,
     extractTweetHandle,
+    extractTweetId,
     removeUrlsFromText
   };
 }

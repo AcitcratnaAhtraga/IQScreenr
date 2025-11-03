@@ -258,7 +258,7 @@ async function processTweet(tweetElement) {
     return;
   }
 
-  const { extractTweetText, isTweetTruncated, tryExtractFullTextWithoutExpanding, extractFullTextWithoutVisualExpansion, extractTweetHandle } = getTextExtraction();
+  const { extractTweetText, isTweetTruncated, tryExtractFullTextWithoutExpanding, extractFullTextWithoutVisualExpansion, extractTweetHandle, extractTweetId } = getTextExtraction();
   const { validateTweetText } = getTweetDetection();
   const badgeManager = getBadgeManager();
   if (!badgeManager || !badgeManager.createLoadingBadge) {
@@ -322,10 +322,15 @@ async function processTweet(tweetElement) {
   actualTweetElement.setAttribute('data-iq-processing', 'true');
   actualTweetElement.setAttribute('data-iq-processing-start', Date.now().toString());
 
-  // Extract handle early for game mode
+  // Extract handle and tweet ID early for game mode
   let handle = extractTweetHandle(actualTweetElement);
   if (handle) {
     actualTweetElement.setAttribute('data-handle', handle);
+  }
+
+  let tweetId = extractTweetId(actualTweetElement);
+  if (tweetId) {
+    actualTweetElement.setAttribute('data-tweet-id', tweetId);
   }
 
   let tweetText = extractTweetText(actualTweetElement);
@@ -743,7 +748,7 @@ async function processTweet(tweetElement) {
   if (loadingBadge && settings.showIQBadge) {
     const gameManager = getGameManager();
     if (gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled()) {
-      const guessBadge = gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
+      const guessBadge = await gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
       if (guessBadge) {
         loadingBadge = guessBadge;
       }
