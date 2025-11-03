@@ -12,7 +12,8 @@ const defaultSettings = {
   minIQ: 60,
   maxIQ: 145,
   useConfidenceForColor: false,
-  enableDebugLogging: true
+  enableDebugLogging: true,
+  enableIQGuessr: false
 };
 
 const settings = { ...defaultSettings };
@@ -21,7 +22,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -39,6 +40,9 @@ function loadSettings() {
     }
     if (result.enableDebugLogging !== undefined) {
       settings.enableDebugLogging = result.enableDebugLogging;
+    }
+    if (result.enableIQGuessr !== undefined) {
+      settings.enableIQGuessr = result.enableIQGuessr;
     }
   });
 }
@@ -75,6 +79,10 @@ function setupSettingsListener(onChange) {
         settings.enableDebugLogging = changes.enableDebugLogging.newValue;
         relevantChanges.enableDebugLogging = changes.enableDebugLogging;
       }
+      if (changes.enableIQGuessr) {
+        settings.enableIQGuessr = changes.enableIQGuessr.newValue;
+        relevantChanges.enableIQGuessr = changes.enableIQGuessr;
+      }
 
       if (onChange && Object.keys(relevantChanges).length > 0) {
         onChange(relevantChanges);
@@ -96,6 +104,7 @@ if (typeof window !== 'undefined') {
     get maxIQ() { return settings.maxIQ; },
     get useConfidenceForColor() { return settings.useConfidenceForColor; },
     get enableDebugLogging() { return settings.enableDebugLogging; },
+    get enableIQGuessr() { return settings.enableIQGuessr; },
     loadSettings,
     setupSettingsListener,
     // Also export the raw settings object for modules that need it

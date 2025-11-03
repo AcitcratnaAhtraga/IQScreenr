@@ -17,6 +17,7 @@
   const getTweetProcessor = () => window.TweetProcessor || {};
   const getRealtimeManager = () => window.RealtimeManager || {};
   const getBadgeManager = () => window.BadgeManager || {};
+  const getGameManager = () => window.GameManager || {};
 
   /**
    * Apply settings changes immediately
@@ -124,6 +125,45 @@
           }
         }
       });
+    }
+
+    // Handle enableIQGuessr changes - convert badges between loading and guess modes
+    if (changes.enableIQGuessr !== undefined) {
+      const gameModeEnabled = changes.enableIQGuessr.newValue;
+      const gameManager = getGameManager();
+      const badgeManager = getBadgeManager();
+
+      if (!gameModeEnabled && badgeManager && badgeManager.createLoadingBadge) {
+        // Game mode disabled: convert guess badges back to loading badges
+        const guessBadges = document.querySelectorAll('.iq-badge-guess, [data-iq-guess="true"]');
+        guessBadges.forEach(guessBadge => {
+          // Only convert badges that haven't been guessed yet
+          if (!guessBadge.hasAttribute('data-iq-guessed') && !guessBadge.hasAttribute('data-iq-calculating')) {
+            const loadingBadge = badgeManager.createLoadingBadge();
+            if (guessBadge.parentElement) {
+              guessBadge.parentElement.insertBefore(loadingBadge, guessBadge);
+              guessBadge.remove();
+            }
+          }
+        });
+      } else if (gameModeEnabled && gameManager && gameManager.replaceLoadingBadgeWithGuess && settings.showIQBadge) {
+        // Game mode enabled: convert loading badges to guess badges
+        const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
+        loadingBadges.forEach(loadingBadge => {
+          // Only convert badges that are still loading (not yet calculated)
+          if (loadingBadge.hasAttribute('data-iq-loading') || loadingBadge.classList.contains('iq-badge-loading')) {
+            const guessBadge = gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
+            // replaceLoadingBadgeWithGuess handles the replacement, so we don't need to do anything else
+          }
+        });
+
+        // Reprocess visible tweets to apply game mode to new badges
+        if (tweetProcessor && tweetProcessor.processVisibleTweets) {
+          setTimeout(() => {
+            tweetProcessor.processVisibleTweets();
+          }, 100);
+        }
+      }
     }
   }
 

@@ -286,11 +286,27 @@ async function processTweet(tweetElement) {
   }
 
   const existingBadge = actualTweetElement.querySelector('.iq-badge');
-  if (existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
-      !existingBadge.classList.contains('iq-badge-loading') &&
-      !existingBadge.hasAttribute('data-iq-invalid')) {
-    actualTweetElement.setAttribute('data-iq-analyzed', 'true');
-    return;
+
+  // Check if badge is a valid completed badge (score, invalid, or guess badge)
+  const isGuessBadge = existingBadge && (
+    existingBadge.classList.contains('iq-badge-guess') ||
+    existingBadge.hasAttribute('data-iq-guess')
+  );
+
+  const hasScore = existingBadge && existingBadge.hasAttribute('data-iq-score');
+  const isInvalid = existingBadge && existingBadge.hasAttribute('data-iq-invalid');
+  const isNotLoading = existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
+                       !existingBadge.classList.contains('iq-badge-loading');
+
+  // If badge exists and is valid (has score, is invalid, is a guess badge, or is not loading), mark as analyzed
+  if (existingBadge && (hasScore || isInvalid || isGuessBadge || isNotLoading)) {
+    // Only skip if badge is completed or a guess badge waiting for input
+    // Don't skip if it's stuck in loading state
+    if (!existingBadge.hasAttribute('data-iq-loading') &&
+        !existingBadge.classList.contains('iq-badge-loading')) {
+      actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+      return;
+    }
   }
 
   actualTweetElement.setAttribute('data-iq-processing', 'true');
@@ -1450,11 +1466,28 @@ function processVisibleTweets() {
 
     if (actualTweet.hasAttribute('data-iq-analyzed')) {
       const existingBadge = actualTweet.querySelector('.iq-badge');
+
+      // Check if badge is a game mode guess badge (which is valid even without data-iq-score)
+      const isGuessBadge = existingBadge && (
+        existingBadge.classList.contains('iq-badge-guess') ||
+        existingBadge.hasAttribute('data-iq-guess')
+      );
+
+      // Check if badge has a calculated score (either from game mode reveal or normal processing)
+      const hasCalculatedScore = existingBadge && existingBadge.hasAttribute('data-iq-score');
+
+      // Check if badge is a valid completed badge (score, invalid, or guess badge waiting for input)
+      const isValidCompletedBadge = existingBadge && (
+        hasCalculatedScore ||
+        existingBadge.hasAttribute('data-iq-invalid') ||
+        isGuessBadge
+      );
+
+      // Only consider it "stuck in loading" if it's actually a loading badge (not a guess badge)
       const isStuckInLoading = existingBadge && (
         existingBadge.hasAttribute('data-iq-loading') ||
-        existingBadge.classList.contains('iq-badge-loading') ||
-        (!existingBadge.hasAttribute('data-iq-score') && !existingBadge.hasAttribute('data-iq-invalid'))
-      );
+        existingBadge.classList.contains('iq-badge-loading')
+      ) && !isGuessBadge;
 
       if (isStuckInLoading) {
         // Tweet is stuck in loading state - force reprocess
@@ -1464,14 +1497,18 @@ function processVisibleTweets() {
           existingBadge.remove();
         }
       } else if (!existingBadge && settings.showIQBadge) {
+        // Badge was removed somehow - reprocess only if badges should be shown
         actualTweet.removeAttribute('data-iq-analyzed');
         processedTweets.delete(actualTweet);
-      } else {
+      } else if (isValidCompletedBadge || existingBadge) {
+        // Tweet has a valid badge (completed, invalid, or guess badge) - don't reprocess
         if (isNotificationsPage && index < 5) {
           skippedTweets.push({
             reason: 'already analyzed with badge',
             index,
             hasBadge: !!existingBadge,
+            isGuessBadge: isGuessBadge,
+            hasCalculatedScore: hasCalculatedScore,
             isStuckInLoading: isStuckInLoading,
             handle: actualTweet.getAttribute('data-handle')
           });
@@ -1524,8 +1561,18 @@ function processVisibleTweets() {
   if (settings.showIQBadge) {
     newTweets.forEach((tweet) => {
       setTimeout(() => {
+        // Only add badge if tweet doesn't already have one and isn't already analyzed
         if (!tweet.querySelector('.iq-badge')) {
-          addLoadingBadgeToTweet(tweet);
+          let actualTweet = tweet;
+          const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
+                              tweet.querySelector('article[role="article"]');
+          if (nestedTweet && nestedTweet !== tweet) {
+            actualTweet = nestedTweet;
+          }
+          // Don't add badge if tweet is already analyzed (shouldn't happen, but be safe)
+          if (!actualTweet.hasAttribute('data-iq-analyzed')) {
+            addLoadingBadgeToTweet(tweet);
+          }
         }
       }, 0);
     });
@@ -1551,15 +1598,18 @@ function addLoadingBadgeToTweet(tweet) {
 
   const { createLoadingBadge } = badgeManager;
 
-  if (!settings.showIQBadge || tweet.querySelector('.iq-badge')) {
-    return;
-  }
-
   let actualTweet = tweet;
   const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
                       tweet.querySelector('article[role="article"]');
   if (nestedTweet && nestedTweet !== tweet) {
     actualTweet = nestedTweet;
+  }
+
+  // Don't add badge if tweet is already analyzed or already has a badge
+  if (!settings.showIQBadge ||
+      actualTweet.hasAttribute('data-iq-analyzed') ||
+      actualTweet.querySelector('.iq-badge')) {
+    return;
   }
 
   const isNotificationsPage = window.location.href.includes('/notifications');

@@ -33,6 +33,7 @@
         "content/features/badge/badgeAnimations.js",
         "content/features/badge/badgeCreation.js",
         "content/features/badge/badge.js",
+        "content/features/gameManager.js",
         "content/features/tweetProcessor.js",
         "content/features/realtime.js",
         "content/content.js"

@@ -36,6 +36,17 @@
         </label>
         <p class="setting-desc">Display live IQ score while typing in compose boxes</p>
       </div>
+      <div class="setting-item setting-item-large">
+        <label class="switch-label switch-label-large">
+          <input type="checkbox" id="enableIQGuessr" class="switch-large">
+          <span class="switch-text switch-text-large">🎮 IQ Guessr</span>
+        </label>
+        <p class="setting-desc">Guess IQ scores before they're calculated! Score points based on accuracy</p>
+        <div id="iqGuessrScore" class="iq-guessr-score" style="display: none;">
+          <span class="score-label">Score:</span>
+          <span class="score-value" id="iqGuessrScoreValue">0</span>
+        </div>
+      </div>
       <div class="setting-item">
         <label class="switch-label">
           <input type="checkbox" id="enableDebugLogging" checked>
@@ -158,7 +169,7 @@
     <div class="footer">
       <button id="resetSettings" class="btn-secondary">Reset to Defaults</button>
       <div class="footer-info">
-        <p class="version">Version 1.0.0</p>
+        <p class="version">Version 1.1.0</p>
         <p class="status" id="saveStatus"></p>
       </div>
     </div>

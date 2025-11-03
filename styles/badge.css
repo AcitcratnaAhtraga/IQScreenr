@@ -28,13 +28,19 @@
   line-height: 1;
   width: fit-content;
   min-width: 28px;
-  min-height: fit-content;
+  /* Ensure consistent height to prevent layout shifts */
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
+  box-sizing: border-box;
   perspective: 1000px;
 }
 
 /* Ensure badges with flip structure maintain proper height */
 .iq-badge.iq-badge-flip {
-  min-height: fit-content;
+  height: 20px;
+  min-height: 20px;
+  max-height: 20px;
 }
 
 /* Real-time badges (for compose boxes) - prevent height growth */
@@ -377,6 +383,66 @@ article[data-iq-analyzed] {
 
 .iq-badge-pulse {
   animation: pulseGrow 0.3s ease-out;
+}
+
+/* Rotating border animation for IQ Guessr calculation */
+@keyframes rotatingBorder {
+  0% {
+    box-shadow:
+      inset 0 0 0 1px rgba(37, 99, 235, 0.5),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(37, 99, 235, 0.5),
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+  25% {
+    box-shadow:
+      inset 0 0 0 1px rgba(37, 99, 235, 0.8),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.1),
+      0 0 0 2px rgba(37, 99, 235, 0.8),
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgba(37, 99, 235, 0.5),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(37, 99, 235, 0.5),
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+  75% {
+    box-shadow:
+      inset 0 0 0 1px rgba(37, 99, 235, 0.8),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.1),
+      0 0 0 2px rgba(37, 99, 235, 0.8),
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgba(37, 99, 235, 0.5),
+      inset 0 0 0 2px rgba(0, 0, 0, 0.1),
+      0 0 0 1px rgba(37, 99, 235, 0.5),
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 3px 6px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.iq-badge-calculating {
+  animation: rotatingBorder 1s linear infinite !important;
+}
+
+/* Score feedback float-up animation */
+@keyframes scoreFloatUp {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-30px);
+  }
 }
 
 

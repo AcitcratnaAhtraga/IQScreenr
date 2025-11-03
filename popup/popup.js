@@ -60,27 +60,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Helper function to update IQ Guessr score display
+  function updateIQGuessrScore(score) {
+    const scoreElement = document.getElementById('iqGuessrScore');
+    const scoreValue = document.getElementById('iqGuessrScoreValue');
+    const enableCheckbox = document.getElementById('enableIQGuessr');
+
+    if (enableCheckbox && enableCheckbox.checked) {
+      scoreElement.style.display = 'flex';
+      if (scoreValue) {
+        scoreValue.textContent = score;
+      }
+    } else {
+      scoreElement.style.display = 'none';
+    }
+  }
+
   // Initialize defaults if not set
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'iqGuessrScore'], (result) => {
     // Set defaults if this is first run
     if (result.showIQBadge === undefined) {
       chrome.storage.sync.set({
         showIQBadge: true,
         showRealtimeBadge: true,
         useConfidenceForColor: false,
-        enableDebugLogging: true
+        enableDebugLogging: true,
+        enableIQGuessr: false,
+        iqGuessrScore: 0
       }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error loading settings', 'error');
         }
       });
-      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: false, enableDebugLogging: true };
+      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: false, enableDebugLogging: true, enableIQGuessr: false, iqGuessrScore: 0 };
     }
     // Set checkbox states
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
     document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false; // Default to true
     document.getElementById('useConfidenceForColor').checked = result.useConfidenceForColor === true; // Default to false
     document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
+    document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
+
+    // Update IQ Guessr score display
+    updateIQGuessrScore(result.iqGuessrScore || 0);
 
     // Update dependent checkboxes state
     updateDependentCheckboxes();
@@ -121,6 +143,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Handle IQ Guessr checkbox
+  document.getElementById('enableIQGuessr').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ enableIQGuessr: e.target.checked }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving setting', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+        // Update score display visibility
+        updateIQGuessrScore(0);
+      }
+    });
+  });
+
   document.getElementById('enableDebugLogging').addEventListener('change', (e) => {
     chrome.storage.sync.set({ enableDebugLogging: e.target.checked }, () => {
       if (chrome.runtime.lastError) {
@@ -138,7 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showIQBadge: true,
         showRealtimeBadge: true,
         useConfidenceForColor: false,
-        enableDebugLogging: true
+        enableDebugLogging: true,
+        enableIQGuessr: false,
+        iqGuessrScore: 0
       };
 
       chrome.storage.sync.set(defaults, () => {
@@ -150,11 +187,27 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
           document.getElementById('useConfidenceForColor').checked = defaults.useConfidenceForColor;
           document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
+          document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
           // Update dependent checkboxes state
           updateDependentCheckboxes();
+          updateIQGuessrScore(defaults.iqGuessrScore);
           showStatus('Settings reset to defaults', 'success');
         }
       });
+    }
+  });
+
+  // Listen for IQ Guessr score updates from content script
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'updateIQGuessrScore') {
+      updateIQGuessrScore(message.score);
+    }
+  });
+
+  // Also periodically refresh the score display in case we missed a message
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'sync' && changes.iqGuessrScore) {
+      updateIQGuessrScore(changes.iqGuessrScore.newValue);
     }
   });
 });
