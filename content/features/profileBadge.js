@@ -110,7 +110,6 @@
         // Prefer containers without edit buttons and without overflow:hidden
         if (!hasEditButton && styles.overflow !== 'hidden') {
           bestContainer = parent;
-          console.log('[ProfileBadge] Found container without edit button at level', i + 1);
         }
 
         parent = parent.parentElement;
@@ -121,12 +120,10 @@
       if (bestStyles.overflow === 'hidden' && bestContainer.parentElement) {
         const parentStyles = window.getComputedStyle(bestContainer.parentElement);
         if (parentStyles.overflow !== 'hidden') {
-          console.log('[ProfileBadge] Using parent container to avoid overflow:hidden');
           return bestContainer.parentElement;
         }
       }
 
-      console.log('[ProfileBadge] Using UserName container area as insertion point');
       return bestContainer;
     }
 
@@ -166,50 +163,38 @@
    * @param {boolean} force - If true, bypass settings check and proceed directly
    */
   function addScoreBadge(force = false) {
-    console.log('[ProfileBadge] addScoreBadge called, badgeAdded:', badgeAdded, 'force:', force);
-
     if (!force) {
       // Check settings only if not forced (e.g., from init or mutation observer)
       const settings = getSettings();
       const isGameModeEnabled = settings.enableIQGuessr === true;
-      console.log('[ProfileBadge] Settings:', settings, 'isGameModeEnabled:', isGameModeEnabled);
 
       // Only show badge if game mode is enabled
       if (!isGameModeEnabled) {
-        console.log('[ProfileBadge] Game mode not enabled, returning early');
         return;
       }
-    } else {
-      console.log('[ProfileBadge] Force mode - bypassing settings check');
     }
 
     // Check if we're on a profile page
     const onProfilePage = isProfilePage();
-    console.log('[ProfileBadge] isProfilePage():', onProfilePage, 'pathname:', window.location.pathname);
     if (!onProfilePage) {
-      console.log('[ProfileBadge] Not on profile page, returning early');
       return;
     }
 
     // Get the score from storage
     chrome.storage.sync.get(['iqGuessrScore'], (result) => {
       const score = result.iqGuessrScore || 0;
-      console.log('[ProfileBadge] Score from storage:', score);
 
       // Find where to insert the badge
       const insertionPoint = findInsertionPoint();
-      console.log('[ProfileBadge] Insertion point found:', insertionPoint !== null);
       if (!insertionPoint) {
         // Reset badgeAdded flag if we can't find insertion point yet
         // This allows retrying when DOM is ready
-        console.log('[ProfileBadge] Could not find insertion point, resetting badgeAdded flag');
         badgeAdded = false;
         return;
       }
 
       // Check if badge already exists anywhere in the DOM
       const existingBadge = document.querySelector('.iq-guessr-score-badge');
-      console.log('[ProfileBadge] Existing badge found:', existingBadge !== null);
       if (existingBadge) {
         // Update score in existing badge
         const scoreValue = existingBadge.querySelector('.score-value');
@@ -219,29 +204,21 @@
         // Make sure badge is visible
         existingBadge.style.display = 'inline-flex';
         badgeAdded = true;
-        console.log('[ProfileBadge] Updated existing badge');
         return;
       }
 
       // Only create new badge if we haven't already added one
       if (badgeAdded) {
-        console.log('[ProfileBadge] Badge already added, skipping creation');
         return;
       }
 
       // Create and insert the badge
-      console.log('[ProfileBadge] Creating new badge with score:', score);
-      console.log('[ProfileBadge] Insertion point element:', insertionPoint);
-      console.log('[ProfileBadge] Insertion point tagName:', insertionPoint.tagName);
-      console.log('[ProfileBadge] Insertion point classes:', insertionPoint.className);
-      console.log('[ProfileBadge] Insertion point innerHTML before:', insertionPoint.innerHTML.substring(0, 200));
 
       const badge = createScoreBadge(score);
 
       // Check if insertion point has overflow:hidden - if so, try to insert at parent level
       const insertionStyles = window.getComputedStyle(insertionPoint);
       const hasOverflowHidden = insertionStyles.overflow === 'hidden';
-      console.log('[ProfileBadge] Insertion point overflow:', insertionStyles.overflow, 'width:', insertionStyles.width);
 
       if (hasOverflowHidden) {
         // Try to find a parent without overflow:hidden
@@ -249,10 +226,8 @@
         let foundParent = null;
         for (let i = 0; i < 5 && parent; i++) {
           const parentStyles = window.getComputedStyle(parent);
-          console.log('[ProfileBadge] Checking parent level', i + 1, 'overflow:', parentStyles.overflow);
           if (parentStyles.overflow !== 'hidden') {
             foundParent = parent;
-            console.log('[ProfileBadge] Found parent without overflow:hidden');
             break;
           }
           parent = parent.parentElement;
@@ -263,19 +238,15 @@
           const userNameContainer = foundParent.querySelector('div[data-testid="UserName"]');
           if (userNameContainer && userNameContainer.nextSibling) {
             foundParent.insertBefore(badge, userNameContainer.nextSibling);
-            console.log('[ProfileBadge] Inserted badge as sibling of UserName container (above overflow:hidden)');
           } else if (userNameContainer) {
             // Insert right after UserName container
             userNameContainer.parentElement.insertBefore(badge, userNameContainer.nextSibling);
-            console.log('[ProfileBadge] Inserted badge after UserName container');
           } else {
             foundParent.appendChild(badge);
-            console.log('[ProfileBadge] Appended badge to parent without overflow:hidden');
           }
         } else {
           // Fallback: still insert in original location, but adjust positioning
           insertionPoint.appendChild(badge);
-          console.log('[ProfileBadge] Appended to insertion point despite overflow:hidden (may be clipped)');
         }
       } else {
         // No overflow:hidden, can safely insert here
@@ -292,15 +263,12 @@
             // Insert badge right after the handle span, within the UserName container
             if (handleSpan.nextSibling) {
               userNameContainer.insertBefore(badge, handleSpan.nextSibling);
-              console.log('[ProfileBadge] Inserted badge after handle span within UserName container');
             } else {
               userNameContainer.appendChild(badge);
-              console.log('[ProfileBadge] Appended badge to UserName container after handle');
             }
           } else {
             // Fallback: append to UserName container
             userNameContainer.appendChild(badge);
-            console.log('[ProfileBadge] Appended badge to UserName container (fallback)');
           }
         } else {
           // Fallback: find username span and insert after it
@@ -310,53 +278,22 @@
                               ) ||
                               null;
 
-          console.log('[ProfileBadge] Username span found:', usernameSpan !== null);
-
           if (usernameSpan) {
             // Insert as next sibling of the username span
             if (usernameSpan.nextSibling) {
               usernameSpan.parentElement.insertBefore(badge, usernameSpan.nextSibling);
-              console.log('[ProfileBadge] Inserted badge as next sibling of username span');
             } else {
               // No next sibling, append after
               usernameSpan.parentElement.appendChild(badge);
-              console.log('[ProfileBadge] Appended badge after username span');
             }
           } else {
             // Fallback: append to insertion point
             insertionPoint.appendChild(badge);
-            console.log('[ProfileBadge] Appended badge to insertion point (fallback)');
           }
         }
       }
 
       badgeAdded = true;
-
-      // Verify badge is in DOM and visible
-      const badgeInDOM = document.querySelector('.iq-guessr-score-badge');
-      console.log('[ProfileBadge] Badge exists in DOM after insertion:', badgeInDOM !== null);
-      console.log('[ProfileBadge] Badge parent:', badgeInDOM?.parentElement);
-      console.log('[ProfileBadge] Badge computed display:', badgeInDOM ? window.getComputedStyle(badgeInDOM).display : 'N/A');
-      console.log('[ProfileBadge] Badge computed visibility:', badgeInDOM ? window.getComputedStyle(badgeInDOM).visibility : 'N/A');
-      console.log('[ProfileBadge] Badge computed opacity:', badgeInDOM ? window.getComputedStyle(badgeInDOM).opacity : 'N/A');
-      console.log('[ProfileBadge] Badge computed position:', badgeInDOM ? window.getComputedStyle(badgeInDOM).position : 'N/A');
-      console.log('[ProfileBadge] Badge computed z-index:', badgeInDOM ? window.getComputedStyle(badgeInDOM).zIndex : 'N/A');
-      console.log('[ProfileBadge] Badge offsetWidth:', badgeInDOM?.offsetWidth);
-      console.log('[ProfileBadge] Badge offsetHeight:', badgeInDOM?.offsetHeight);
-      console.log('[ProfileBadge] Badge getBoundingClientRect:', badgeInDOM ? badgeInDOM.getBoundingClientRect() : 'N/A');
-
-      // Check parent container visibility
-      const parent = badgeInDOM?.parentElement;
-      if (parent) {
-        const parentStyles = window.getComputedStyle(parent);
-        console.log('[ProfileBadge] Parent computed display:', parentStyles.display);
-        console.log('[ProfileBadge] Parent computed visibility:', parentStyles.visibility);
-        console.log('[ProfileBadge] Parent computed overflow:', parentStyles.overflow);
-        console.log('[ProfileBadge] Parent getBoundingClientRect:', parent.getBoundingClientRect());
-      }
-
-      console.log('[ProfileBadge] Insertion point innerHTML after:', insertionPoint.innerHTML.substring(0, 300));
-      console.log('[ProfileBadge] Badge created and inserted successfully');
     });
   }
 
@@ -365,18 +302,9 @@
    */
   function removeScoreBadge() {
     const badge = document.querySelector('.iq-guessr-score-badge');
-    console.log('[ProfileBadge] removeScoreBadge called, badge found:', badge !== null);
     if (badge) {
-      console.log('[ProfileBadge] Removing badge, parent:', badge.parentElement);
-      console.log('[ProfileBadge] Badge before removal:', badge);
       badge.remove();
       badgeAdded = false;
-
-      // Verify badge is removed
-      const badgeStillExists = document.querySelector('.iq-guessr-score-badge');
-      console.log('[ProfileBadge] Badge still exists after removal:', badgeStillExists !== null);
-    } else {
-      console.log('[ProfileBadge] No badge found to remove');
     }
   }
 
@@ -385,13 +313,10 @@
    */
   function setupStorageListener() {
     if (storageListenerSetup) {
-      console.log('[ProfileBadge] Storage listener already set up');
       return; // Already set up
     }
 
-    console.log('[ProfileBadge] Setting up storage listener');
     chrome.storage.onChanged.addListener((changes, areaName) => {
-      console.log('[ProfileBadge] Storage changed:', areaName, Object.keys(changes));
       if (areaName === 'sync') {
         // Handle IQGuessr score updates
         if (changes.iqGuessrScore) {
@@ -408,26 +333,19 @@
         // Handle enableIQGuessr toggle
         if (changes.enableIQGuessr) {
           const gameModeEnabled = changes.enableIQGuessr.newValue;
-          console.log('[ProfileBadge] enableIQGuessr changed:', gameModeEnabled);
 
           if (gameModeEnabled) {
             // IQGuessr mode enabled - add badge immediately
             // Use force=true to bypass settings check since settings may not be updated yet
-            console.log('[ProfileBadge] IQGuessr enabled, resetting badgeAdded and calling addScoreBadge with force=true');
             badgeAdded = false; // Reset flag to allow adding
             addScoreBadge(true); // Force bypass settings check
           } else {
             // IQGuessr mode disabled - verify storage before removing to avoid race conditions
-            console.log('[ProfileBadge] IQGuessr disabled notification received, verifying storage...');
             chrome.storage.sync.get(['enableIQGuessr'], (result) => {
               const isActuallyDisabled = result.enableIQGuessr !== true;
-              console.log('[ProfileBadge] Storage verification - enableIQGuessr:', result.enableIQGuessr, 'isActuallyDisabled:', isActuallyDisabled);
 
               if (isActuallyDisabled) {
-                console.log('[ProfileBadge] Confirmed disabled, removing badge');
                 removeScoreBadge();
-              } else {
-                console.log('[ProfileBadge] Storage shows enabled (race condition?), keeping badge');
               }
             });
           }
@@ -436,14 +354,12 @@
     });
 
     storageListenerSetup = true;
-    console.log('[ProfileBadge] Storage listener setup complete');
   }
 
   /**
    * Initialize the profile badge feature
    */
   function init() {
-    console.log('[ProfileBadge] init() called');
     // Clean up previous observer if it exists
     if (currentObserver) {
       currentObserver.disconnect();
@@ -451,16 +367,12 @@
     }
 
     const onProfilePage = isProfilePage();
-    console.log('[ProfileBadge] init - isProfilePage():', onProfilePage);
     if (!onProfilePage) {
-      console.log('[ProfileBadge] Not on profile page, exiting init');
       return;
     }
 
     currentHandle = getHandleFromUrl();
-    console.log('[ProfileBadge] init - currentHandle:', currentHandle);
     if (!currentHandle) {
-      console.log('[ProfileBadge] No handle found, exiting init');
       return;
     }
 
@@ -484,7 +396,6 @@
     });
 
     currentObserver = observer;
-    console.log('[ProfileBadge] init() completed');
   }
 
   // Start observing when DOM is ready
