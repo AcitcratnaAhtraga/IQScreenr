@@ -87,17 +87,7 @@ function logDebugInfo(debugData) {
     return;
   }
 
-  console.log(
-    '%c' + '='.repeat(80),
-    'color: #4CAF50; font-weight: bold; font-size: 14px;'
-  );
-  console.log(
-    '%c🧠 IQ ESTIMATION DEBUG - Hover Details',
-    'color: #2196F3; font-weight: bold; font-size: 16px; background: #E3F2FD; padding: 4px 8px;'
-  );
-  console.log('%c' + '='.repeat(80), 'color: #4CAF50; font-weight: bold;');
-
-  console.group('%c📝 Original Text', 'color: #FF9800; font-weight: bold;');
+  console.groupCollapsed('%c📝 Original Text', 'color: #FF9800; font-weight: bold;');
   console.log('%c' + text, 'color: #333; font-family: monospace; background: #FFF9C4; padding: 8px; border-left: 3px solid #FFC107;');
   console.log(`Length: ${text.length} characters, ${text.split(/\s+/).length} words`);
   console.groupEnd();
@@ -117,7 +107,7 @@ function logDebugInfo(debugData) {
   console.groupEnd();
 
   if (result.dimension_scores) {
-    console.group('%c📊 Dimension Breakdown (Weighted Combination)', 'color: #2196F3; font-weight: bold;');
+    console.groupCollapsed('%c📊 Dimension Breakdown (Weighted Combination)', 'color: #2196F3; font-weight: bold;');
 
     const weights = result.is_twitter_calibrated ? {
       vocabulary_sophistication: 0.45,
@@ -150,7 +140,7 @@ function logDebugInfo(debugData) {
     console.groupEnd();
   }
 
-  console.group('%c🔍 Feature Extraction Details', 'color: #00BCD4; font-weight: bold;');
+  console.groupCollapsed('%c🔍 Feature Extraction Details', 'color: #00BCD4; font-weight: bold;');
   const features = result.features || {};
   const tokens = features.tokens || text.match(/\b\w+\b/g) || [];
   const sentences = features.sentences || text.split(/[.!?]+/).filter(s => s.trim().length > 0);
@@ -232,7 +222,7 @@ function logDebugInfo(debugData) {
 
   console.groupEnd();
 
-  console.group('%c🧮 Calculation Summary', 'color: #795548; font-weight: bold;');
+  console.groupCollapsed('%c🧮 Calculation Summary', 'color: #795548; font-weight: bold;');
   console.log(`Weighted Average Formula:`);
 
   const weights = result.is_twitter_calibrated ? {
@@ -263,7 +253,7 @@ function logDebugInfo(debugData) {
   }
   console.groupEnd();
 
-  console.group('%c📊 Confidence Calculation (Anti-Gaming)', 'color: #9C27B0; font-weight: bold;');
+  console.groupCollapsed('%c📊 Confidence Calculation (Anti-Gaming)', 'color: #9C27B0; font-weight: bold;');
   if (result.confidence !== undefined && result.confidence !== null) {
     const wordCount = features.word_count || tokens.length;
     const sentenceCount = features.sentence_count || sentences.length;
@@ -459,10 +449,6 @@ function logDebugInfo(debugData) {
   console.log(
     `%c⏰ Analyzed at: ${new Date(timestamp).toLocaleTimeString()}`,
     'color: #757575; font-style: italic;'
-  );
-  console.log(
-    '%c' + '='.repeat(80),
-    'color: #4CAF50; font-weight: bold; font-size: 14px;'
   );
 }
 
