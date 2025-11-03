@@ -153,8 +153,15 @@ document.addEventListener('DOMContentLoaded', () => {
         showStatus('Error saving setting', 'error');
       } else {
         showStatus('Settings saved', 'success');
-        // Update score display visibility
-        updateIQGuessrScore(0);
+        // Fetch and update score display with actual score from storage
+        if (isEnabled) {
+          chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+            const score = result.iqGuessrScore || 0;
+            updateIQGuessrScore(score);
+          });
+        } else {
+          updateIQGuessrScore(0);
+        }
       }
     });
   });
@@ -207,10 +214,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Also periodically refresh the score display in case we missed a message
+  // Listen for storage changes to update the score display
   chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'sync' && changes.iqGuessrScore) {
-      updateIQGuessrScore(changes.iqGuessrScore.newValue);
+    if (areaName === 'sync') {
+      // Update score when it changes
+      if (changes.iqGuessrScore) {
+        updateIQGuessrScore(changes.iqGuessrScore.newValue);
+      }
+
+      // When enableIQGuessr is toggled, fetch and display the current score
+      if (changes.enableIQGuessr && changes.enableIQGuessr.newValue === true) {
+        chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+          const score = result.iqGuessrScore || 0;
+          updateIQGuessrScore(score);
+        });
+      }
     }
   });
 });
