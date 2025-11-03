@@ -234,18 +234,221 @@ function logDebugInfo(debugData) {
 
   console.group('%c🧮 Calculation Summary', 'color: #795548; font-weight: bold;');
   console.log(`Weighted Average Formula:`);
-  console.log(`  IQ = (Vocab × 35% + Diversity × 25% + Sentence × 20% + Grammar × 20%)`);
+
+  const weights = result.is_twitter_calibrated ? {
+    vocabulary_sophistication: 0.45,
+    lexical_diversity: 0.25,
+    sentence_complexity: 0.15,
+    grammatical_precision: 0.15
+  } : {
+    vocabulary_sophistication: 0.35,
+    lexical_diversity: 0.25,
+    sentence_complexity: 0.20,
+    grammatical_precision: 0.20
+  };
+
   if (result.dimension_scores) {
     const calculated =
-      (result.dimension_scores.vocabulary_sophistication || 100) * 0.35 +
-      (result.dimension_scores.lexical_diversity || 100) * 0.25 +
-      (result.dimension_scores.sentence_complexity || 100) * 0.20 +
-      (result.dimension_scores.grammatical_precision || 100) * 0.20;
-    console.log(`  = (${(result.dimension_scores.vocabulary_sophistication || 100).toFixed(1)} × 0.35) + ` +
-                `(${(result.dimension_scores.lexical_diversity || 100).toFixed(1)} × 0.25) + ` +
-                `(${(result.dimension_scores.sentence_complexity || 100).toFixed(1)} × 0.20) + ` +
-                `(${(result.dimension_scores.grammatical_precision || 100).toFixed(1)} × 0.20)`);
-    console.log(`  = ${calculated.toFixed(2)} → Rounded: ${Math.round(calculated)}`);
+      (result.dimension_scores.vocabulary_sophistication || 100) * weights.vocabulary_sophistication +
+      (result.dimension_scores.lexical_diversity || 100) * weights.lexical_diversity +
+      (result.dimension_scores.sentence_complexity || 100) * weights.sentence_complexity +
+      (result.dimension_scores.grammatical_precision || 100) * weights.grammatical_precision;
+    console.log(`  IQ = (Vocab × ${(weights.vocabulary_sophistication * 100).toFixed(0)}% + Diversity × ${(weights.lexical_diversity * 100).toFixed(0)}% + Sentence × ${(weights.sentence_complexity * 100).toFixed(0)}% + Grammar × ${(weights.grammatical_precision * 100).toFixed(0)}%)`);
+    console.log(`  = (${(result.dimension_scores.vocabulary_sophistication || 100).toFixed(1)} × ${weights.vocabulary_sophistication.toFixed(2)}) + ` +
+                `(${(result.dimension_scores.lexical_diversity || 100).toFixed(1)} × ${weights.lexical_diversity.toFixed(2)}) + ` +
+                `(${(result.dimension_scores.sentence_complexity || 100).toFixed(1)} × ${weights.sentence_complexity.toFixed(2)}) + ` +
+                `(${(result.dimension_scores.grammatical_precision || 100).toFixed(1)} × ${weights.grammatical_precision.toFixed(2)})`);
+    console.log(`  = ${calculated.toFixed(2)} → Final: ${iq.toFixed(1)}`);
+    console.log(`  %cNote: IQ score is length-independent - quality matters, not quantity`, 'color: #666; font-style: italic;');
+  }
+  console.groupEnd();
+
+  console.group('%c📊 Confidence Calculation (Anti-Gaming)', 'color: #9C27B0; font-weight: bold;');
+  if (result.confidence !== undefined && result.confidence !== null) {
+    const wordCount = features.word_count || tokens.length;
+    const sentenceCount = features.sentence_count || sentences.length;
+    const uniqueWords = new Set(tokens.map(t => t.toLowerCase().replace(/[^\w]/g, ''))).size;
+    const actualTTR = tokens.length > 0 ? uniqueWords / tokens.length : 0;
+
+    // Calculate dimension agreement
+    let agreementInfo = 'N/A';
+    let agreementScore = 'N/A';
+    if (result.dimension_scores) {
+      const iqValues = Object.values(result.dimension_scores);
+      if (iqValues.length >= 4) {
+        const mean = iqValues.reduce((a, b) => a + b, 0) / iqValues.length;
+        const variance = iqValues.reduce((sum, iq) => sum + Math.pow(iq - mean, 2), 0) / iqValues.length;
+        const stdDev = Math.sqrt(variance);
+        agreementInfo = `${stdDev.toFixed(2)}`;
+        // Calculate agreement score using same formula as confidence calculation
+        if (stdDev <= 3) {
+          agreementScore = (100 - (stdDev * 3)).toFixed(1);
+        } else if (stdDev <= 5) {
+          agreementScore = (91 - ((stdDev - 3) * 3)).toFixed(1);
+        } else if (stdDev <= 10) {
+          agreementScore = (85 - ((stdDev - 5) * 5)).toFixed(1);
+        } else if (stdDev <= 15) {
+          agreementScore = (60 - ((stdDev - 10) * 4)).toFixed(1);
+        } else {
+          agreementScore = Math.max(20, (40 - ((stdDev - 15) * 1.33))).toFixed(1);
+        }
+      }
+    }
+
+    // Calculate signal quality components
+    let signalQualityComponents = [];
+    let signalQualityScore = 0;
+
+    // TTR component (0-25 points)
+    if (actualTTR >= 0.8) {
+      signalQualityComponents.push(`TTR Diversity: 25 pts (TTR=${actualTTR.toFixed(2)}, extremely diverse)`);
+      signalQualityScore += 25;
+    } else if (actualTTR >= 0.7) {
+      signalQualityComponents.push(`TTR Diversity: 20 pts (TTR=${actualTTR.toFixed(2)}, very diverse)`);
+      signalQualityScore += 20;
+    } else if (actualTTR >= 0.6) {
+      signalQualityComponents.push(`TTR Diversity: 15 pts (TTR=${actualTTR.toFixed(2)}, good diversity)`);
+      signalQualityScore += 15;
+    } else if (actualTTR >= 0.5) {
+      signalQualityComponents.push(`TTR Diversity: 10 pts (TTR=${actualTTR.toFixed(2)}, moderate)`);
+      signalQualityScore += 10;
+    } else if (actualTTR >= 0.4) {
+      signalQualityComponents.push(`TTR Diversity: 5 pts (TTR=${actualTTR.toFixed(2)}, low diversity)`);
+      signalQualityScore += 5;
+    } else {
+      signalQualityComponents.push(`TTR Diversity: 0 pts (TTR=${actualTTR.toFixed(2)}, repetitive)`);
+    }
+
+    // Sentence variety component (0-15 points)
+    const sentenceVariance = features.sentence_variance || 0;
+    if (sentenceCount >= 5 && sentenceVariance > 3) {
+      signalQualityComponents.push(`Sentence Variety: 15 pts (${sentenceCount} sentences, variance=${sentenceVariance.toFixed(2)})`);
+      signalQualityScore += 15;
+    } else if (sentenceCount >= 3 && sentenceVariance > 2) {
+      signalQualityComponents.push(`Sentence Variety: 10 pts (${sentenceCount} sentences, variance=${sentenceVariance.toFixed(2)})`);
+      signalQualityScore += 10;
+    } else if (sentenceCount >= 2) {
+      signalQualityComponents.push(`Sentence Variety: 5 pts (${sentenceCount} sentences)`);
+      signalQualityScore += 5;
+    } else {
+      signalQualityComponents.push(`Sentence Variety: 0 pts (single sentence)`);
+    }
+
+    // AoA sophistication component (0-15 points)
+    const meanAoa = features.mean_aoa || 0;
+    if (meanAoa >= 10) {
+      signalQualityComponents.push(`Vocabulary Sophistication: 15 pts (AoA=${meanAoa.toFixed(2)}, very advanced)`);
+      signalQualityScore += 15;
+    } else if (meanAoa >= 8) {
+      signalQualityComponents.push(`Vocabulary Sophistication: 10 pts (AoA=${meanAoa.toFixed(2)}, moderate)`);
+      signalQualityScore += 10;
+    } else if (meanAoa >= 6) {
+      signalQualityComponents.push(`Vocabulary Sophistication: 5 pts (AoA=${meanAoa.toFixed(2)}, some sophistication)`);
+      signalQualityScore += 5;
+    } else {
+      signalQualityComponents.push(`Vocabulary Sophistication: 0 pts (AoA=${meanAoa.toFixed(2)}, basic)`);
+    }
+
+    // Sample size penalty
+    let sampleSizePenalty = 0;
+    if (wordCount < 15) {
+      sampleSizePenalty = 15;
+    } else if (wordCount < 25) {
+      sampleSizePenalty = 10;
+    } else if (wordCount < 50) {
+      sampleSizePenalty = 5;
+    }
+
+    const signalQualityAfterPenalty = Math.max(0, signalQualityScore - sampleSizePenalty);
+    const signalQualityNormalized = Math.min(100, (signalQualityAfterPenalty / 55) * 100);
+
+    // Sample size constraint multiplier
+    let sampleSizeConstraint = 1.0;
+    let constraintNote = '';
+    if (wordCount < 100) {
+      const logFactor = Math.log(wordCount + 1) / Math.log(101);
+      sampleSizeConstraint = 0.35 + (logFactor * 0.65);
+      constraintNote = ` (logarithmic scaling: ${sampleSizeConstraint.toFixed(3)}x)`;
+    }
+
+    // Feature reliability
+    let featureReliability = 30;
+    if (features.aoa_match_rate !== undefined) {
+      const matchRate = features.aoa_match_rate;
+      if (matchRate >= 80) {
+        featureReliability = 90;
+      } else if (matchRate >= 65) {
+        featureReliability = 70;
+      } else if (matchRate >= 50) {
+        featureReliability = 50;
+      } else if (matchRate >= 35) {
+        featureReliability = 35;
+      } else {
+        featureReliability = 25;
+      }
+    }
+
+    // Check feature completeness
+    const hasReadability = features.readability && Object.keys(features.readability).length > 0;
+    const hasDiversityMetrics = features.ttr !== undefined && features.mtld !== undefined;
+    const hasGrammarMetrics = features.avg_dependency_depth !== undefined || features.punctuation_complexity !== undefined;
+    if (hasReadability && hasDiversityMetrics && hasGrammarMetrics) {
+      featureReliability = Math.min(100, featureReliability + 10);
+    } else if ((hasReadability && hasDiversityMetrics) || (hasReadability && hasGrammarMetrics) || (hasDiversityMetrics && hasGrammarMetrics)) {
+      featureReliability = Math.min(100, featureReliability + 5);
+    }
+
+    console.log(`%cConfidence: ${result.confidence.toFixed(1)}%`, 'font-size: 16px; font-weight: bold; color: #7B1FA2;');
+    console.log('');
+    console.log(`%c1. Signal Quality (40% weight):`, 'font-weight: bold; color: #2196F3;');
+    signalQualityComponents.forEach(comp => console.log(`  ${comp}`));
+    if (sampleSizePenalty > 0) {
+      console.log(`  %cSample Size Penalty: -${sampleSizePenalty} pts (${wordCount} words)`, 'color: #F44336;');
+    }
+    console.log(`  Raw Score: ${signalQualityScore} pts ${sampleSizePenalty > 0 ? `→ ${signalQualityAfterPenalty} pts after penalty` : ''}`);
+    console.log(`  Normalized: ${signalQualityNormalized.toFixed(1)}%`);
+
+    console.log('');
+    console.log(`%c2. Dimension Agreement (40% weight):`, 'font-weight: bold; color: #4CAF50;');
+    if (result.dimension_scores) {
+      const iqValues = Object.values(result.dimension_scores);
+      if (iqValues.length >= 4) {
+        const mean = iqValues.reduce((a, b) => a + b, 0) / iqValues.length;
+        console.log(`  Standard Deviation: ${agreementInfo}`);
+        console.log(`  Agreement Score: ${agreementScore}%`);
+        console.log(`    → Lower stdDev = higher agreement = more reliable`);
+        console.log(`    → Dimensions: Vocab=${(result.dimension_scores.vocabulary_sophistication || 0).toFixed(1)}, Diversity=${(result.dimension_scores.lexical_diversity || 0).toFixed(1)}, Sentence=${(result.dimension_scores.sentence_complexity || 0).toFixed(1)}, Grammar=${(result.dimension_scores.grammatical_precision || 0).toFixed(1)}`);
+      } else {
+        console.log(`  Insufficient dimensions for agreement calculation`);
+      }
+    }
+
+    console.log('');
+    console.log(`%c3. Feature Reliability (20% weight):`, 'font-weight: bold; color: #FF9800;');
+    console.log(`  Dictionary Match Rate: ${features.aoa_match_rate?.toFixed(1) || 'N/A'}%`);
+    console.log(`  Feature Completeness: ${hasReadability ? '✓' : '✗'} Readability, ${hasDiversityMetrics ? '✓' : '✗'} Diversity, ${hasGrammarMetrics ? '✓' : '✗'} Grammar`);
+    console.log(`  Feature Reliability Score: ${featureReliability.toFixed(1)}%`);
+
+    console.log('');
+    console.log(`%c4. Sample Size Constraint:`, 'font-weight: bold; color: #9E9E9E;');
+    console.log(`  Word Count: ${wordCount} words${constraintNote}`);
+    console.log(`  Constraint Multiplier: ${sampleSizeConstraint.toFixed(3)}x`);
+    console.log(`  %cNote: Length matters for confidence (not IQ) - more data = more reliable`, 'color: #666; font-style: italic;');
+
+    console.log('');
+    console.log(`%cCombined Calculation:`, 'font-weight: bold;');
+    const calculatedConfidence = (signalQualityNormalized * 0.40) +
+                                  (parseFloat(agreementScore) * 0.40) +
+                                  (featureReliability * 0.20);
+    const afterConstraint = calculatedConfidence * sampleSizeConstraint;
+    console.log(`  = (Signal: ${signalQualityNormalized.toFixed(1)}% × 40%) + (Agreement: ${agreementScore}% × 40%) + (Features: ${featureReliability.toFixed(1)}% × 20%)`);
+    console.log(`  = ${calculatedConfidence.toFixed(2)}%`);
+    console.log(`  × Sample Size Constraint (${sampleSizeConstraint.toFixed(3)}x)`);
+    console.log(`  = ${afterConstraint.toFixed(2)}%`);
+    console.log(`  %c→ Final: ${result.confidence.toFixed(1)}%`, 'font-weight: bold; color: #7B1FA2;');
+    console.log(`  %cAnti-Gaming: Confidence reflects signal quality & agreement, not just length`, 'color: #666; font-style: italic;');
+  } else {
+    console.log(`Confidence: N/A`);
   }
   console.groupEnd();
 
