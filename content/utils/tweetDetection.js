@@ -122,6 +122,12 @@ function validateTweetText(text) {
     return { isValid: false, reason: 'Empty text' };
   }
 
+  // Check for age-restricted content warning
+  const ageRestrictionPattern = /due to local laws.*restricting access.*estimate your age/i;
+  if (ageRestrictionPattern.test(text)) {
+    return { isValid: false, reason: 'Age-restricted content' };
+  }
+
   // Remove emojis and check if there are actual words
   const textWithoutEmoji = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
 

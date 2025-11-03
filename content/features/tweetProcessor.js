@@ -414,6 +414,17 @@ async function processTweet(tweetElement) {
 
   const validation = validateTweetText(tweetText);
   if (!validation.isValid) {
+    // Special handling for age-restricted content - remove badge instead of showing invalid
+    if (validation.reason === 'Age-restricted content') {
+      const existingBadge = actualTweetElement.querySelector('.iq-badge');
+      if (existingBadge) {
+        existingBadge.remove();
+      }
+      actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+      actualTweetElement.removeAttribute('data-iq-processing');
+      return;
+    }
+
     if (settings.showIQBadge) {
       // Get or transition existing badge instead of creating new one
       let invalidBadge = actualTweetElement.querySelector('.iq-badge');
@@ -1131,18 +1142,6 @@ async function processTweet(tweetElement) {
               return;
             }
 
-            // Preserve badge dimensions before transition to prevent layout shift
-            const badgeRect = loadingBadge.getBoundingClientRect();
-            const currentHeight = badgeRect.height;
-            const currentWidth = badgeRect.width;
-
-            // If dimensions are 0, badge might be hidden - skip min-size preservation
-            if (currentHeight > 0 && currentWidth > 0) {
-              // Set minimum dimensions to prevent layout shift during transition
-              loadingBadge.style.setProperty('min-height', `${currentHeight}px`, 'important');
-              loadingBadge.style.setProperty('min-width', `${currentWidth}px`, 'important');
-            }
-
             loadingBadge.removeAttribute('data-iq-loading');
             loadingBadge.setAttribute('data-iq-score', iq);
             loadingBadge.style.setProperty('cursor', 'help', 'important');
@@ -1171,24 +1170,6 @@ async function processTweet(tweetElement) {
             }
 
             animateCountUp(loadingBadge, iq, iqColor);
-
-            // Remove min-height/min-width after a brief delay to allow animation to settle
-            // But keep them long enough to prevent layout shift
-            setTimeout(() => {
-              // Use requestAnimationFrame to ensure DOM has updated
-              requestAnimationFrame(() => {
-                const newRect = loadingBadge.getBoundingClientRect();
-                // Only remove min constraints if the badge has settled to a stable size
-                if (newRect.height >= currentHeight && newRect.width >= currentWidth) {
-                  loadingBadge.style.removeProperty('min-height');
-                  loadingBadge.style.removeProperty('min-width');
-                } else {
-                  // If badge shrunk, restore min dimensions to prevent shift
-                  loadingBadge.style.setProperty('min-height', `${currentHeight}px`, 'important');
-                  loadingBadge.style.setProperty('min-width', `${currentWidth}px`, 'important');
-                }
-              });
-            }, 100);
 
             // Immediately after starting animation, ensure position is correct for notification pages
             if (isNotificationsPage && correctPosition) {
@@ -1231,7 +1212,7 @@ async function processTweet(tweetElement) {
             // Always add hover event listener for console debug info
             loadingBadge.addEventListener('mouseenter', () => {
               if (loadingBadge._debugData) {
-                logDebugInfo(loadingBadge._debugData);
+                logDebugInfo(loadingBadge._debugData, loadingBadge);
               }
             });
           }
@@ -1385,7 +1366,7 @@ async function processTweet(tweetElement) {
         // Add hover event listener
         loadingBadge.addEventListener('mouseenter', () => {
           if (loadingBadge._debugData) {
-            logDebugInfo(loadingBadge._debugData);
+            logDebugInfo(loadingBadge._debugData, loadingBadge);
           }
         });
 

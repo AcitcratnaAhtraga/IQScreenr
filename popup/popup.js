@@ -61,24 +61,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialize defaults if not set
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging'], (result) => {
     // Set defaults if this is first run
     if (result.showIQBadge === undefined) {
       chrome.storage.sync.set({
         showIQBadge: true,
         showRealtimeBadge: true,
-        useConfidenceForColor: false
+        useConfidenceForColor: false,
+        enableDebugLogging: true
       }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error loading settings', 'error');
         }
       });
-      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: false };
+      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: false, enableDebugLogging: true };
     }
     // Set checkbox states
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
     document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false; // Default to true
     document.getElementById('useConfidenceForColor').checked = result.useConfidenceForColor === true; // Default to false
+    document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
 
     // Update dependent checkboxes state
     updateDependentCheckboxes();
@@ -119,13 +121,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  document.getElementById('enableDebugLogging').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ enableDebugLogging: e.target.checked }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving setting', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+      }
+    });
+  });
+
   // Handle reset button
   document.getElementById('resetSettings').addEventListener('click', () => {
     if (confirm('Reset all settings to defaults?')) {
       const defaults = {
         showIQBadge: true,
         showRealtimeBadge: true,
-        useConfidenceForColor: false
+        useConfidenceForColor: false,
+        enableDebugLogging: true
       };
 
       chrome.storage.sync.set(defaults, () => {
@@ -136,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('showIQBadge').checked = defaults.showIQBadge;
           document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
           document.getElementById('useConfidenceForColor').checked = defaults.useConfidenceForColor;
+          document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
           // Update dependent checkboxes state
           updateDependentCheckboxes();
           showStatus('Settings reset to defaults', 'success');

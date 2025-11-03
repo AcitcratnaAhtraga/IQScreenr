@@ -67,22 +67,12 @@ function animateCountUp(badge, finalIQ, iqColor) {
       return;
     }
 
-    // CRITICAL: Lock badge dimensions BEFORE any DOM manipulation to prevent size changes
-    const badgeRect = badge.getBoundingClientRect();
-    const lockedHeight = badgeRect.height;
-    const lockedWidth = badgeRect.width;
-
-    // Only lock dimensions if they're valid (badge is visible)
-    if (lockedHeight > 0 && lockedWidth > 0) {
-      badge.style.setProperty('height', `${lockedHeight}px`, 'important');
-      badge.style.setProperty('width', `${lockedWidth}px`, 'important');
-      badge.style.setProperty('min-height', `${lockedHeight}px`, 'important');
-      badge.style.setProperty('min-width', `${lockedWidth}px`, 'important');
-      badge.style.setProperty('max-height', `${lockedHeight}px`, 'important');
-      badge.style.setProperty('max-width', `${lockedWidth}px`, 'important');
-    }
-
     badge.setAttribute('data-iq-animating', 'true');
+
+    // CRITICAL: Check if badge will have flip structure BEFORE DOM manipulation
+    // This prevents size changes from switching structures during animation
+    const confidenceAttr = badge.getAttribute('data-confidence');
+    const willHaveFlip = confidenceAttr !== null;
 
     const scoreContainer = badge.querySelector('.iq-score');
 
@@ -92,51 +82,42 @@ function animateCountUp(badge, finalIQ, iqColor) {
       const beforeMinWidth = badge.style.minWidth;
       const beforeDisplay = window.getComputedStyle(badge).display;
 
-      badge.innerHTML = `
-        <span class="iq-label">IQ</span>
-        <span class="iq-score">${finalIQ}</span>
-      `;
+      // Build final structure immediately to prevent size changes
+      if (willHaveFlip) {
+        const confidence = parseInt(confidenceAttr, 10);
+        badge.innerHTML = `
+          <div class="iq-badge-inner" style="transform: rotateY(0deg);">
+            <div class="iq-badge-front">
+              <span class="iq-label">IQ</span>
+              <span class="iq-score">${finalIQ}</span>
+            </div>
+            <div class="iq-badge-back">
+              <span class="iq-label">%</span>
+              <span class="iq-score">${confidence}</span>
+            </div>
+          </div>
+        `;
+        badge.classList.add('iq-badge-flip');
+      } else {
+        badge.innerHTML = `
+          <span class="iq-label">IQ</span>
+          <span class="iq-score">${finalIQ}</span>
+        `;
+      }
       badge.classList.remove('iq-badge-loading');
       badge.removeAttribute('data-iq-animating');
       badge.setAttribute('data-iq-animated', 'true');
 
-      // Restore locked dimensions first (if set), then preserve other styles
-      if (lockedHeight > 0 && lockedWidth > 0) {
-        badge.style.setProperty('height', `${lockedHeight}px`, 'important');
-        badge.style.setProperty('width', `${lockedWidth}px`, 'important');
-        badge.style.setProperty('min-height', `${lockedHeight}px`, 'important');
-        badge.style.setProperty('min-width', `${lockedWidth}px`, 'important');
-        badge.style.setProperty('max-height', `${lockedHeight}px`, 'important');
-        badge.style.setProperty('max-width', `${lockedWidth}px`, 'important');
-      } else {
-        // Preserve min-height/min-width if they were set
-        if (beforeMinHeight) {
-          badge.style.setProperty('min-height', beforeMinHeight, 'important');
-        }
-        if (beforeMinWidth) {
-          badge.style.setProperty('min-width', beforeMinWidth, 'important');
-        }
+      // Preserve min-height/min-width if they were set
+      if (beforeMinHeight) {
+        badge.style.setProperty('min-height', beforeMinHeight, 'important');
+      }
+      if (beforeMinWidth) {
+        badge.style.setProperty('min-width', beforeMinWidth, 'important');
       }
       // Preserve display if it was set to block
       if (beforeDisplay === 'block') {
         badge.style.setProperty('display', 'block', 'important');
-      }
-
-      // Release dimension locks after a brief delay
-      if (lockedHeight > 0 && lockedWidth > 0) {
-        setTimeout(() => {
-          requestAnimationFrame(() => {
-            const finalRect = badge.getBoundingClientRect();
-            if (finalRect.height >= lockedHeight && finalRect.width >= lockedWidth) {
-              badge.style.removeProperty('height');
-              badge.style.removeProperty('width');
-              badge.style.removeProperty('min-height');
-              badge.style.removeProperty('min-width');
-              badge.style.removeProperty('max-height');
-              badge.style.removeProperty('max-width');
-            }
-          });
-        }, 100);
       }
 
       return;
@@ -145,7 +126,25 @@ function animateCountUp(badge, finalIQ, iqColor) {
     const hasFlipStructure = badge.querySelector('.iq-badge-inner');
     let scoreElement;
 
-    if (hasFlipStructure) {
+    // CRITICAL: If loading badge doesn't have flip structure but will need it,
+    // build it NOW before animation starts to prevent size changes
+    if (!hasFlipStructure && willHaveFlip) {
+      const confidence = parseInt(confidenceAttr, 10);
+      badge.innerHTML = `
+        <div class="iq-badge-inner" style="transform: rotateY(0deg);">
+          <div class="iq-badge-front">
+            <span class="iq-label">IQ</span>
+            <span class="iq-score">0</span>
+          </div>
+          <div class="iq-badge-back">
+            <span class="iq-label">%</span>
+            <span class="iq-score">${confidence}</span>
+          </div>
+        </div>
+      `;
+      badge.classList.add('iq-badge-flip');
+      scoreElement = badge.querySelector('.iq-badge-front .iq-score');
+    } else if (hasFlipStructure) {
       scoreElement = badge.querySelector('.iq-badge-front .iq-score');
       if (!scoreElement) {
         const frontDiv = badge.querySelector('.iq-badge-front');
@@ -182,22 +181,12 @@ function animateCountUp(badge, finalIQ, iqColor) {
         `;
         scoreElement = badge.querySelector('.iq-score');
 
-        // Restore locked dimensions first (if set), then preserved styles
-        if (lockedHeight > 0 && lockedWidth > 0) {
-          badge.style.setProperty('height', `${lockedHeight}px`, 'important');
-          badge.style.setProperty('width', `${lockedWidth}px`, 'important');
-          badge.style.setProperty('min-height', `${lockedHeight}px`, 'important');
-          badge.style.setProperty('min-width', `${lockedWidth}px`, 'important');
-          badge.style.setProperty('max-height', `${lockedHeight}px`, 'important');
-          badge.style.setProperty('max-width', `${lockedWidth}px`, 'important');
-        } else {
-          // Restore preserved styles immediately after innerHTML replacement
-          if (preserveMinHeight) {
-            badge.style.setProperty('min-height', preserveMinHeight, 'important');
-          }
-          if (preserveMinWidth) {
-            badge.style.setProperty('min-width', preserveMinWidth, 'important');
-          }
+        // Restore preserved styles immediately after innerHTML replacement
+        if (preserveMinHeight) {
+          badge.style.setProperty('min-height', preserveMinHeight, 'important');
+        }
+        if (preserveMinWidth) {
+          badge.style.setProperty('min-width', preserveMinWidth, 'important');
         }
         if (preserveDisplay) {
           badge.style.setProperty('display', preserveDisplay, 'important');
@@ -323,43 +312,9 @@ function animateCountUp(badge, finalIQ, iqColor) {
         badge.removeAttribute('data-iq-animating');
         badge.setAttribute('data-iq-animated', 'true');
 
-        const confidenceAttr = badge.getAttribute('data-confidence');
-        if (confidenceAttr !== null) {
-          const confidence = parseInt(confidenceAttr, 10);
-          // Call updateBadgeWithFlipStructure directly (we are in the same module)
-          updateBadgeWithFlipStructure(badge, finalIQ, confidence);
-        }
-
-        // Release dimension locks after animation completes and badge has settled
-        // Use requestAnimationFrame to ensure DOM has updated
-        requestAnimationFrame(() => {
-          const finalRect = badge.getBoundingClientRect();
-          // Only release locks if final size is stable and matches or exceeds locked size
-          if (finalRect.height >= lockedHeight && finalRect.width >= lockedWidth) {
-            badge.style.removeProperty('height');
-            badge.style.removeProperty('width');
-            badge.style.removeProperty('min-height');
-            badge.style.removeProperty('min-width');
-            badge.style.removeProperty('max-height');
-            badge.style.removeProperty('max-width');
-          } else {
-            // Keep locks if badge is smaller (shouldn't happen, but safety measure)
-            // Release after a longer delay to allow any delayed rendering
-            setTimeout(() => {
-              requestAnimationFrame(() => {
-                const delayedRect = badge.getBoundingClientRect();
-                if (delayedRect.height >= lockedHeight && delayedRect.width >= lockedWidth) {
-                  badge.style.removeProperty('height');
-                  badge.style.removeProperty('width');
-                  badge.style.removeProperty('min-height');
-                  badge.style.removeProperty('min-width');
-                  badge.style.removeProperty('max-height');
-                  badge.style.removeProperty('max-width');
-                }
-              });
-            }, 300);
-          }
-        });
+        // Note: We already built the flip structure earlier if needed,
+        // so we don't need to call updateBadgeWithFlipStructure here
+        // which would cause size changes from DOM manipulation
 
         setTimeout(() => {
           triggerPulseAnimation(badge, iqColor);
