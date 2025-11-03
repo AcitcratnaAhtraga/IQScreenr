@@ -1410,78 +1410,224 @@ class ComprehensiveIQEstimatorUltimate {
   }
 
   /**
-   * Compute confidence
-   * FIXED: Better penalizes short texts and inflated metrics
+   * Compute confidence - Anti-Gaming, Quality-Focused Approach
+   *
+   * Confidence reflects RELIABILITY of the IQ estimate, based on:
+   * 1. Signal quality (not just quantity) - Are metrics meaningful or noise?
+   * 2. Dimension agreement - Do all 4 dimensions converge on same estimate?
+   * 3. Feature reliability - Dictionary coverage, metric stability
+   * 4. Text coherence - Is it actual sophisticated writing or padded text?
+   *
+   * KEY: Length helps ONLY if it provides MEANINGFUL VARIETY, not repetition.
+   * Cannot be gamed by just writing more words - quality matters more.
    */
   _computeConfidence(dimensions, features, wordCount, originalText) {
-    let baseConfidence = 0;
+    // ========== 1. SIGNAL QUALITY FACTOR (Primary - Cannot be gamed) ==========
+    // Measure how STRONG and RELIABLE the signal is, not just how much text exists
+    let signalQuality = 0;
 
-    if (wordCount >= 100) {
-      baseConfidence = 90;
-    } else if (wordCount >= 50) {
-      baseConfidence = 70 + (wordCount - 50) * 0.4;
-    } else if (wordCount >= 20) {
-      baseConfidence = 50 + (wordCount - 20) * 0.67;
-    } else if (wordCount >= 10) {
-      baseConfidence = 30 + (wordCount - 10) * 2;
+    // Lexical diversity ratio (TTR) - Higher = more varied vocabulary
+    // This can't be gamed by length alone - repetition lowers TTR
+    const ttr = features.ttr || 0.5;
+    const uniqueWords = new Set((features.tokens || []).map(t => t.toLowerCase())).size;
+    const totalWords = features.tokens?.length || wordCount;
+    const actualTTR = totalWords > 0 ? uniqueWords / totalWords : 0;
+
+    // Signal quality from vocabulary diversity (0-25 points, stricter)
+    // Most tweets have TTR around 0.5-0.7, so we're conservative
+    if (actualTTR >= 0.8) {
+      signalQuality += 25; // Extremely diverse (rare)
+    } else if (actualTTR >= 0.7) {
+      signalQuality += 20; // Very diverse
+    } else if (actualTTR >= 0.6) {
+      signalQuality += 15; // Good diversity
+    } else if (actualTTR >= 0.5) {
+      signalQuality += 10; // Moderate diversity (typical)
+    } else if (actualTTR >= 0.4) {
+      signalQuality += 5; // Low diversity (repetitive)
     } else {
-      baseConfidence = 20 + (wordCount - 5) * 2;
+      signalQuality += 0; // Very repetitive (weak signal)
     }
 
-    // Additional penalty for very short texts (< 50 words)
-    // Metrics become unreliable, reduce confidence by up to 40%
-    if (wordCount < 50) {
-      const shortTextPenalty = (50 - wordCount) * 0.8; // Up to 32 points penalty at 10 words
-      baseConfidence = Math.max(10, baseConfidence - shortTextPenalty);
+    // Sentence variety (variance) - Multiple varied sentences = stronger signal
+    const sentenceCount = features.sentences?.length || features.sentence_count || 1;
+    const sentenceVariance = features.sentence_variance || 0;
+    if (sentenceCount >= 5 && sentenceVariance > 3) {
+      signalQuality += 15; // Multiple varied sentences = reliable
+    } else if (sentenceCount >= 3 && sentenceVariance > 2) {
+      signalQuality += 10; // Some variety
+    } else if (sentenceCount >= 2) {
+      signalQuality += 5; // At least multiple sentences
+    } else {
+      signalQuality += 0; // Single sentence = limited signal
     }
 
-    // Boost confidence if using real AoA dictionary with good coverage
-    if (this.aoaDictionaryLoaded && features.aoa_match_rate > 60) {
-      baseConfidence = Math.min(95, baseConfidence + 8);
-    } else if (this.aoaDictionaryLoaded) {
-      baseConfidence = Math.min(95, baseConfidence + 5);
+    // Word sophistication (AoA) - Advanced vocabulary indicates meaningful signal
+    const meanAoa = features.mean_aoa || 0;
+    if (meanAoa >= 10) {
+      signalQuality += 15; // Very sophisticated vocabulary
+    } else if (meanAoa >= 8) {
+      signalQuality += 10; // Moderately sophisticated
+    } else if (meanAoa >= 6) {
+      signalQuality += 5; // Some sophistication
+    } else {
+      signalQuality += 0; // Basic vocabulary
     }
 
+    // Apply sample size penalty - short texts have less reliable metrics
+    // Even good signal is less reliable with less data
+    let sampleSizePenalty = 0;
+    if (wordCount < 15) {
+      sampleSizePenalty = 15; // Significant penalty for very short texts
+    } else if (wordCount < 25) {
+      sampleSizePenalty = 10; // Penalty for short texts
+    } else if (wordCount < 50) {
+      sampleSizePenalty = 5; // Small penalty for medium texts
+    }
+
+    signalQuality = Math.max(0, signalQuality - sampleSizePenalty);
+
+    // Normalize signal quality to 0-100 scale (max possible: 55 from above)
+    // Use stricter normalization - don't inflate mediocre scores
+    signalQuality = Math.min(100, (signalQuality / 55) * 100);
+
+    // ========== 2. DIMENSION AGREEMENT FACTOR (Critical - Cannot be faked) ==========
+    // When all 4 dimensions agree, we have high confidence
+    // When they disagree, the estimate is less reliable
     const iqValues = Object.values(dimensions);
-    let agreementScore = 50;
+    let agreementScore = 30; // Lower default - start from skepticism
 
-    if (iqValues.length > 1) {
+    if (iqValues.length >= 4) {
       const mean = iqValues.reduce((a, b) => a + b, 0) / iqValues.length;
       const variance = iqValues.reduce((sum, iq) => sum + Math.pow(iq - mean, 2), 0) / iqValues.length;
       const stdDev = Math.sqrt(variance);
-      agreementScore = Math.max(40, 100 - stdDev * 5);
-    }
 
-    const sentenceCount = features.sentences?.length || features.sentence_count || 1;
-    const avgWordsPerSentence = features.avg_words_per_sentence || 0;
-    let qualityPenalty = 0;
-
-    if (avgWordsPerSentence < 5) {
-      qualityPenalty = 15;
-    } else if (avgWordsPerSentence < 8) {
-      qualityPenalty = 5;
-    }
-
-    // Enhanced penalty for single-sentence casual run-ons
-    if (sentenceCount === 1) {
-      if (wordCount < 15) {
-        qualityPenalty += 10;
-      } else if (wordCount < 50) {
-        // Check for parenthetical-heavy casual style
-        const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
-        if (parentheticalCount >= 2 && wordCount > 30) {
-          qualityPenalty += 8; // Penalize casual run-ons
-        }
+      // Stricter agreement scoring - most tweets have moderate disagreement
+      // Perfect agreement (stdDev = 0) → 100% confidence
+      // High agreement (stdDev ≤ 5) → 85-100% confidence
+      // Moderate agreement (stdDev 5-10) → 60-85% confidence
+      // Low agreement (stdDev 10-15) → 40-60% confidence
+      // Poor agreement (stdDev > 15) → 20-40% confidence
+      if (stdDev <= 3) {
+        agreementScore = 100 - (stdDev * 3); // 91% at stdDev=3
+      } else if (stdDev <= 5) {
+        agreementScore = 91 - ((stdDev - 3) * 3); // 85% at stdDev=5
+      } else if (stdDev <= 10) {
+        agreementScore = 85 - ((stdDev - 5) * 5); // 60% at stdDev=10
+      } else if (stdDev <= 15) {
+        agreementScore = 60 - ((stdDev - 10) * 4); // 40% at stdDev=15
+      } else {
+        agreementScore = Math.max(20, 40 - ((stdDev - 15) * 1.33)); // Min 20%
       }
     }
 
-    const agreementWeight = wordCount >= 20 ? 0.3 : 0.2;
-    const baseWeight = 1 - agreementWeight;
+    // ========== 3. FEATURE RELIABILITY FACTOR ==========
+    // How reliable are the features we're using?
+    let featureReliability = 30; // Lower default - start skeptical
 
-    let confidence = baseConfidence * baseWeight + agreementScore * agreementWeight;
-    confidence -= qualityPenalty;
+    // AoA dictionary coverage - Higher match rate = more reliable vocabulary analysis
+    if (this.aoaDictionaryLoaded) {
+      const matchRate = features.aoa_match_rate || 0;
+      if (matchRate >= 80) {
+        featureReliability = 90; // Excellent - most words matched
+      } else if (matchRate >= 65) {
+        featureReliability = 70; // Good coverage
+      } else if (matchRate >= 50) {
+        featureReliability = 50; // Moderate coverage
+      } else if (matchRate >= 35) {
+        featureReliability = 35; // Low coverage
+      } else {
+        featureReliability = 25; // Poor coverage - unreliable
+      }
+    } else {
+      // No dictionary - using approximations, less reliable
+      featureReliability = 20;
+    }
 
-    return Math.max(15, Math.min(95, Math.round(confidence)));
+    // Feature completeness - Having all metrics available
+    const hasReadability = features.readability && Object.keys(features.readability).length > 0;
+    const hasDiversityMetrics = features.ttr !== undefined && features.mtld !== undefined;
+    const hasGrammarMetrics = features.avg_dependency_depth !== undefined ||
+                              features.punctuation_complexity !== undefined;
+
+    if (hasReadability && hasDiversityMetrics && hasGrammarMetrics) {
+      featureReliability = Math.min(100, featureReliability + 10); // All features available
+    } else if ((hasReadability && hasDiversityMetrics) ||
+               (hasReadability && hasGrammarMetrics) ||
+               (hasDiversityMetrics && hasGrammarMetrics)) {
+      featureReliability = Math.min(100, featureReliability + 5); // Most features available
+    }
+
+    // ========== 4. ANTI-GAMING CHECKS ==========
+    // Detect attempts to inflate confidence through padding/repetition
+    let gamingPenalty = 0;
+
+    // Check for excessive repetition (can't game by repeating words)
+    const repetitionRatio = totalWords > 0 ? (totalWords - uniqueWords) / totalWords : 0;
+    if (repetitionRatio > 0.6 && wordCount > 30) {
+      gamingPenalty += 15; // Highly repetitive = weak signal
+    } else if (repetitionRatio > 0.5 && wordCount > 20) {
+      gamingPenalty += 10; // Moderately repetitive
+    } else if (repetitionRatio > 0.4 && wordCount > 15) {
+      gamingPenalty += 5; // Some repetition
+    }
+
+    // Check for meaningless padding (very short sentences, fragments)
+    const avgWordsPerSentence = features.avg_words_per_sentence || 0;
+    if (avgWordsPerSentence < 4 && sentenceCount > 3) {
+      gamingPenalty += 10; // Fragmentary text = weak signal
+    }
+
+    // Single very long sentence might indicate run-on, less reliable
+    if (sentenceCount === 1 && wordCount > 50) {
+      const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
+      if (parentheticalCount >= 4) {
+        gamingPenalty += 8; // Casual run-on pattern
+      }
+    }
+
+    // ========== 5. SAMPLE SIZE CONSTRAINT ==========
+    // Short texts inherently have less reliable estimates
+    // Use smooth, continuous scaling instead of coarse steps to avoid clustering
+    let sampleSizeConstraint = 1.0; // Multiplier
+
+    if (wordCount < 100) {
+      // Smooth scaling: confidence increases logarithmically with word count
+      // At 10 words: ~0.42, at 50 words: ~0.78, at 100 words: ~1.0
+      // This creates natural variation instead of clustering at fixed multipliers
+      const logFactor = Math.log(wordCount + 1) / Math.log(101); // Normalized log scale
+      sampleSizeConstraint = 0.35 + (logFactor * 0.65); // Range: 0.35 to 1.0
+    }
+    // 100+ words: Full confidence allowed (no constraint)
+
+    // ========== 6. COMBINE FACTORS ==========
+    // Weight factors based on their importance for RELIABILITY
+    // Signal quality and agreement matter most - these can't be gamed
+    const signalWeight = 0.40;      // Most important: signal strength
+    const agreementWeight = 0.40;   // Equally important: dimension consensus
+    const featureWeight = 0.20;     // Important: measurement reliability
+
+    let confidence = (signalQuality * signalWeight) +
+                     (agreementScore * agreementWeight) +
+                     (featureReliability * featureWeight);
+
+    // Apply gaming penalties
+    confidence -= gamingPenalty;
+
+    // Apply sample size constraint (reduces confidence for short texts)
+    // This naturally handles length limitations - no need for hard caps
+    confidence *= sampleSizeConstraint;
+
+    // ========== 7. FINAL BOUNDS ==========
+    // Only apply absolute minimum/maximum bounds - let calculation flow naturally
+    // The sample size constraint and penalties already handle length limitations
+
+    // Absolute minimum: Even perfect agreement needs some data
+    // Absolute maximum: Even perfect signal has some uncertainty
+    confidence = Math.max(12, Math.min(94, confidence));
+
+    // Round to whole number for display (preserves precision from calculation)
+    return Math.round(confidence);
   }
 
   // ========== Feature Extraction Helpers ==========
