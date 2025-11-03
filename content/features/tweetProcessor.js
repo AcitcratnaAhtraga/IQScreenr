@@ -292,7 +292,23 @@ async function processTweet(tweetElement) {
 
   // For nested structures, check for badge in both outer wrapper and nested tweet
   // This fixes the issue where badges are placed in outer wrapper but we only search nested tweet
+  // Also check for and remove duplicate badges
   let existingBadge = actualTweetElement.querySelector('.iq-badge');
+  const allBadgesInActual = actualTweetElement.querySelectorAll('.iq-badge');
+  const allBadgesInOuter = hasNestedStructure ? tweetElement.querySelectorAll('.iq-badge') : [];
+
+  // If multiple badges found, keep only the first one and remove duplicates
+  const allBadges = [...allBadgesInActual, ...allBadgesInOuter];
+  if (allBadges.length > 1) {
+    // Keep the first badge, remove all others
+    for (let i = 1; i < allBadges.length; i++) {
+      if (allBadges[i].parentElement) {
+        allBadges[i].remove();
+      }
+    }
+    existingBadge = allBadges[0];
+  }
+
   if (!existingBadge && hasNestedStructure) {
     existingBadge = tweetElement.querySelector('.iq-badge');
   }
@@ -799,11 +815,46 @@ async function processTweet(tweetElement) {
   let loadingBadge = null;
   if (settings.showIQBadge) {
     // Check both nested and outer wrapper for nested structures
+    // Also check for ALL badges to detect and remove duplicates
+    const allBadgesForLoadingCheck = [
+      ...actualTweetElement.querySelectorAll('.iq-badge'),
+      ...(hasNestedStructure ? tweetElement.querySelectorAll('.iq-badge') : [])
+    ];
+
+    // If multiple badges found, remove duplicates (keep the first one)
+    if (allBadgesForLoadingCheck.length > 1) {
+      for (let i = 1; i < allBadgesForLoadingCheck.length; i++) {
+        if (allBadgesForLoadingCheck[i].parentElement) {
+          allBadgesForLoadingCheck[i].remove();
+        }
+      }
+    }
+
     loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                    actualTweetElement.querySelector('.iq-badge-loading');
     if (!loadingBadge && hasNestedStructure) {
       loadingBadge = tweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                      tweetElement.querySelector('.iq-badge-loading');
+    }
+
+    // If we already found a badge (any type), don't create a new one
+    if (!loadingBadge) {
+      const anyExistingBadge = actualTweetElement.querySelector('.iq-badge') ||
+                               (hasNestedStructure ? tweetElement.querySelector('.iq-badge') : null);
+      if (anyExistingBadge) {
+        // If it's a loading badge, use it
+        if (anyExistingBadge.hasAttribute('data-iq-loading') ||
+            anyExistingBadge.classList.contains('iq-badge-loading')) {
+          loadingBadge = anyExistingBadge;
+        } else {
+          // There's already a non-loading badge - mark as analyzed and return
+          actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+          if (hasNestedStructure) {
+            tweetElement.setAttribute('data-iq-analyzed', 'true');
+          }
+          return;
+        }
+      }
     }
 
     if (!loadingBadge) {

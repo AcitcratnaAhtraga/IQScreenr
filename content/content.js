@@ -182,8 +182,39 @@
         const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
         const calculatedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
 
-
+        // First, clean up duplicate badges for each tweet
+        const processedTweetsForDupes = new Set();
         for (const loadingBadge of loadingBadges) {
+          const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
+                              loadingBadge.closest('article[role="article"]') ||
+                              loadingBadge.closest('article');
+          if (tweetElement && !processedTweetsForDupes.has(tweetElement)) {
+            processedTweetsForDupes.add(tweetElement);
+            // Find nested tweet if it exists
+            const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                               tweetElement.querySelector('article[role="article"]');
+            const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+
+            // Find all badges in this tweet
+            const allBadges = [
+              ...actualTweetElement.querySelectorAll('.iq-badge'),
+              ...(nestedTweet && nestedTweet !== tweetElement ? tweetElement.querySelectorAll('.iq-badge') : [])
+            ];
+
+            // Remove duplicates (keep the first one)
+            if (allBadges.length > 1) {
+              for (let i = 1; i < allBadges.length; i++) {
+                if (allBadges[i].parentElement) {
+                  allBadges[i].remove();
+                }
+              }
+            }
+          }
+        }
+
+        // Get loading badges again after cleanup (in case some were removed)
+        const loadingBadgesAfterCleanup = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
+        for (const loadingBadge of loadingBadgesAfterCleanup) {
           // Only convert badges that are still loading (not yet calculated)
           if (loadingBadge.hasAttribute('data-iq-loading') || loadingBadge.classList.contains('iq-badge-loading')) {
             const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
@@ -235,7 +266,40 @@
     if (settings.enableIQGuessr && gameManager && gameManager.replaceLoadingBadgeWithGuess && badgeManager) {
       // Game mode enabled on page load - convert loading badges to guess badges
       const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
+
+      // First, clean up duplicate badges for each tweet
+      const processedTweetsForDupes = new Set();
       for (const loadingBadge of loadingBadges) {
+        const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
+                            loadingBadge.closest('article[role="article"]') ||
+                            loadingBadge.closest('article');
+        if (tweetElement && !processedTweetsForDupes.has(tweetElement)) {
+          processedTweetsForDupes.add(tweetElement);
+          // Find nested tweet if it exists
+          const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                             tweetElement.querySelector('article[role="article"]');
+          const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+
+          // Find all badges in this tweet
+          const allBadges = [
+            ...actualTweetElement.querySelectorAll('.iq-badge'),
+            ...(nestedTweet && nestedTweet !== tweetElement ? tweetElement.querySelectorAll('.iq-badge') : [])
+          ];
+
+          // Remove duplicates (keep the first one)
+          if (allBadges.length > 1) {
+            for (let i = 1; i < allBadges.length; i++) {
+              if (allBadges[i].parentElement) {
+                allBadges[i].remove();
+              }
+            }
+          }
+        }
+      }
+
+      // Get loading badges again after cleanup
+      const loadingBadgesAfterCleanup = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
+      for (const loadingBadge of loadingBadgesAfterCleanup) {
         // Only convert badges that are still loading (not yet calculated)
         if (loadingBadge.hasAttribute('data-iq-loading') || loadingBadge.classList.contains('iq-badge-loading')) {
           const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
