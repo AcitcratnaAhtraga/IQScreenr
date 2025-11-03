@@ -39,10 +39,7 @@
           badge.style.setProperty('visibility', 'visible', 'important');
           badge.style.setProperty('opacity', '1', 'important');
         });
-        // Reprocess tweets to create badges that might be missing
-        if (tweetProcessor && tweetProcessor.processVisibleTweets) {
-          tweetProcessor.processVisibleTweets();
-        }
+        // Don't reprocess - let observer handle new tweets
       } else {
         // Hide all badges
         allBadges.forEach(badge => {

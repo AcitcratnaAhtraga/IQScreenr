@@ -574,6 +574,73 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
         characterData: true
       });
 
+      // Function to apply CSS truncation
+      const applyCssTruncation = () => {
+        try {
+          const currentText = extractTweetText(tweetElement);
+          if (!currentText || currentText.length <= baselineLength + 50) {
+            return; // Text hasn't expanded yet
+          }
+
+          const fullText = removeUrlsFromText(currentText);
+          const expandedHeight = textContainer.getBoundingClientRect().height;
+          const lineHeight = expandedHeight / (fullText.length / 50);
+          const targetHeight = Math.max(originalHeight, lineHeight * 4);
+
+          textContainer.style.maxHeight = `${targetHeight}px`;
+          textContainer.style.overflow = 'hidden';
+          textContainer.style.position = 'relative';
+          textContainer.setAttribute('data-iq-truncated', 'true');
+          textContainer.setAttribute('data-iq-target-height', targetHeight.toString());
+
+          // Add custom toggle button if it doesn't exist
+          let parentWrapper = textContainer.parentElement;
+          if (!parentWrapper || !parentWrapper.querySelector('[data-iq-toggle-btn]')) {
+            const buttonWrapper = document.createElement('button');
+            buttonWrapper.setAttribute('data-iq-toggle-btn', 'true');
+            buttonWrapper.setAttribute('type', 'button');
+            buttonWrapper.setAttribute('dir', 'ltr');
+            buttonWrapper.setAttribute('role', 'button');
+            buttonWrapper.className = 'css-146c3p1 r-bcqeeo r-qvutc0 r-37j5jr r-a023e6 r-rjixqe r-16dba41 r-fdjqy7';
+            buttonWrapper.style.cssText = 'color: rgb(29, 155, 240); background: none; border: none; cursor: pointer; padding: 0; margin: 0; font-size: inherit; font-family: inherit; display: inline-block; position: relative; z-index: 10;';
+
+            const span = document.createElement('span');
+            span.className = 'css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3';
+            span.textContent = 'Show more';
+            span.style.cssText = 'color: inherit;';
+
+            buttonWrapper.appendChild(span);
+
+            buttonWrapper.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              const isTruncated = textContainer.getAttribute('data-iq-truncated') === 'true';
+              const savedHeight = parseFloat(textContainer.getAttribute('data-iq-target-height') || targetHeight);
+              if (isTruncated) {
+                textContainer.style.maxHeight = 'none';
+                textContainer.removeAttribute('data-iq-truncated');
+                span.textContent = 'Show less';
+              } else {
+                textContainer.style.maxHeight = `${savedHeight}px`;
+                textContainer.setAttribute('data-iq-truncated', 'true');
+                span.textContent = 'Show more';
+              }
+            };
+
+            if (parentWrapper) {
+              parentWrapper.insertBefore(buttonWrapper, textContainer.nextSibling);
+            } else {
+              textContainer.parentNode.insertBefore(buttonWrapper, textContainer.nextSibling);
+            }
+          }
+
+          // Store full text
+          tweetElement.setAttribute('data-iq-full-text', fullText);
+        } catch (e) {
+          // Silently fail
+        }
+      };
+
       // Click the button to trigger expansion
       try {
         showMoreButton.click();
@@ -588,6 +655,51 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
         }
       }
 
+      // Immediately try to collapse it back (before MutationObserver fires)
+      // Try multiple times with increasing delays to catch expansion as quickly as possible
+      const attemptCollapse = (attempt = 0) => {
+        // Check if Twitter added a "Show less" button and click it
+        const showLessButton = tweetElement.querySelector('button[data-testid="tweet-text-show-less-link"]') ||
+          Array.from(tweetElement.querySelectorAll('button, span[role="button"]')).find(el => {
+            const text = (el.textContent || '').trim().toLowerCase();
+            return text === 'show less' || text === 'read less' ||
+                   (text.includes('show') && text.includes('less'));
+          });
+
+        if (showLessButton) {
+          // Twitter added a "Show less" button - click it immediately
+          try {
+            showLessButton.click();
+            return; // Success, stop retrying
+          } catch (e) {
+            // Fallback to CSS truncation if clicking fails
+            applyCssTruncation();
+            return;
+          }
+        } else {
+          // No "Show less" button yet, check if text expanded and apply CSS truncation
+          const currentText = extractTweetText(tweetElement);
+          if (currentText && currentText.length > baselineLength + 50) {
+            applyCssTruncation();
+            return; // Success, stop retrying
+          }
+
+          // Text not expanded yet, retry if we haven't tried too many times
+          if (attempt < 5) {
+            const delays = [10, 20, 30, 50, 100]; // Progressive delays
+            setTimeout(() => attemptCollapse(attempt + 1), delays[attempt] || 100);
+          }
+        }
+      };
+
+      // Start immediately (synchronous check first)
+      attemptCollapse(0);
+
+      // Also try after one frame to catch any async updates
+      requestAnimationFrame(() => {
+        attemptCollapse(1);
+      });
+
       // Fallback timeout - if MutationObserver doesn't catch it in time
       const capturedBaselineLength = baselineLength;
       setTimeout(() => {
@@ -598,6 +710,63 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
             // extractTweetText already removes URLs, but ensure it's cleaned
             const cleanedText = removeUrlsFromText(currentText);
             tweetElement.setAttribute('data-iq-full-text', cleanedText);
+
+            // Apply visual truncation even in fallback case
+            try {
+              const expandedHeight = textContainer.getBoundingClientRect().height;
+              const lineHeight = expandedHeight / (cleanedText.length / 50);
+              const targetHeight = Math.max(originalHeight, lineHeight * 4);
+
+              textContainer.style.maxHeight = `${targetHeight}px`;
+              textContainer.style.overflow = 'hidden';
+              textContainer.style.position = 'relative';
+              textContainer.setAttribute('data-iq-truncated', 'true');
+              textContainer.setAttribute('data-iq-target-height', targetHeight.toString());
+
+              // Add custom toggle button
+              let parentWrapper = textContainer.parentElement;
+              if (!parentWrapper || !parentWrapper.querySelector('[data-iq-toggle-btn]')) {
+                const buttonWrapper = document.createElement('button');
+                buttonWrapper.setAttribute('data-iq-toggle-btn', 'true');
+                buttonWrapper.setAttribute('type', 'button');
+                buttonWrapper.setAttribute('dir', 'ltr');
+                buttonWrapper.setAttribute('role', 'button');
+                buttonWrapper.className = 'css-146c3p1 r-bcqeeo r-qvutc0 r-37j5jr r-a023e6 r-rjixqe r-16dba41 r-fdjqy7';
+                buttonWrapper.style.cssText = 'color: rgb(29, 155, 240); background: none; border: none; cursor: pointer; padding: 0; margin: 0; font-size: inherit; font-family: inherit; display: inline-block; position: relative; z-index: 10;';
+
+                const span = document.createElement('span');
+                span.className = 'css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3';
+                span.textContent = 'Show more';
+                span.style.cssText = 'color: inherit;';
+
+                buttonWrapper.appendChild(span);
+
+                buttonWrapper.onclick = (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const isTruncated = textContainer.getAttribute('data-iq-truncated') === 'true';
+                  const savedHeight = parseFloat(textContainer.getAttribute('data-iq-target-height') || targetHeight);
+                  if (isTruncated) {
+                    textContainer.style.maxHeight = 'none';
+                    textContainer.removeAttribute('data-iq-truncated');
+                    span.textContent = 'Show less';
+                  } else {
+                    textContainer.style.maxHeight = `${savedHeight}px`;
+                    textContainer.setAttribute('data-iq-truncated', 'true');
+                    span.textContent = 'Show more';
+                  }
+                };
+
+                if (parentWrapper) {
+                  parentWrapper.insertBefore(buttonWrapper, textContainer.nextSibling);
+                } else {
+                  textContainer.parentNode.insertBefore(buttonWrapper, textContainer.nextSibling);
+                }
+              }
+            } catch (e) {
+              // Silently fail if truncation fails
+            }
+
             resolve(cleanedText);
           } else {
             resolve(null);
