@@ -13,7 +13,6 @@ const getBadgeManager = () => window.BadgeManager || {};
 const getGameManager = () => window.GameManager || {};
 const getIQCache = () => window.IQCache || {};
 const getSettings = () => window.Settings || {};
-const getDebugLog = () => window.DOMHelpers?.debugLog || (() => {});
 
 // Local state
 const processedTweets = new Set();
@@ -144,8 +143,6 @@ function findNotificationBadgePlacement(tweetElement) {
  * Returns true if badge was repositioned
  */
 function ensureCorrectBadgePosition(badge, tweetElement, isNotificationsPage) {
-  const debugLogFn = getDebugLog();
-
   if (!isNotificationsPage || !badge || !badge.parentElement) {
     return false;
   }
@@ -184,19 +181,6 @@ function ensureCorrectBadgePosition(badge, tweetElement, isNotificationsPage) {
 
   // If badge is in engagement bar or not positioned correctly, move it
   if (isInEngagementBar || !isInCorrectParent || !isPositionedCorrectly) {
-    // DEBUG: Log when badge is being moved
-    if (isNotificationsPage) {
-      debugLogFn('[Position Fix DEBUG] Moving badge:', {
-        inEngagementBar: isInEngagementBar,
-        isInCorrectParent: isInCorrectParent,
-        isPositionedCorrectly: isPositionedCorrectly,
-        currentParent: currentParent ? currentParent.tagName : 'none',
-        targetParent: parentElement ? parentElement.tagName : 'none',
-        badgeClass: badge.className,
-        hasParent: !!badge.parentElement
-      });
-    }
-
     // Remove from current location
     if (badge.parentElement) {
       badge.remove();
@@ -259,14 +243,6 @@ function ensureCorrectBadgePosition(badge, tweetElement, isNotificationsPage) {
       badge.style.setProperty('width', '100%', 'important');
     }
 
-    // DEBUG: Log after reinsertion
-    if (isNotificationsPage) {
-      debugLogFn('[Position Fix DEBUG] Badge reinserted:', {
-        nowInParent: badge.parentElement ? badge.parentElement.tagName : 'none',
-        inDOM: document.body.contains(badge)
-      });
-    }
-
     return true;
   }
 
@@ -286,17 +262,13 @@ async function processTweet(tweetElement) {
   const { validateTweetText } = getTweetDetection();
   const badgeManager = getBadgeManager();
   if (!badgeManager || !badgeManager.createLoadingBadge) {
-    const debugLogFn = getDebugLog();
-    debugLogFn('BadgeManager not available yet');
     return;
   }
   const { createLoadingBadge, createInvalidBadge, getIQColor, getConfidenceColor, createIQBadge, animateCountUp, updateBadgeWithFlipStructure, logDebugInfo, hexToRgb, desaturateColor } = badgeManager;
   const { getCachedIQ, cacheIQ } = getIQCache();
-  const debugLogFn = getDebugLog(); // Get debugLog function (avoid shadowing outer debugLog)
   const iqEstimator = window.ComprehensiveIQEstimatorUltimate ? new window.ComprehensiveIQEstimatorUltimate() : null;
 
   if (!iqEstimator) {
-    debugLogFn('IQ Estimator not available yet');
     return;
   }
 
@@ -331,9 +303,7 @@ async function processTweet(tweetElement) {
 
   let tweetText = extractTweetText(actualTweetElement);
 
-  // Debug for notifications page user tweets
   const isNotificationsPage = window.location.href.includes('/notifications');
-  const debugId = `tweet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   // Apply URL removal explicitly here as a safety measure
   // (extractTweetText should already do this, but ensure it happens)
@@ -368,27 +338,72 @@ async function processTweet(tweetElement) {
     }
     // Silent skip for elements that don't look like tweets
     if (settings.showIQBadge) {
-      const existingBadge = actualTweetElement.querySelector('.iq-badge');
-      if (existingBadge) {
-        existingBadge.remove();
-      }
-      const invalidBadge = createInvalidBadge();
-      const engagementBar = actualTweetElement.querySelector('[role="group"]');
-      if (engagementBar) {
-        const firstChild = engagementBar.firstElementChild;
-        if (firstChild) {
-          engagementBar.insertBefore(invalidBadge, firstChild);
-        } else {
-          engagementBar.appendChild(invalidBadge);
+      // Get or transition existing badge instead of creating new one
+      let invalidBadge = actualTweetElement.querySelector('.iq-badge');
+
+      if (invalidBadge) {
+        // Transition existing badge to invalid state
+        invalidBadge.innerHTML = `
+          <div class="iq-badge-inner">
+            <div class="iq-badge-front">
+              <span class="iq-label">IQ</span>
+              <span class="iq-score">✕</span>
+            </div>
+            <div class="iq-badge-back">
+              <span class="iq-label">NO</span>
+              <span class="iq-score">text</span>
+            </div>
+          </div>
+        `;
+        invalidBadge.className = 'iq-badge iq-badge-invalid iq-badge-flip';
+        invalidBadge.setAttribute('data-iq-invalid', 'true');
+        invalidBadge.removeAttribute('data-iq-loading');
+        invalidBadge.removeAttribute('data-iq-score');
+        invalidBadge.style.setProperty('background-color', '#9e9e9e', 'important');
+        invalidBadge.style.setProperty('color', '#000000', 'important');
+        invalidBadge.style.setProperty('cursor', 'help', 'important');
+
+        // Ensure badge is in DOM
+        if (!invalidBadge.parentElement) {
+          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          if (engagementBar) {
+            const firstChild = engagementBar.firstElementChild;
+            if (firstChild) {
+              engagementBar.insertBefore(invalidBadge, firstChild);
+            } else {
+              engagementBar.appendChild(invalidBadge);
+            }
+          } else {
+            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                actualTweetElement.querySelector('div[lang]') ||
+                                actualTweetElement.firstElementChild;
+            if (tweetContent && tweetContent.parentElement) {
+              tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
+            } else {
+              actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+            }
+          }
         }
       } else {
-        const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
-                            actualTweetElement.querySelector('div[lang]') ||
-                            actualTweetElement.firstElementChild;
-        if (tweetContent && tweetContent.parentElement) {
-          tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
+        // No existing badge, create new invalid badge
+        invalidBadge = createInvalidBadge();
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
+        if (engagementBar) {
+          const firstChild = engagementBar.firstElementChild;
+          if (firstChild) {
+            engagementBar.insertBefore(invalidBadge, firstChild);
+          } else {
+            engagementBar.appendChild(invalidBadge);
+          }
         } else {
-          actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweetElement.querySelector('div[lang]') ||
+                              actualTweetElement.firstElementChild;
+          if (tweetContent && tweetContent.parentElement) {
+            tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
+          } else {
+            actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+          }
         }
       }
     }
@@ -400,27 +415,72 @@ async function processTweet(tweetElement) {
   const validation = validateTweetText(tweetText);
   if (!validation.isValid) {
     if (settings.showIQBadge) {
-      const existingBadge = actualTweetElement.querySelector('.iq-badge');
-      if (existingBadge) {
-        existingBadge.remove();
-      }
-      const invalidBadge = createInvalidBadge();
-      const engagementBar = actualTweetElement.querySelector('[role="group"]');
-      if (engagementBar) {
-        const firstChild = engagementBar.firstElementChild;
-        if (firstChild) {
-          engagementBar.insertBefore(invalidBadge, firstChild);
-        } else {
-          engagementBar.appendChild(invalidBadge);
+      // Get or transition existing badge instead of creating new one
+      let invalidBadge = actualTweetElement.querySelector('.iq-badge');
+
+      if (invalidBadge) {
+        // Transition existing badge to invalid state
+        invalidBadge.innerHTML = `
+          <div class="iq-badge-inner">
+            <div class="iq-badge-front">
+              <span class="iq-label">IQ</span>
+              <span class="iq-score">✕</span>
+            </div>
+            <div class="iq-badge-back">
+              <span class="iq-label">NO</span>
+              <span class="iq-score">text</span>
+            </div>
+          </div>
+        `;
+        invalidBadge.className = 'iq-badge iq-badge-invalid iq-badge-flip';
+        invalidBadge.setAttribute('data-iq-invalid', 'true');
+        invalidBadge.removeAttribute('data-iq-loading');
+        invalidBadge.removeAttribute('data-iq-score');
+        invalidBadge.style.setProperty('background-color', '#9e9e9e', 'important');
+        invalidBadge.style.setProperty('color', '#000000', 'important');
+        invalidBadge.style.setProperty('cursor', 'help', 'important');
+
+        // Ensure badge is in DOM
+        if (!invalidBadge.parentElement) {
+          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          if (engagementBar) {
+            const firstChild = engagementBar.firstElementChild;
+            if (firstChild) {
+              engagementBar.insertBefore(invalidBadge, firstChild);
+            } else {
+              engagementBar.appendChild(invalidBadge);
+            }
+          } else {
+            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                actualTweetElement.querySelector('div[lang]') ||
+                                actualTweetElement.firstElementChild;
+            if (tweetContent && tweetContent.parentElement) {
+              tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
+            } else {
+              actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+            }
+          }
         }
       } else {
-        const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
-                            actualTweetElement.querySelector('div[lang]') ||
-                            actualTweetElement.firstElementChild;
-        if (tweetContent && tweetContent.parentElement) {
-          tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
+        // No existing badge, create new invalid badge
+        invalidBadge = createInvalidBadge();
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
+        if (engagementBar) {
+          const firstChild = engagementBar.firstElementChild;
+          if (firstChild) {
+            engagementBar.insertBefore(invalidBadge, firstChild);
+          } else {
+            engagementBar.appendChild(invalidBadge);
+          }
         } else {
-          actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweetElement.querySelector('div[lang]') ||
+                              actualTweetElement.firstElementChild;
+          if (tweetContent && tweetContent.parentElement) {
+            tweetContent.parentElement.insertBefore(invalidBadge, tweetContent);
+          } else {
+            actualTweetElement.insertBefore(invalidBadge, actualTweetElement.firstChild);
+          }
         }
       }
     }
@@ -435,11 +495,6 @@ async function processTweet(tweetElement) {
                    actualTweetElement.querySelector('.iq-badge-loading');
 
     if (!loadingBadge) {
-      // DEBUG: Log creation of loading badge (notifications page only)
-      if (isNotificationsPage) {
-        debugLogFn('[Badge Creation DEBUG] Creating new loading badge');
-      }
-
       loadingBadge = createLoadingBadge();
 
       // Special handling for notification page tweets
@@ -505,15 +560,6 @@ async function processTweet(tweetElement) {
           actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
         }
 
-        // DEBUG: Log after placement (notifications page only)
-        if (isNotificationsPage) {
-          debugLogFn('[Badge Creation DEBUG] Loading badge placed in DOM:', {
-            inDOM: document.body.contains(loadingBadge),
-            parentTag: loadingBadge.parentElement ? loadingBadge.parentElement.tagName : 'none',
-            display: window.getComputedStyle(loadingBadge).display
-          });
-        }
-
         // Verify and fix position if needed - check immediately and after delay
         requestAnimationFrame(() => {
           ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
@@ -577,48 +623,22 @@ async function processTweet(tweetElement) {
 
   if (settings.showIQBadge && loadingBadge) {
     if (!loadingBadge.parentElement) {
-      loadingBadge = createLoadingBadge();
-
-      // Use the same placement logic as initial creation
+      // Re-insert existing badge instead of creating new one
       if (isNotificationsPage) {
-        // For notification tweets, place badge after notification text
-        const allSpans = Array.from(actualTweetElement.querySelectorAll('span'));
-        const notificationText = allSpans.find(span => {
-          const text = (span.textContent || '').toLowerCase();
-          return text.includes('liked your post') ||
-                 text.includes('reposted') ||
-                 text.includes('replied to') ||
-                 text.includes('quoted your post') ||
-                 text.includes('liked') && text.includes('post') ||
-                 text.includes('repost');
-        });
-
-        const notificationDiv = !notificationText ? Array.from(actualTweetElement.querySelectorAll('div')).find(div => {
-          const text = (div.textContent || '').toLowerCase();
-          return (text.includes('liked your post') ||
-                  text.includes('reposted') ||
-                  text.includes('replied to') ||
-                  text.includes('quoted your post')) &&
-                 !div.querySelector('article[data-testid="tweet"]');
-        }) : null;
-
-        const targetElement = notificationText || notificationDiv;
-
-        if (targetElement && targetElement.parentElement) {
-          const notificationParent = targetElement.parentElement;
-          if (targetElement.nextSibling) {
-            notificationParent.insertBefore(loadingBadge, targetElement.nextSibling);
+        const placement = findNotificationBadgePlacement(actualTweetElement);
+        if (placement) {
+          const { targetElement, parentElement } = placement;
+          if (placement.placement === 'before-tweet-content') {
+            parentElement.insertBefore(loadingBadge, targetElement);
           } else {
-            notificationParent.appendChild(loadingBadge);
+            if (targetElement.nextSibling) {
+              parentElement.insertBefore(loadingBadge, targetElement.nextSibling);
+            } else {
+              parentElement.appendChild(loadingBadge);
+            }
           }
         } else {
-          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
-                              actualTweetElement.querySelector('div[lang]');
-          if (tweetContent && tweetContent.parentElement) {
-            tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
-          } else {
-            actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
-          }
+          actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
         }
       } else {
         // Normal tweet pages: use engagement bar
@@ -629,6 +649,15 @@ async function processTweet(tweetElement) {
             engagementBar.insertBefore(loadingBadge, firstChild);
           } else {
             engagementBar.appendChild(loadingBadge);
+          }
+        } else {
+          const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweetElement.querySelector('div[lang]') ||
+                              actualTweetElement.firstElementChild;
+          if (tweetContent && tweetContent.parentElement) {
+            tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+          } else {
+            actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
           }
         }
       }
@@ -672,9 +701,49 @@ async function processTweet(tweetElement) {
 
     if (likelyTruncated && baselineLength > 50) {
       if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
+        // Re-insert existing badge instead of creating new one
+        if (isNotificationsPage) {
+          const placement = findNotificationBadgePlacement(actualTweetElement);
+          if (placement) {
+            const { targetElement, parentElement } = placement;
+            if (placement.placement === 'before-tweet-content') {
+              parentElement.insertBefore(loadingBadge, targetElement);
+            } else {
+              if (targetElement.nextSibling) {
+                parentElement.insertBefore(loadingBadge, targetElement.nextSibling);
+              } else {
+                parentElement.appendChild(loadingBadge);
+              }
+            }
+          } else {
+            actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+          }
+        } else {
+          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          if (engagementBar) {
+            const firstChild = engagementBar.firstElementChild;
+            if (firstChild) {
+              engagementBar.insertBefore(loadingBadge, firstChild);
+            } else {
+              engagementBar.appendChild(loadingBadge);
+            }
+          } else {
+            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                actualTweetElement.querySelector('div[lang]') ||
+                                actualTweetElement.firstElementChild;
+            if (tweetContent && tweetContent.parentElement) {
+              tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+            } else {
+              actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+            }
+          }
+        }
+      } else if (settings.showIQBadge && !loadingBadge) {
+        // No loading badge exists, try to find one
         loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                        actualTweetElement.querySelector('.iq-badge-loading');
         if (!loadingBadge) {
+          // Only create new badge if none exists
           loadingBadge = createLoadingBadge();
 
           // Use correct placement logic for notification pages
@@ -702,6 +771,15 @@ async function processTweet(tweetElement) {
                 engagementBar.insertBefore(loadingBadge, firstChild);
               } else {
                 engagementBar.appendChild(loadingBadge);
+              }
+            } else {
+              const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                  actualTweetElement.querySelector('div[lang]') ||
+                                  actualTweetElement.firstElementChild;
+              if (tweetContent && tweetContent.parentElement) {
+                tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+              } else {
+                actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
               }
             }
           }
@@ -713,9 +791,49 @@ async function processTweet(tweetElement) {
       const expandedText = expandedTextRaw && removeUrlsFromText ? removeUrlsFromText(expandedTextRaw) : expandedTextRaw;
 
       if (settings.showIQBadge && loadingBadge && !loadingBadge.parentElement) {
+        // Re-insert existing badge instead of creating new one
+        if (isNotificationsPage) {
+          const placement = findNotificationBadgePlacement(actualTweetElement);
+          if (placement) {
+            const { targetElement, parentElement } = placement;
+            if (placement.placement === 'before-tweet-content') {
+              parentElement.insertBefore(loadingBadge, targetElement);
+            } else {
+              if (targetElement.nextSibling) {
+                parentElement.insertBefore(loadingBadge, targetElement.nextSibling);
+              } else {
+                parentElement.appendChild(loadingBadge);
+              }
+            }
+          } else {
+            actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+          }
+        } else {
+          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          if (engagementBar) {
+            const firstChild = engagementBar.firstElementChild;
+            if (firstChild) {
+              engagementBar.insertBefore(loadingBadge, firstChild);
+            } else {
+              engagementBar.appendChild(loadingBadge);
+            }
+          } else {
+            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                actualTweetElement.querySelector('div[lang]') ||
+                                actualTweetElement.firstElementChild;
+            if (tweetContent && tweetContent.parentElement) {
+              tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+            } else {
+              actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+            }
+          }
+        }
+      } else if (settings.showIQBadge && !loadingBadge) {
+        // No loading badge exists, try to find one
         loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                        actualTweetElement.querySelector('.iq-badge-loading');
         if (!loadingBadge) {
+          // Only create new badge if none exists
           loadingBadge = createLoadingBadge();
 
           // Use correct placement logic for notification pages
@@ -743,6 +861,15 @@ async function processTweet(tweetElement) {
                 engagementBar.insertBefore(loadingBadge, firstChild);
               } else {
                 engagementBar.appendChild(loadingBadge);
+              }
+            } else {
+              const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                  actualTweetElement.querySelector('div[lang]') ||
+                                  actualTweetElement.firstElementChild;
+              if (tweetContent && tweetContent.parentElement) {
+                tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+              } else {
+                actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
               }
             }
           }
@@ -765,7 +892,7 @@ async function processTweet(tweetElement) {
 
   try {
     if (settings.showIQBadge) {
-      if (!loadingBadge || !loadingBadge.parentElement) {
+      if (!loadingBadge) {
         loadingBadge = actualTweetElement.querySelector('.iq-badge[data-iq-loading="true"]') ||
                        actualTweetElement.querySelector('.iq-badge-loading');
         if (!loadingBadge) {
@@ -777,6 +904,53 @@ async function processTweet(tweetElement) {
               engagementBar.insertBefore(loadingBadge, firstChild);
             } else {
               engagementBar.appendChild(loadingBadge);
+            }
+          } else {
+            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                actualTweetElement.querySelector('div[lang]') ||
+                                actualTweetElement.firstElementChild;
+            if (tweetContent && tweetContent.parentElement) {
+              tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+            } else {
+              actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+            }
+          }
+        }
+      } else if (!loadingBadge.parentElement) {
+        // Badge exists but not in DOM - re-insert it
+        if (isNotificationsPage) {
+          const placement = findNotificationBadgePlacement(actualTweetElement);
+          if (placement) {
+            const { targetElement, parentElement } = placement;
+            if (placement.placement === 'before-tweet-content') {
+              parentElement.insertBefore(loadingBadge, targetElement);
+            } else {
+              if (targetElement.nextSibling) {
+                parentElement.insertBefore(loadingBadge, targetElement.nextSibling);
+              } else {
+                parentElement.appendChild(loadingBadge);
+              }
+            }
+          } else {
+            actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+          }
+        } else {
+          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          if (engagementBar) {
+            const firstChild = engagementBar.firstElementChild;
+            if (firstChild) {
+              engagementBar.insertBefore(loadingBadge, firstChild);
+            } else {
+              engagementBar.appendChild(loadingBadge);
+            }
+          } else {
+            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                actualTweetElement.querySelector('div[lang]') ||
+                                actualTweetElement.firstElementChild;
+            if (tweetContent && tweetContent.parentElement) {
+              tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+            } else {
+              actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
             }
           }
         }
@@ -931,33 +1105,13 @@ async function processTweet(tweetElement) {
           } else {
             // No guess, proceed with normal animation
 
-            // DEBUG: Log badge status before transition (notifications page only)
-            if (isNotificationsPage) {
-              debugLogFn(`[Badge Transition DEBUG] Starting transition for badge:`, {
-                badgeClass: loadingBadge.className,
-                hasDataIqLoading: loadingBadge.hasAttribute('data-iq-loading'),
-                hasDataIqScore: loadingBadge.hasAttribute('data-iq-score'),
-                parentExists: !!loadingBadge.parentElement,
-                inDOM: document.body.contains(loadingBadge),
-                innerHTML: loadingBadge.innerHTML.substring(0, 100),
-                iq: iq,
-                confidence: confidence
-              });
-            }
-
             // CRITICAL: Check if badge is still in DOM before proceeding
             if (!document.body.contains(loadingBadge)) {
-              if (isNotificationsPage) {
-                debugLogFn('[Badge Transition DEBUG] Badge not in DOM - aborting transition');
-              }
               return;
             }
 
             // CRITICAL: Double-check badge is still in DOM before accessing getBoundingClientRect
             if (!document.body.contains(loadingBadge)) {
-              if (isNotificationsPage) {
-                debugLogFn('[Badge Transition DEBUG] Badge not in DOM (double-check) - aborting transition');
-              }
               return;
             }
 
@@ -966,14 +1120,6 @@ async function processTweet(tweetElement) {
             const currentHeight = badgeRect.height;
             const currentWidth = badgeRect.width;
 
-            // DEBUG: Log dimensions (notifications page only)
-            if (isNotificationsPage) {
-              debugLogFn(`[Badge Transition DEBUG] Badge dimensions before transition:`, {
-                height: currentHeight,
-                width: currentWidth
-              });
-            }
-
             // If dimensions are 0, badge might be hidden - skip min-size preservation
             if (currentHeight > 0 && currentWidth > 0) {
               // Set minimum dimensions to prevent layout shift during transition
@@ -981,28 +1127,9 @@ async function processTweet(tweetElement) {
               loadingBadge.style.setProperty('min-width', `${currentWidth}px`, 'important');
             }
 
-            // DEBUG: Log before attribute changes (notifications page only)
-            if (isNotificationsPage) {
-              debugLogFn(`[Badge Transition DEBUG] Before attribute changes:`, {
-                hasDataIqLoading: loadingBadge.hasAttribute('data-iq-loading'),
-                className: loadingBadge.className,
-                inDOM: document.body.contains(loadingBadge)
-              });
-            }
-
             loadingBadge.removeAttribute('data-iq-loading');
             loadingBadge.setAttribute('data-iq-score', iq);
             loadingBadge.style.setProperty('cursor', 'help', 'important');
-
-            // DEBUG: Log after attribute changes (notifications page only)
-            if (isNotificationsPage) {
-              debugLogFn(`[Badge Transition DEBUG] After attribute changes:`, {
-                hasDataIqLoading: loadingBadge.hasAttribute('data-iq-loading'),
-                hasDataIqScore: loadingBadge.hasAttribute('data-iq-score'),
-                className: loadingBadge.className,
-                inDOM: document.body.contains(loadingBadge)
-              });
-            }
 
             loadingBadge._animationData = {
               finalIQ: iq,
@@ -1024,28 +1151,10 @@ async function processTweet(tweetElement) {
 
             // CRITICAL: Final check before animating - badge must be in DOM
             if (!document.body.contains(loadingBadge)) {
-              if (isNotificationsPage) {
-                debugLogFn('[Badge Transition DEBUG] Badge not in DOM before animateCountUp - aborting');
-              }
               return;
             }
 
-            // DEBUG: Log just before calling animateCountUp (notifications page only)
-            if (isNotificationsPage) {
-              debugLogFn(`[Badge Transition DEBUG] About to call animateCountUp:`, {
-                iq: iq,
-                iqColor: iqColor,
-                badgeInDOM: document.body.contains(loadingBadge),
-                badgeClass: loadingBadge.className
-              });
-            }
-
             animateCountUp(loadingBadge, iq, iqColor);
-
-            // DEBUG: Log immediately after calling animateCountUp (notifications page only)
-            if (isNotificationsPage) {
-              debugLogFn(`[Badge Transition DEBUG] Called animateCountUp successfully`);
-            }
 
             // Remove min-height/min-width after a brief delay to allow animation to settle
             // But keep them long enough to prevent layout shift
@@ -1138,114 +1247,140 @@ async function processTweet(tweetElement) {
           }
         }
       } else {
-        const badge = createIQBadge(iq, result, tweetText);
-
-        const confidence = result.confidence ? Math.round(result.confidence) : null;
-        if (confidence !== null) {
-          badge.setAttribute('data-confidence', confidence);
+        // loadingBadge exists but doesn't have parentElement - transition it instead of creating new
+        // First, ensure the badge is in the DOM
+        if (!loadingBadge.parentElement) {
+          // Re-insert badge into DOM before transitioning
+          if (isNotificationsPage) {
+            const placement = findNotificationBadgePlacement(actualTweetElement);
+            if (placement) {
+              const { targetElement, parentElement } = placement;
+              if (placement.placement === 'before-tweet-content') {
+                parentElement.insertBefore(loadingBadge, targetElement);
+              } else {
+                if (targetElement.nextSibling) {
+                  parentElement.insertBefore(loadingBadge, targetElement.nextSibling);
+                } else {
+                  parentElement.appendChild(loadingBadge);
+                }
+              }
+            } else {
+              actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+            }
+          } else {
+            const engagementBar = actualTweetElement.querySelector('[role="group"]');
+            if (engagementBar) {
+              const firstChild = engagementBar.firstElementChild;
+              if (firstChild) {
+                engagementBar.insertBefore(loadingBadge, firstChild);
+              } else {
+                engagementBar.appendChild(loadingBadge);
+              }
+            } else {
+              const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                  actualTweetElement.querySelector('div[lang]') ||
+                                  actualTweetElement.firstElementChild;
+              if (tweetContent && tweetContent.parentElement) {
+                tweetContent.parentElement.insertBefore(loadingBadge, tweetContent);
+              } else {
+                actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+              }
+            }
+          }
         }
 
-        // Use confidence color if setting is enabled, otherwise use IQ color
+        // Now transition the existing badge (same logic as above)
+        const confidence = result.confidence ? Math.round(result.confidence) : null;
         const iqColor = (settings.useConfidenceForColor && confidence !== null)
           ? getConfidenceColor(confidence)
           : getIQColor(iq);
-        badge._animationData = {
+
+        // Ensure badge is still in DOM before proceeding
+        if (!document.body.contains(loadingBadge)) {
+          return;
+        }
+
+        // Preserve badge dimensions before transition to prevent layout shift
+        const badgeRect = loadingBadge.getBoundingClientRect();
+        const currentHeight = badgeRect.height;
+        const currentWidth = badgeRect.width;
+
+        if (currentHeight > 0 && currentWidth > 0) {
+          loadingBadge.style.setProperty('min-height', `${currentHeight}px`, 'important');
+          loadingBadge.style.setProperty('min-width', `${currentWidth}px`, 'important');
+        }
+
+        loadingBadge.removeAttribute('data-iq-loading');
+        loadingBadge.setAttribute('data-iq-score', iq);
+        loadingBadge.style.setProperty('cursor', 'help', 'important');
+
+        loadingBadge._animationData = {
           finalIQ: iq,
           iqColor: iqColor
         };
 
-        badge.setAttribute('data-final-iq', iq);
-
-        const scoreElement = badge.querySelector('.iq-score');
-        if (scoreElement) {
-          scoreElement.textContent = '0';
+        // Final check before animating
+        if (!document.body.contains(loadingBadge)) {
+          return;
         }
 
-        // Use BadgeManager's helper functions if needed, but getIQColor handles colors
-        // For loading state, we'll use a simple approach
-        const darkerRed = '#b71c1c';
-        const rgb = hexToRgb(darkerRed);
-        const desat = desaturateColor(rgb, 0.5);
-        const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
-        badge.style.setProperty('background-color', loadingColor, 'important');
+        animateCountUp(loadingBadge, iq, iqColor);
 
-        animateCountUp(badge, iq, iqColor);
+        // Remove min-height/min-width after animation settles
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            const newRect = loadingBadge.getBoundingClientRect();
+            if (newRect.height >= currentHeight && newRect.width >= currentWidth) {
+              loadingBadge.style.removeProperty('min-height');
+              loadingBadge.style.removeProperty('min-width');
+            } else {
+              loadingBadge.style.setProperty('min-height', `${currentHeight}px`, 'important');
+              loadingBadge.style.setProperty('min-width', `${currentWidth}px`, 'important');
+            }
+          });
+        }, 100);
 
-        // Use correct placement logic for notification pages
+        // Ensure position is correct for notification pages
         if (isNotificationsPage) {
-          const placement = findNotificationBadgePlacement(actualTweetElement);
-          if (placement) {
-            const { targetElement, parentElement } = placement;
+          requestAnimationFrame(() => {
+            ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+          });
+          setTimeout(() => {
+            ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
+          }, 50);
+        }
 
-            // Always ensure badge appears on its own line (below notification)
-            if (placement.placement === 'before-tweet-content') {
-              parentElement.insertBefore(badge, targetElement);
-            } else {
-              // After notification - find block-level container
-              let insertionParent = parentElement;
-              let insertionPoint = targetElement;
+        // Store debug data
+        loadingBadge._debugData = {
+          iq: iq,
+          result: result,
+          text: tweetText,
+          timestamp: new Date().toISOString(),
+          analyzedTextLength: tweetText.length,
+          analyzedWordCount: tweetText.split(/\s+/).filter(w => w.length > 0).length
+        };
 
-              if (targetElement.tagName === 'SPAN') {
-                let blockParent = targetElement.parentElement;
-                while (blockParent && blockParent !== actualTweetElement) {
-                  const computedStyle = window.getComputedStyle(blockParent);
-                  const display = computedStyle.display;
-                  if (display === 'block' || display === 'flex' || display === 'grid' ||
-                      blockParent.tagName === 'DIV' || blockParent.tagName === 'ARTICLE') {
-                    insertionParent = blockParent;
-                    insertionPoint = blockParent;
-
-                    let nextSibling = blockParent.nextElementSibling;
-                    if (nextSibling) {
-                      insertionPoint = nextSibling;
-                    }
-                    break;
-                  }
-                  blockParent = blockParent.parentElement;
-                }
-              }
-
-              if (insertionPoint !== targetElement && insertionPoint.parentElement) {
-                insertionPoint.parentElement.insertBefore(badge, insertionPoint);
-              } else if (parentElement.contains(targetElement)) {
-                if (targetElement.nextSibling) {
-                  parentElement.insertBefore(badge, targetElement.nextSibling);
-                } else {
-                  parentElement.appendChild(badge);
-                }
-              } else {
-                parentElement.appendChild(badge);
-              }
-            }
-
-            // Force block-level display to ensure badge appears on its own line
-            badge.style.setProperty('display', 'block', 'important');
-            badge.style.setProperty('width', '100%', 'important');
-          } else {
-            actualTweetElement.appendChild(badge);
-          }
-        } else {
-          const engagementBar = actualTweetElement.querySelector('[role="group"]');
-          if (engagementBar) {
-            const firstChild = engagementBar.firstElementChild;
-            if (firstChild) {
-              engagementBar.insertBefore(badge, firstChild);
-            } else {
-              engagementBar.appendChild(badge);
-            }
-          } else {
-            actualTweetElement.appendChild(badge);
+        if (confidence !== null) {
+          if (document.body.contains(loadingBadge)) {
+            loadingBadge.setAttribute('data-confidence', confidence);
           }
         }
+
+        // Add hover event listener
+        loadingBadge.addEventListener('mouseenter', () => {
+          if (loadingBadge._debugData) {
+            logDebugInfo(loadingBadge._debugData);
+          }
+        });
 
         processedTweets.add(actualTweetElement);
         actualTweetElement.setAttribute('data-iq-analyzed', 'true');
         actualTweetElement.removeAttribute('data-iq-processing');
 
-        // Verify position after creation
+        // Final position check for notification pages
         if (isNotificationsPage) {
           setTimeout(() => {
-            ensureCorrectBadgePosition(badge, actualTweetElement, isNotificationsPage);
+            ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
           }, 100);
         }
       }
