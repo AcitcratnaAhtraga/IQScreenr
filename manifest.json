@@ -29,7 +29,10 @@
         "content/utils/textExtraction.js",
         "content/utils/tweetDetection.js",
         "content/features/settings.js",
-        "content/features/badge.js",
+        "content/features/badge/colorUtils.js",
+        "content/features/badge/badgeAnimations.js",
+        "content/features/badge/badgeCreation.js",
+        "content/features/badge/badge.js",
         "content/features/tweetProcessor.js",
         "content/features/realtime.js",
         "content/content.js"

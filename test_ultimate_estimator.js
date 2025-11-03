@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Load the Ultimate estimator
-const estimatorPath = path.join(__dirname, 'content', 'comprehensiveIQEstimatorUltimate.js');
+const estimatorPath = path.join(__dirname, 'content', 'core', 'iqEstimator.js');
 const estimatorCode = fs.readFileSync(estimatorPath, 'utf8');
 
 // Create module context

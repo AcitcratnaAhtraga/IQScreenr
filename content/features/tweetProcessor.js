@@ -18,127 +18,8 @@ const getDebugLog = () => window.DOMHelpers?.debugLog || (() => {});
 // Local state
 const processedTweets = new Set();
 
-/**
- * Log badge position details for debugging
- */
 // Store previous positions to detect changes
 const badgePositions = new Map();
-
-function logBadgePosition(badge, context, handle) {
-  if (!badge) {
-    console.log(`[BadgePosition:${context}] Badge is null`);
-    return;
-  }
-
-  // Detect if we're on notifications page
-  const isNotificationsPage = window.location.href.includes('/notifications');
-
-  const rect = badge.getBoundingClientRect();
-  const parent = badge.parentElement;
-  const parentRect = parent ? parent.getBoundingClientRect() : null;
-
-  // Find nearby elements to understand context
-  const siblings = parent ? Array.from(parent.children) : [];
-  const badgeIndex = siblings.indexOf(badge);
-  const prevSibling = badgeIndex > 0 ? siblings[badgeIndex - 1] : null;
-  const nextSibling = badgeIndex < siblings.length - 1 ? siblings[badgeIndex + 1] : null;
-
-  // Check if in engagement bar
-  const engagementBar = badge.closest('[role="group"]');
-
-  // Check if near notification text
-  const notificationText = Array.from(badge.closest('article')?.querySelectorAll('span') || []).find(span => {
-    const text = (span.textContent || '').toLowerCase();
-    return text.includes('liked your post') ||
-           text.includes('reposted') ||
-           text.includes('replied to') ||
-           text.includes('quoted your post');
-  });
-
-  const currentPos = {
-    top: Math.round(rect.top),
-    left: Math.round(rect.left)
-  };
-
-  // Get previous position if exists
-  const prevPos = badgePositions.get(handle);
-  const positionChanged = prevPos && (prevPos.top !== currentPos.top || prevPos.left !== currentPos.left);
-
-  // Store current position
-  badgePositions.set(handle, currentPos);
-
-  // Get detailed placement info for debugging
-  const placement = isNotificationsPage ? findNotificationBadgePlacement(badge.closest('article') || badge.closest('article[data-testid="tweet"]')) : null;
-  const shouldBeInEngagementBar = !isNotificationsPage && !!badge.closest('article')?.querySelector('[role="group"]');
-
-  const positionInfo = {
-    handle: handle || 'unknown',
-    context: context,
-    timestamp: Date.now(),
-    positionChanged: positionChanged || false,
-    previousPosition: prevPos || null,
-    positionDelta: prevPos ? {
-      top: currentPos.top - prevPos.top,
-      left: currentPos.left - prevPos.left
-    } : null,
-    badge: {
-      inDOM: document.body.contains(badge),
-      hasParent: !!parent,
-      parentTag: parent?.tagName || 'none',
-      parentClass: parent?.className || 'none',
-      position: {
-        top: currentPos.top,
-        left: currentPos.left,
-        width: Math.round(rect.width),
-        height: Math.round(rect.height)
-      },
-      relativeToParent: parentRect ? {
-        top: Math.round(rect.top - parentRect.top),
-        left: Math.round(rect.left - parentRect.left)
-      } : null
-    },
-    siblings: {
-      total: siblings.length,
-      index: badgeIndex,
-      prevSiblingTag: prevSibling?.tagName || 'none',
-      prevSiblingText: prevSibling ? (prevSibling.textContent || '').substring(0, 50) : 'none',
-      nextSiblingTag: nextSibling?.tagName || 'none',
-      nextSiblingText: nextSibling ? (nextSibling.textContent || '').substring(0, 50) : 'none'
-    },
-    contextChecks: {
-      inEngagementBar: !!engagementBar,
-      engagementBarText: engagementBar ? (engagementBar.textContent || '').substring(0, 50) : 'none',
-      nearNotificationText: !!notificationText,
-      notificationTextContent: notificationText ? (notificationText.textContent || '').substring(0, 50) : 'none',
-      shouldBeInEngagementBar: shouldBeInEngagementBar,
-      expectedPlacement: placement ? {
-        placement: placement.placement,
-        targetElementTag: placement.targetElement?.tagName || 'none',
-        targetElementText: placement.targetElement ? (placement.targetElement.textContent || '').substring(0, 50) : 'none',
-        parentElementTag: placement.parentElement?.tagName || 'none',
-        parentElementClass: placement.parentElement?.className || 'none',
-        badgeInCorrectParent: parent === placement.parentElement,
-        badgeCorrectlyPositioned: placement.placement === 'before-tweet-content'
-          ? (badgeIndex === siblings.indexOf(placement.targetElement) - 1 || badgeIndex === siblings.indexOf(placement.targetElement))
-          : (badgeIndex === siblings.indexOf(placement.targetElement) + 1)
-      } : null
-    }
-  };
-
-  if (positionChanged) {
-    console.warn(`[BadgePosition:${context}] POSITION CHANGED!`, positionInfo);
-    console.warn(`[BadgePosition:${context}] Position moved:`, {
-      from: prevPos,
-      to: currentPos,
-      delta: positionInfo.positionDelta,
-      inEngagementBar: positionInfo.contextChecks.inEngagementBar,
-      shouldBeInEngagementBar: positionInfo.contextChecks.shouldBeInEngagementBar,
-      expectedPlacement: positionInfo.contextChecks.expectedPlacement
-    });
-  } else {
-    console.log(`[BadgePosition:${context}]`, positionInfo);
-  }
-}
 
 /**
  * Find the correct placement location for notification badges
@@ -146,10 +27,14 @@ function logBadgePosition(badge, context, handle) {
  * Always places badge BELOW notification text (on a new line) for consistency
  */
 function findNotificationBadgePlacement(tweetElement) {
+  if (!tweetElement) {
+    return null;
+  }
+
   // PRIORITY 1: Find tweet content and place badge BEFORE it
   // This ensures badge always appears on its own line, below notification text
   const tweetContent = tweetElement.querySelector('div[data-testid="tweetText"]') ||
-                      tweetElement.querySelector('div[lang]');
+                        tweetElement.querySelector('div[lang]');
   if (tweetContent && tweetContent.parentElement) {
     return {
       targetElement: tweetContent,
@@ -259,6 +144,8 @@ function findNotificationBadgePlacement(tweetElement) {
  * Returns true if badge was repositioned
  */
 function ensureCorrectBadgePosition(badge, tweetElement, isNotificationsPage) {
+  const debugLogFn = getDebugLog();
+
   if (!isNotificationsPage || !badge || !badge.parentElement) {
     return false;
   }
@@ -297,18 +184,18 @@ function ensureCorrectBadgePosition(badge, tweetElement, isNotificationsPage) {
 
   // If badge is in engagement bar or not positioned correctly, move it
   if (isInEngagementBar || !isInCorrectParent || !isPositionedCorrectly) {
-    const beforePos = badge.getBoundingClientRect();
-
-    console.log(`[ensureCorrectBadgePosition] Repositioning badge for ${tweetElement.getAttribute('data-handle') || 'unknown'}:`, {
-      isInEngagementBar,
-      isInCorrectParent,
-      isPositionedCorrectly,
-      currentParent: currentParent?.tagName || 'none',
-      correctParent: parentElement?.tagName || 'none',
-      placement: placement.placement,
-      targetElement: targetElement?.tagName || 'none',
-      beforePosition: { top: Math.round(beforePos.top), left: Math.round(beforePos.left) }
-    });
+    // DEBUG: Log when badge is being moved
+    if (isNotificationsPage) {
+      debugLogFn('[Position Fix DEBUG] Moving badge:', {
+        inEngagementBar: isInEngagementBar,
+        isInCorrectParent: isInCorrectParent,
+        isPositionedCorrectly: isPositionedCorrectly,
+        currentParent: currentParent ? currentParent.tagName : 'none',
+        targetParent: parentElement ? parentElement.tagName : 'none',
+        badgeClass: badge.className,
+        hasParent: !!badge.parentElement
+      });
+    }
 
     // Remove from current location
     if (badge.parentElement) {
@@ -372,14 +259,13 @@ function ensureCorrectBadgePosition(badge, tweetElement, isNotificationsPage) {
       badge.style.setProperty('width', '100%', 'important');
     }
 
-    const afterPos = badge.getBoundingClientRect();
-    console.log(`[ensureCorrectBadgePosition] Badge repositioned:`, {
-      afterPosition: { top: Math.round(afterPos.top), left: Math.round(afterPos.left) },
-      positionDelta: {
-        top: Math.round(afterPos.top - beforePos.top),
-        left: Math.round(afterPos.left - beforePos.left)
-      }
-    });
+    // DEBUG: Log after reinsertion
+    if (isNotificationsPage) {
+      debugLogFn('[Position Fix DEBUG] Badge reinserted:', {
+        nowInParent: badge.parentElement ? badge.parentElement.tagName : 'none',
+        inDOM: document.body.contains(badge)
+      });
+    }
 
     return true;
   }
@@ -549,20 +435,17 @@ async function processTweet(tweetElement) {
                    actualTweetElement.querySelector('.iq-badge-loading');
 
     if (!loadingBadge) {
+      // DEBUG: Log creation of loading badge (notifications page only)
+      if (isNotificationsPage) {
+        debugLogFn('[Badge Creation DEBUG] Creating new loading badge');
+      }
+
       loadingBadge = createLoadingBadge();
 
       // Special handling for notification page tweets
       if (isNotificationsPage) {
         // Use helper function to find correct placement
         const placement = findNotificationBadgePlacement(actualTweetElement);
-
-        console.log(`[BadgePlacement:initial] Finding placement for ${handle || 'unknown'}:`, {
-          foundPlacement: !!placement,
-          placementType: placement?.placement || 'none',
-          targetElementTag: placement?.targetElement?.tagName || 'none',
-          targetElementText: placement?.targetElement ? (placement.targetElement.textContent || '').substring(0, 50) : 'none',
-          parentElementTag: placement?.parentElement?.tagName || 'none'
-        });
 
         if (placement) {
           const { targetElement, parentElement } = placement;
@@ -617,36 +500,27 @@ async function processTweet(tweetElement) {
             loadingBadge.style.setProperty('display', 'block', 'important');
             loadingBadge.style.setProperty('width', '100%', 'important');
           }
-
-          const afterInsertPos = loadingBadge.getBoundingClientRect();
-          console.log(`[BadgePlacement:initial] Badge inserted for ${handle || 'unknown'}:`, {
-            beforePosition: { top: Math.round(beforeInsertPos.top), left: Math.round(beforeInsertPos.left) },
-            afterPosition: { top: Math.round(afterInsertPos.top), left: Math.round(afterInsertPos.left) },
-            parent: loadingBadge.parentElement?.tagName || 'none',
-            siblingsCount: loadingBadge.parentElement ? loadingBadge.parentElement.children.length : 0,
-            badgeIndex: loadingBadge.parentElement ? Array.from(loadingBadge.parentElement.children).indexOf(loadingBadge) : -1,
-            targetIndex: loadingBadge.parentElement && targetElement.parentElement === parentElement
-              ? Array.from(parentElement.children).indexOf(targetElement) : -1
-          });
         } else {
-          console.warn(`[BadgePlacement:initial] No placement found for ${handle || 'unknown'}, using fallback`);
           // Last resort: place at start of tweet element
           actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
         }
 
+        // DEBUG: Log after placement (notifications page only)
+        if (isNotificationsPage) {
+          debugLogFn('[Badge Creation DEBUG] Loading badge placed in DOM:', {
+            inDOM: document.body.contains(loadingBadge),
+            parentTag: loadingBadge.parentElement ? loadingBadge.parentElement.tagName : 'none',
+            display: window.getComputedStyle(loadingBadge).display
+          });
+        }
+
         // Verify and fix position if needed - check immediately and after delay
         requestAnimationFrame(() => {
-          const wasRepositioned = ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
-          if (wasRepositioned) {
-            console.log(`[BadgePlacement:initial] Badge was repositioned (RAF) for ${handle || 'unknown'}`);
-          }
+          ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
         });
 
         setTimeout(() => {
-          const wasRepositioned = ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
-          if (wasRepositioned) {
-            console.log(`[BadgePlacement:initial] Badge was repositioned (50ms delay) for ${handle || 'unknown'}`);
-          }
+          ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
         }, 50);
       } else {
         // Normal tweet pages: use engagement bar if available
@@ -670,13 +544,13 @@ async function processTweet(tweetElement) {
         }
       }
 
-      // Log badge position after initial placement
+      // Verify and fix position after initial placement
       if (isNotificationsPage) {
         // Immediately verify and fix position
         ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
-        // Use setTimeout to log after any DOM updates from repositioning
+        // Check again after DOM updates
         setTimeout(() => {
-          logBadgePosition(loadingBadge, 'initial-placement', handle);
+          ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
         }, 10);
       }
     }
@@ -695,11 +569,9 @@ async function processTweet(tweetElement) {
       }
     }
 
-    // Log badge position before IQ estimation
+    // Ensure badge is in correct position before IQ estimation
     if (isNotificationsPage && loadingBadge) {
-      // Ensure badge is in correct position before IQ estimation
       ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
-      logBadgePosition(loadingBadge, 'before-iq-estimation', handle);
     }
   }
 
@@ -1019,11 +891,9 @@ async function processTweet(tweetElement) {
       const gameManager = getGameManager();
       const confidence = result.confidence ? Math.round(result.confidence) : null;
 
-      // Log badge position before update
+      // Ensure badge is in correct position before update
       if (isNotificationsPage && loadingBadge) {
-        // Ensure badge is in correct position before update
         ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
-        logBadgePosition(loadingBadge, 'before-update', handle);
       }
 
       if (loadingBadge && loadingBadge.parentElement) {
@@ -1060,9 +930,79 @@ async function processTweet(tweetElement) {
             }
           } else {
             // No guess, proceed with normal animation
+
+            // DEBUG: Log badge status before transition (notifications page only)
+            if (isNotificationsPage) {
+              debugLogFn(`[Badge Transition DEBUG] Starting transition for badge:`, {
+                badgeClass: loadingBadge.className,
+                hasDataIqLoading: loadingBadge.hasAttribute('data-iq-loading'),
+                hasDataIqScore: loadingBadge.hasAttribute('data-iq-score'),
+                parentExists: !!loadingBadge.parentElement,
+                inDOM: document.body.contains(loadingBadge),
+                innerHTML: loadingBadge.innerHTML.substring(0, 100),
+                iq: iq,
+                confidence: confidence
+              });
+            }
+
+            // CRITICAL: Check if badge is still in DOM before proceeding
+            if (!document.body.contains(loadingBadge)) {
+              if (isNotificationsPage) {
+                debugLogFn('[Badge Transition DEBUG] Badge not in DOM - aborting transition');
+              }
+              return;
+            }
+
+            // CRITICAL: Double-check badge is still in DOM before accessing getBoundingClientRect
+            if (!document.body.contains(loadingBadge)) {
+              if (isNotificationsPage) {
+                debugLogFn('[Badge Transition DEBUG] Badge not in DOM (double-check) - aborting transition');
+              }
+              return;
+            }
+
+            // Preserve badge dimensions before transition to prevent layout shift
+            const badgeRect = loadingBadge.getBoundingClientRect();
+            const currentHeight = badgeRect.height;
+            const currentWidth = badgeRect.width;
+
+            // DEBUG: Log dimensions (notifications page only)
+            if (isNotificationsPage) {
+              debugLogFn(`[Badge Transition DEBUG] Badge dimensions before transition:`, {
+                height: currentHeight,
+                width: currentWidth
+              });
+            }
+
+            // If dimensions are 0, badge might be hidden - skip min-size preservation
+            if (currentHeight > 0 && currentWidth > 0) {
+              // Set minimum dimensions to prevent layout shift during transition
+              loadingBadge.style.setProperty('min-height', `${currentHeight}px`, 'important');
+              loadingBadge.style.setProperty('min-width', `${currentWidth}px`, 'important');
+            }
+
+            // DEBUG: Log before attribute changes (notifications page only)
+            if (isNotificationsPage) {
+              debugLogFn(`[Badge Transition DEBUG] Before attribute changes:`, {
+                hasDataIqLoading: loadingBadge.hasAttribute('data-iq-loading'),
+                className: loadingBadge.className,
+                inDOM: document.body.contains(loadingBadge)
+              });
+            }
+
             loadingBadge.removeAttribute('data-iq-loading');
             loadingBadge.setAttribute('data-iq-score', iq);
             loadingBadge.style.setProperty('cursor', 'help', 'important');
+
+            // DEBUG: Log after attribute changes (notifications page only)
+            if (isNotificationsPage) {
+              debugLogFn(`[Badge Transition DEBUG] After attribute changes:`, {
+                hasDataIqLoading: loadingBadge.hasAttribute('data-iq-loading'),
+                hasDataIqScore: loadingBadge.hasAttribute('data-iq-score'),
+                className: loadingBadge.className,
+                inDOM: document.body.contains(loadingBadge)
+              });
+            }
 
             loadingBadge._animationData = {
               finalIQ: iq,
@@ -1082,7 +1022,48 @@ async function processTweet(tweetElement) {
               }
             }
 
+            // CRITICAL: Final check before animating - badge must be in DOM
+            if (!document.body.contains(loadingBadge)) {
+              if (isNotificationsPage) {
+                debugLogFn('[Badge Transition DEBUG] Badge not in DOM before animateCountUp - aborting');
+              }
+              return;
+            }
+
+            // DEBUG: Log just before calling animateCountUp (notifications page only)
+            if (isNotificationsPage) {
+              debugLogFn(`[Badge Transition DEBUG] About to call animateCountUp:`, {
+                iq: iq,
+                iqColor: iqColor,
+                badgeInDOM: document.body.contains(loadingBadge),
+                badgeClass: loadingBadge.className
+              });
+            }
+
             animateCountUp(loadingBadge, iq, iqColor);
+
+            // DEBUG: Log immediately after calling animateCountUp (notifications page only)
+            if (isNotificationsPage) {
+              debugLogFn(`[Badge Transition DEBUG] Called animateCountUp successfully`);
+            }
+
+            // Remove min-height/min-width after a brief delay to allow animation to settle
+            // But keep them long enough to prevent layout shift
+            setTimeout(() => {
+              // Use requestAnimationFrame to ensure DOM has updated
+              requestAnimationFrame(() => {
+                const newRect = loadingBadge.getBoundingClientRect();
+                // Only remove min constraints if the badge has settled to a stable size
+                if (newRect.height >= currentHeight && newRect.width >= currentWidth) {
+                  loadingBadge.style.removeProperty('min-height');
+                  loadingBadge.style.removeProperty('min-width');
+                } else {
+                  // If badge shrunk, restore min dimensions to prevent shift
+                  loadingBadge.style.setProperty('min-height', `${currentHeight}px`, 'important');
+                  loadingBadge.style.setProperty('min-width', `${currentWidth}px`, 'important');
+                }
+              });
+            }, 100);
 
             // Immediately after starting animation, ensure position is correct for notification pages
             if (isNotificationsPage && correctPosition) {
@@ -1110,9 +1091,16 @@ async function processTweet(tweetElement) {
               analyzedWordCount: tweetText.split(/\s+/).filter(w => w.length > 0).length
             };
 
+            // NOTE: We do NOT call updateBadgeWithFlipStructure here
+            // It will be called automatically by animateCountUp when the animation completes
+            // Calling it here would interfere with the animation by changing the badge structure
             if (confidence !== null) {
+              // CRITICAL: Check if badge is still in DOM before setting attribute
+              if (!document.body.contains(loadingBadge)) {
+                return;
+              }
+
               loadingBadge.setAttribute('data-confidence', confidence);
-              updateBadgeWithFlipStructure(loadingBadge, iq, confidence);
             }
 
             // Always add hover event listener for console debug info
@@ -1143,10 +1131,9 @@ async function processTweet(tweetElement) {
               ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
             }, 50);
 
-            // Final check and log after DOM settles
+            // Final check after DOM settles
             setTimeout(() => {
               ensureCorrectBadgePosition(loadingBadge, actualTweetElement, isNotificationsPage);
-              logBadgePosition(loadingBadge, 'after-update', handle);
             }, 200);
           }
         }
@@ -1255,10 +1242,10 @@ async function processTweet(tweetElement) {
         actualTweetElement.setAttribute('data-iq-analyzed', 'true');
         actualTweetElement.removeAttribute('data-iq-processing');
 
-        // Log badge position after creation
+        // Verify position after creation
         if (isNotificationsPage) {
           setTimeout(() => {
-            logBadgePosition(badge, 'after-creation', handle);
+            ensureCorrectBadgePosition(badge, actualTweetElement, isNotificationsPage);
           }, 100);
         }
       }

@@ -86,8 +86,9 @@ Click "Reset to Defaults" in the popup to restore original settings.
 IQGuessr/
 ├── manifest.json              # Extension manifest
 ├── content/
-│   ├── comprehensiveIQEstimatorUltimate.js  # Research-based IQ estimator (client-side, Ultimate version)
-│   ├── spacyDependencyParser.js             # Dependency parsing approximation
+│   ├── core/
+│   │   ├── iqEstimator.js                  # Research-based IQ estimator (client-side, Ultimate version)
+│   │   └── dependencyParser.js             # Dependency parsing approximation
 │   └── content.js                          # Content script (tweet detection & badge injection)
 ├── popup/
 │   ├── popup.html             # Settings UI
@@ -163,7 +164,7 @@ Edit `content/content.js` and modify the `getIQColor()` function to change color
 
 ### Modifying IQ Algorithm
 
-Edit `content/comprehensiveIQEstimatorUltimate.js` to adjust:
+Edit `content/core/iqEstimator.js` to adjust:
 - Dimension weights (35%, 25%, 20%, 20% for essays; 45%, 25%, 15%, 15% for tweets ≤300 chars)
 - Twitter-specific calibration (sentence baseline: 8.5 vs 11.0 for essays)
 - Trained mapping parameters
