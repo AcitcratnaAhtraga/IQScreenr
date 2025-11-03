@@ -302,6 +302,14 @@ article[data-iq-analyzed] {
   position: relative;
 }
 
+/* Fix vertical alignment for badges in engagement bars (post detail pages) */
+[role="group"] .iq-badge:not(.iq-badge-realtime) {
+  align-self: center !important;
+  vertical-align: middle;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
 /* Adjust for dark mode compatibility */
 @media (prefers-color-scheme: dark) {
   .iq-badge {
