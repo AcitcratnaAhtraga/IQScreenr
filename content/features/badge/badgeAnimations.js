@@ -312,9 +312,22 @@ function animateCountUp(badge, finalIQ, iqColor) {
         badge.removeAttribute('data-iq-animating');
         badge.setAttribute('data-iq-animated', 'true');
 
+        // Safety check: If confidence data exists but flip structure wasn't built,
+        // add it now (this handles edge cases where attribute was set after animation started)
+        const confidenceAttr = badge.getAttribute('data-confidence');
+        const hasFlipStructure = badge.querySelector('.iq-badge-inner');
+        if (confidenceAttr !== null && !hasFlipStructure) {
+          const confidence = parseInt(confidenceAttr, 10);
+          if (!isNaN(confidence)) {
+            const updateBadgeWithFlipStructure = window.BadgeAnimations?.updateBadgeWithFlipStructure;
+            if (updateBadgeWithFlipStructure) {
+              updateBadgeWithFlipStructure(badge, finalIQ, confidence);
+            }
+          }
+        }
+
         // Note: We already built the flip structure earlier if needed,
-        // so we don't need to call updateBadgeWithFlipStructure here
-        // which would cause size changes from DOM manipulation
+        // but the safety check above ensures it exists if confidence data is present
 
         setTimeout(() => {
           triggerPulseAnimation(badge, iqColor);

@@ -389,8 +389,8 @@ async function processTweet(tweetElement) {
         invalidBadge.setAttribute('data-iq-invalid', 'true');
         invalidBadge.removeAttribute('data-iq-loading');
         invalidBadge.removeAttribute('data-iq-score');
-        invalidBadge.style.setProperty('background-color', '#9e9e9e', 'important');
-        invalidBadge.style.setProperty('color', '#000000', 'important');
+        invalidBadge.style.setProperty('background-color', '#000000', 'important');
+        invalidBadge.style.setProperty('color', '#9e9e9e', 'important');
         invalidBadge.style.setProperty('cursor', 'help', 'important');
 
         // Ensure badge is in DOM
@@ -485,8 +485,8 @@ async function processTweet(tweetElement) {
         invalidBadge.setAttribute('data-iq-invalid', 'true');
         invalidBadge.removeAttribute('data-iq-loading');
         invalidBadge.removeAttribute('data-iq-score');
-        invalidBadge.style.setProperty('background-color', '#9e9e9e', 'important');
-        invalidBadge.style.setProperty('color', '#000000', 'important');
+        invalidBadge.style.setProperty('background-color', '#000000', 'important');
+        invalidBadge.style.setProperty('color', '#9e9e9e', 'important');
         invalidBadge.style.setProperty('cursor', 'help', 'important');
 
         // Ensure badge is in DOM (use appropriate element based on where badge is)
@@ -1265,6 +1265,13 @@ async function processTweet(tweetElement) {
               return;
             }
 
+            // CRITICAL: Set data-confidence attribute BEFORE calling animateCountUp
+            // animateCountUp checks for this attribute to determine if flip structure is needed
+            // If we set it after, the flip structure won't be built and hover won't work
+            if (confidence !== null) {
+              loadingBadge.setAttribute('data-confidence', confidence);
+            }
+
             animateCountUp(loadingBadge, iq, iqColor);
 
             // Immediately after starting animation, ensure position is correct for notification pages
@@ -1298,14 +1305,6 @@ async function processTweet(tweetElement) {
             // NOTE: We do NOT call updateBadgeWithFlipStructure here
             // It will be called automatically by animateCountUp when the animation completes
             // Calling it here would interfere with the animation by changing the badge structure
-            if (confidence !== null) {
-              // CRITICAL: Check if badge is still in DOM before setting attribute
-              if (!document.body.contains(loadingBadge)) {
-                return;
-              }
-
-              loadingBadge.setAttribute('data-confidence', confidence);
-            }
 
             // Always add hover event listener for console debug info
             loadingBadge.addEventListener('mouseenter', () => {
@@ -1427,6 +1426,13 @@ async function processTweet(tweetElement) {
         // Final check before animating
         if (!document.body.contains(loadingBadge)) {
           return;
+        }
+
+        // CRITICAL: Set data-confidence attribute BEFORE calling animateCountUp
+        // animateCountUp checks for this attribute to determine if flip structure is needed
+        // If we set it after, the flip structure won't be built and hover won't work
+        if (confidence !== null) {
+          loadingBadge.setAttribute('data-confidence', confidence);
         }
 
         animateCountUp(loadingBadge, iq, iqColor);

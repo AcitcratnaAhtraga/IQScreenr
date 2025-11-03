@@ -118,7 +118,8 @@ async function updateRealtimeBadge(inputElement, badge, container) {
 
   const validation = validateTweetText(text);
   if (!validation.isValid) {
-    badge.style.setProperty('background-color', '#9e9e9e', 'important');
+    badge.style.setProperty('background-color', '#000000', 'important');
+    badge.style.setProperty('color', '#9e9e9e', 'important');
 
     let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                        badge.querySelector('.iq-score');
