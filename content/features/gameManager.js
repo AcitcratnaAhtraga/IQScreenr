@@ -366,6 +366,11 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
       badge.removeAttribute('data-iq-guess');
       badge.classList.remove('iq-badge-guess');
 
+      // Store confidence BEFORE calling animateCountUp so it can build the correct structure
+      if (confidence !== null) {
+        badge.setAttribute('data-confidence', confidence);
+      }
+
       // Add debug data for hover
       if (result && tweetText) {
         badge._debugData = {
@@ -385,14 +390,6 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
 
       // Use the count-up animation to reveal the score
       badgeManager.animateCountUp(badge, actualIQ, iqColor);
-
-      // Store confidence if available
-      if (confidence !== null) {
-        badge.setAttribute('data-confidence', confidence);
-        if (badgeManager.updateBadgeWithFlipStructure) {
-          badgeManager.updateBadgeWithFlipStructure(badge, actualIQ, confidence);
-        }
-      }
 
       // Calculate and add score
       if (hasGuess && guessData) {
