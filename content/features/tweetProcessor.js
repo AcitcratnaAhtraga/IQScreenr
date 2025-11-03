@@ -320,6 +320,7 @@ async function processTweet(tweetElement) {
   }
 
   actualTweetElement.setAttribute('data-iq-processing', 'true');
+  actualTweetElement.setAttribute('data-iq-processing-start', Date.now().toString());
 
   // Extract handle early for game mode
   let handle = extractTweetHandle(actualTweetElement);
@@ -439,6 +440,7 @@ async function processTweet(tweetElement) {
     }
     actualTweetElement.setAttribute('data-iq-analyzed', 'true');
     actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
     return;
   }
 
@@ -456,6 +458,7 @@ async function processTweet(tweetElement) {
       }
       actualTweetElement.setAttribute('data-iq-analyzed', 'true');
       actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
       return;
     }
 
@@ -540,6 +543,7 @@ async function processTweet(tweetElement) {
     }
     actualTweetElement.setAttribute('data-iq-analyzed', 'true');
     actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
     return;
   }
 
@@ -1204,6 +1208,7 @@ async function processTweet(tweetElement) {
           processedTweets.add(actualTweetElement);
           actualTweetElement.setAttribute('data-iq-analyzed', 'true');
           actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
           // Also mark outer wrapper as analyzed for nested structures
           if (hasNestedStructure) {
             tweetElement.setAttribute('data-iq-analyzed', 'true');
@@ -1317,6 +1322,7 @@ async function processTweet(tweetElement) {
           processedTweets.add(actualTweetElement);
           actualTweetElement.setAttribute('data-iq-analyzed', 'true');
           actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
           // Also mark outer wrapper as analyzed for nested structures
           if (hasNestedStructure) {
             tweetElement.setAttribute('data-iq-analyzed', 'true');
@@ -1489,6 +1495,7 @@ async function processTweet(tweetElement) {
         processedTweets.add(actualTweetElement);
         actualTweetElement.setAttribute('data-iq-analyzed', 'true');
         actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
 
         // Final position check for notification pages
         if (isNotificationsPage) {
@@ -1504,6 +1511,7 @@ async function processTweet(tweetElement) {
         loadingBadge.remove();
       }
       actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
     }
   } catch (error) {
     console.error(`[TweetProcessor] ERROR processing tweet:`, error?.message || error);
@@ -1512,6 +1520,7 @@ async function processTweet(tweetElement) {
     }
   } finally {
     actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
   }
 }
 
@@ -1777,18 +1786,45 @@ function checkForStuckBadges() {
 
   const loadingBadges = document.querySelectorAll('.iq-badge[data-iq-loading="true"], .iq-badge-loading');
   const stuckBadges = Array.from(loadingBadges).filter(badge => {
-    // Check if badge has been loading for more than 5 seconds (has no score)
+    // Check if badge has been loading (has no score)
     const hasScore = badge.hasAttribute('data-iq-score');
     const hasInvalid = badge.hasAttribute('data-iq-invalid');
     const isReallyStuck = !hasScore && !hasInvalid;
 
-    // Also check if badge is older than 5 seconds (we can approximate by checking if parent exists)
+    // Check if badge is stuck and has a parent (meaning it's in the DOM)
+    // We don't need to wait 5 seconds - if it's stuck, reprocess it
     if (isReallyStuck && badge.parentElement) {
       const tweetElement = badge.closest('article[data-testid="tweet"]') ||
                           badge.closest('article[role="article"]') ||
                           badge.closest('article');
       if (tweetElement) {
-        return true;
+        // Check if tweet is marked as processing - if so, it might still be processing
+        // But if it's been more than 3 seconds, force reprocess
+        const isProcessing = tweetElement.hasAttribute('data-iq-processing');
+        const isAnalyzed = tweetElement.hasAttribute('data-iq-analyzed');
+
+        // If it's marked as analyzed but still has a loading badge, it's stuck
+        // If it's processing for too long (we'll check time via a data attribute)
+        if (isAnalyzed || (!isProcessing && !isAnalyzed)) {
+          return true;
+        }
+
+        // If it's processing, check if it's been stuck in processing state
+        // Use a timestamp attribute to track when processing started
+        if (isProcessing) {
+          const processingStart = tweetElement.getAttribute('data-iq-processing-start');
+          if (!processingStart) {
+            // Mark when processing started
+            tweetElement.setAttribute('data-iq-processing-start', Date.now().toString());
+            return false; // Give it time to process
+          } else {
+            const processingTime = Date.now() - parseInt(processingStart, 10);
+            // If processing for more than 5 seconds, it's stuck
+            if (processingTime > 5000) {
+              return true;
+            }
+          }
+        }
       }
     }
     return false;
@@ -1807,13 +1843,15 @@ function checkForStuckBadges() {
           tweetElement.removeAttribute('data-iq-analyzed');
           processedTweets.delete(tweetElement);
         }
+        tweetElement.removeAttribute('data-iq-processing');
+        tweetElement.removeAttribute('data-iq-processing-start');
         if (badge.parentElement) {
           badge.remove();
         }
-        // Reprocess after a short delay
+        // Reprocess after a short delay to give DOM time to settle
         setTimeout(() => {
           processTweet(tweetElement);
-        }, 100);
+        }, 200);
       }
     });
   }
@@ -1827,8 +1865,13 @@ function setupObserver() {
 
   // Setup periodic check for stuck badges on notifications page
   if (isNotificationsPage) {
-    // Check immediately, then every 3 seconds
-    setTimeout(checkForStuckBadges, 2000);
+    // Check more aggressively on initial load - immediately, then frequently
+    // This fixes the issue where badges get stuck on first page load
+    checkForStuckBadges(); // Run immediately
+    setTimeout(checkForStuckBadges, 500); // Check after 500ms
+    setTimeout(checkForStuckBadges, 1500); // Check after 1.5s
+    setTimeout(checkForStuckBadges, 3000); // Check after 3s
+    // Then check every 3 seconds thereafter
     setInterval(checkForStuckBadges, 3000);
   }
 

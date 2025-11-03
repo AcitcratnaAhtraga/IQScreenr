@@ -1153,27 +1153,35 @@ class ComprehensiveIQEstimatorUltimate {
     const ttr = features.ttr || 0.5;
     const wordCount = features.word_count || (features.tokens?.length || 0);
 
-    // Length-adjusted TTR: For short texts, high TTR is expected, not sophisticated
+    // REMOVED: Length-adjusted TTR - TTR is already a ratio and should be length-independent
+    // A short text with high TTR is genuinely more diverse, not an artifact
+    // Quality of vocabulary choice matters, not the quantity of words
     let adjustedTTR = ttr;
-    if (wordCount < 100) {
-      // Scale TTR down for short texts to prevent inflation
-      // At 50 words, TTR is scaled by ~0.7; at 25 words, ~0.5
-      const lengthFactor = Math.max(0.5, wordCount / 100);
-      adjustedTTR = 0.659 + (ttr - 0.659) * lengthFactor;
-    }
 
     let iq = 70 + (adjustedTTR - 0.659) * 170;
 
     // Boost for MTLD (higher = more diverse vocabulary usage)
-    // But reduce boost for very short texts where MTLD equals text length
+    // MTLD naturally increases with length, so we normalize it to be length-independent
     const mtld = features.mtld || 0;
-    if (mtld > 20) {
-      let mtldBoost = (mtld - 20) * 0.2;
-      // Penalize MTLD boost if it's close to word count (indicates short text artifact)
-      if (wordCount < 50 && mtld >= wordCount * 0.8) {
-        mtldBoost *= 0.3; // Reduce boost by 70% for short-text artifacts
+    if (mtld > 20 && wordCount > 0) {
+      // Normalize MTLD by word count to make it length-independent
+      // A short text with high MTLD/word ratio should score similarly to a long text
+      // Use ratio instead of absolute value to prevent length bias
+      const mtldRatio = mtld / wordCount;
+      // Scale based on ratio: higher ratio = more diverse relative to length
+      let mtldBoost = (mtldRatio * 100 - 0.2) * 0.5; // Adjusted scaling for ratio
+      // Cap the boost and only apply if ratio indicates meaningful diversity
+      if (mtldRatio > 0.2 && mtldRatio < 1.0) { // Reasonable range
+        iq += Math.min(5, Math.max(0, mtldBoost));
+      } else if (mtld > 20 && wordCount < 50) {
+        // For very short texts, use absolute value but with lower threshold
+        // This handles edge cases where ratio might be misleading
+        let absoluteBoost = (mtld - 15) * 0.15;
+        if (mtld >= wordCount * 0.8) {
+          absoluteBoost *= 0.5; // Reduce if MTLD is close to word count (artifact)
+        }
+        iq += Math.min(3, Math.max(0, absoluteBoost));
       }
-      iq += Math.min(5, mtldBoost);
     }
 
     // Adjust for Yule's K (lower = more diverse, higher = repetitive)
@@ -1186,10 +1194,8 @@ class ComprehensiveIQEstimatorUltimate {
       iq -= Math.min(5, (yulesK - 200) * 0.02);
     }
 
-    // Cap for very short texts: don't allow diversity > 110 for texts < 50 words
-    if (wordCount < 50) {
-      iq = Math.min(110, iq);
-    }
+    // REMOVED: Length-based cap - length should not limit IQ score
+    // A short, diverse text can score as high as a long one
 
     // Allow higher diversity scores for very sophisticated texts
     return Math.max(50, Math.min(145, iq));
@@ -1223,22 +1229,32 @@ class ComprehensiveIQEstimatorUltimate {
     }
 
     // Boost for sentence variance (variety indicates sophistication)
+    // Normalize by sentence count to prevent longer texts from getting inflated scores
     // Only apply if we have multiple sentences (variance is meaningful)
     const variance = features.sentence_variance || 0;
     if (variance > 5 && avgWords > 12 && sentenceCount > 1) {
-      iq += Math.min(8, variance * 0.6);
+      // Normalize variance boost by sentence count to make it length-independent
+      // This ensures a 2-sentence tweet with high variance scores similarly to a 20-sentence essay
+      const normalizedVariance = variance / Math.sqrt(sentenceCount);
+      iq += Math.min(8, normalizedVariance * 0.6);
     }
 
     // Readability boost (higher grade level = more complex writing)
-    // But reduce boost for single long sentences (readability inflated by length)
+    // Normalize by sentence count to prevent longer texts from getting inflated scores
+    // Readability metrics naturally favor longer texts, so we normalize them
     const readability = features.readability || {};
     if (readability.flesch_kincaid) {
       const fkGrade = readability.flesch_kincaid;
       if (fkGrade > 12) {
         let readabilityBoost = (fkGrade - 12) * 0.5;
-        // Reduce boost for single-sentence texts (readability inflated by length)
-        if (sentenceCount === 1 && wordCount < 60) {
-          readabilityBoost *= 0.5; // Reduce boost by 50%
+        // Normalize by sentence count - a complex 2-sentence tweet should score
+        // similarly to a complex 20-sentence essay with same grade level
+        // Use log scaling to prevent over-penalizing longer texts
+        if (sentenceCount > 1) {
+          readabilityBoost *= Math.min(1.0, Math.log(sentenceCount + 1) / Math.log(3));
+        } else {
+          // Single sentence - reduce boost as it's often length-inflated
+          readabilityBoost *= 0.5;
         }
         iq += Math.min(5, readabilityBoost);
       }
@@ -1246,16 +1262,17 @@ class ComprehensiveIQEstimatorUltimate {
 
     // Lower lexical overlap = more varied writing = higher complexity
     // Only apply for multi-sentence texts
+    // This metric is already normalized (ratio), so length doesn't directly affect it
+    // But we should ensure avgWords requirement isn't biasing toward longer texts
     const lexicalOverlap = features.lexical_overlap || 0;
     if (lexicalOverlap < 0.2 && avgWords > 15 && sentenceCount > 1) {
       // Very low overlap with long sentences = sophisticated writing
+      // This boost is appropriate as lexical overlap is already a percentage/ratio
       iq += Math.min(4, (0.2 - lexicalOverlap) * 20);
     }
 
-    // Cap for very short texts: don't allow complexity > 110 for texts < 50 words
-    if (wordCount < 50) {
-      iq = Math.min(110, iq);
-    }
+    // REMOVED: Length-based cap - length should not limit IQ score
+    // A short, sophisticated text can score as high as a long one
 
     return Math.max(50, Math.min(145, iq));
   }
@@ -1300,10 +1317,8 @@ class ComprehensiveIQEstimatorUltimate {
       iq += Math.min(3, (connectiveDensity - 0.08) * 25);
     }
 
-    // Cap for very short texts: don't allow grammar > 110 for texts < 50 words
-    if (wordCount < 50) {
-      iq = Math.min(110, iq);
-    }
+    // REMOVED: Length-based cap - length should not limit IQ score
+    // A short, grammatically precise text can score as high as a long one
 
     return Math.max(50, Math.min(145, iq));
   }
@@ -1387,17 +1402,9 @@ class ComprehensiveIQEstimatorUltimate {
 
     let finalIQ = weightedSum / totalWeight;
 
-    // Apply length-based penalty for very short texts
-    if (features) {
-      const wordCount = features.word_count || (features.tokens?.length || 0);
-      if (wordCount < 50) {
-        // Penalty: -0.5 IQ per word below 50
-        // At 25 words: -12.5 IQ penalty
-        // At 46 words (the problematic tweet): -2 IQ penalty
-        const penalty = Math.max(0, (50 - wordCount) * 0.5);
-        finalIQ -= penalty;
-      }
-    }
+    // REMOVED: Length-based penalty - length should not affect IQ score
+    // A short, complex tweet should score the same as a long, complex essay
+    // Quality matters, not quantity
 
     return Math.max(50, Math.min(150, finalIQ));
   }
