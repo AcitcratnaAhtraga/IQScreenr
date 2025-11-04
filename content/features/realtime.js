@@ -207,6 +207,34 @@ async function updateRealtimeBadge(inputElement, badge, container) {
     if (result.is_valid && result.iq_estimate !== null) {
       const newIQ = Math.round(result.iq_estimate);
 
+      // Store debug data for hover (detailed analysis breakdown)
+      const { logDebugInfo } = getBadgeManager();
+      if (logDebugInfo) {
+        badge._debugData = {
+          iq: newIQ,
+          result: result,
+          text: text,
+          timestamp: new Date().toISOString()
+        };
+
+        // Set cursor to help to indicate hover will show debug info
+        badge.style.setProperty('cursor', 'help', 'important');
+
+        // Add hover event listener if not already added
+        if (!badge._realtimeDebugHandlerAdded) {
+          badge.addEventListener('mouseenter', () => {
+            if (badge._debugData) {
+              const settings = getSettings();
+              // Check if debug logging is enabled via settings
+              if (settings.enableDebugLogging !== false) {
+                logDebugInfo(badge._debugData);
+              }
+            }
+          });
+          badge._realtimeDebugHandlerAdded = true;
+        }
+      }
+
       let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                          badge.querySelector('.iq-score');
       let oldIQ = 100; // Default to 100 as starting point
