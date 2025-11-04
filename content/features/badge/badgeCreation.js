@@ -422,7 +422,7 @@ function logDebugInfo(debugData) {
   }
   console.groupEnd();
 
-  console.groupCollapsed('%c📊 Confidence Calculation (Anti-Gaming)', 'color: #9C27B0; font-weight: bold;');
+  console.groupCollapsed('%c📊 Confidence Calculation', 'color: #9C27B0; font-weight: bold;');
   if (result.confidence !== undefined && result.confidence !== null) {
     const wordCount = features.word_count || tokens.length;
     const sentenceCount = features.sentence_count || sentences.length;
@@ -616,7 +616,7 @@ function logDebugInfo(debugData) {
 
       if (runOnConfidencePenalty > 0) {
         console.log('');
-        console.log(`%c5. Run-on Penalty (Anti-Gaming):`, 'font-weight: bold; color: #FF5722;');
+        console.log(`%c5. Run-on Penalty:`, 'font-weight: bold; color: #FF5722;');
         console.log(`  Run-on Detection: ${runOnConfidencePenalty.toFixed(1)} pts penalty`);
         console.log(`  Reason: Casual Twitter run-ons reduce confidence (artificial dimension inflation)`);
         console.log(`  %cNote: Run-ons create unreliable IQ estimates - confidence reflects this`, 'color: #666; font-style: italic;');
@@ -648,6 +648,95 @@ function logDebugInfo(debugData) {
     `%c⏰ Analyzed at: ${new Date(timestamp).toLocaleTimeString()}`,
     'color: #757575; font-style: italic;'
   );
+}
+
+/**
+ * Add hover handlers for color inversion on flip badges
+ * This handles both background and text color inversion on hover
+ */
+function addFlipBadgeHoverHandlers(badge) {
+  // Only add handlers if not already added
+  if (badge._hoverHandlersAdded) {
+    return;
+  }
+
+  const mouseenterHandler = () => {
+    if (badge._debugData) {
+      logDebugInfo(badge._debugData);
+    }
+
+    // Invert colors on hover for flip badges (background and text)
+    if (badge.classList.contains('iq-badge-flip')) {
+      // Store original background color if not already stored
+      let originalBg = badge.style.getPropertyValue('--iq-badge-original-bg');
+      if (!originalBg) {
+        const computedBg = window.getComputedStyle(badge).backgroundColor;
+        if (computedBg && computedBg !== 'rgba(0, 0, 0, 0)' && computedBg !== 'transparent') {
+          badge.style.setProperty('--iq-badge-original-bg', computedBg, 'important');
+          originalBg = computedBg;
+        }
+      }
+
+      // Get the original background color from CSS variable or computed style
+      const originalBgColor = originalBg || window.getComputedStyle(badge).backgroundColor;
+
+      // Invert: set background to black, text to original background color
+      badge.style.setProperty('background-color', '#000000', 'important');
+      badge.style.setProperty('color', originalBgColor, 'important');
+
+      // Update text elements
+      const front = badge.querySelector('.iq-badge-front');
+      const back = badge.querySelector('.iq-badge-back');
+      if (front) {
+        front.style.setProperty('color', originalBgColor, 'important');
+        const frontLabel = front.querySelector('.iq-label');
+        const frontScore = front.querySelector('.iq-score');
+        if (frontLabel) frontLabel.style.setProperty('color', originalBgColor, 'important');
+        if (frontScore) frontScore.style.setProperty('color', originalBgColor, 'important');
+      }
+      if (back) {
+        back.style.setProperty('color', originalBgColor, 'important');
+        const backLabel = back.querySelector('.iq-label');
+        const backScore = back.querySelector('.iq-score');
+        if (backLabel) backLabel.style.setProperty('color', originalBgColor, 'important');
+        if (backScore) backScore.style.setProperty('color', originalBgColor, 'important');
+      }
+    }
+  };
+
+  const mouseleaveHandler = () => {
+    if (badge.classList.contains('iq-badge-flip')) {
+      const originalBgColor = badge.style.getPropertyValue('--iq-badge-original-bg');
+      if (originalBgColor) {
+        // Restore original colors
+        badge.style.setProperty('background-color', originalBgColor, 'important');
+        badge.style.setProperty('color', '#000000', 'important');
+
+        // Restore text elements
+        const front = badge.querySelector('.iq-badge-front');
+        const back = badge.querySelector('.iq-badge-back');
+        if (front) {
+          front.style.setProperty('color', '#000000', 'important');
+          const frontLabel = front.querySelector('.iq-label');
+          const frontScore = front.querySelector('.iq-score');
+          if (frontLabel) frontLabel.style.setProperty('color', '#000000', 'important');
+          if (frontScore) frontScore.style.setProperty('color', '#000000', 'important');
+        }
+        if (back) {
+          back.style.setProperty('color', '#000000', 'important');
+          const backLabel = back.querySelector('.iq-label');
+          const backScore = back.querySelector('.iq-score');
+          if (backLabel) backLabel.style.setProperty('color', '#000000', 'important');
+          if (backScore) backScore.style.setProperty('color', '#000000', 'important');
+        }
+      }
+    }
+  };
+
+  badge.addEventListener('mouseenter', mouseenterHandler);
+  badge.addEventListener('mouseleave', mouseleaveHandler);
+  badge._hoverHandlersAdded = true;
+  badge._hoverHandlers = { mouseenter: mouseenterHandler, mouseleave: mouseleaveHandler };
 }
 
 /**
@@ -701,6 +790,8 @@ function createIQBadge(iq, estimationResult, tweetText) {
       </div>
     `;
     badge.classList.add('iq-badge-flip');
+    // Store original background color in CSS variable for hover inversion
+    badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
   } else {
     badge.innerHTML = `
       <span class="iq-label">IQ</span>
@@ -711,12 +802,8 @@ function createIQBadge(iq, estimationResult, tweetText) {
   badge.style.setProperty('background-color', iqColor, 'important');
   badge.style.setProperty('color', '#000000', 'important');
 
-  // Always add hover event listener for console debug info
-  badge.addEventListener('mouseenter', () => {
-    if (badge._debugData) {
-      logDebugInfo(badge._debugData);
-    }
-  });
+  // Add hover handlers for color inversion on flip badges
+  addFlipBadgeHoverHandlers(badge);
 
   // Skip adding handlers if this is a guess badge (it already has its own handler)
   const isGuessBadge = badge.classList.contains('iq-badge-guess') || badge.hasAttribute('data-iq-guess');
@@ -1152,7 +1239,8 @@ if (typeof window !== 'undefined') {
     createRealtimeBadge,
     logDebugInfo,
     attachCreationContext,
-    captureBadgeCreationContext
+    captureBadgeCreationContext,
+    addFlipBadgeHoverHandlers
   };
 }
 

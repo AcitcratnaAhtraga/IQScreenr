@@ -309,6 +309,10 @@ function animateCountUp(badge, finalIQ, iqColor) {
 
         scoreElement.textContent = finalIQ;
         badge.style.setProperty('background-color', iqColor, 'important');
+        // Store original background color in CSS variable for hover inversion
+        if (badge.classList.contains('iq-badge-flip')) {
+          badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
+        }
 
         if (animationFrameId) {
           cancelAnimationFrame(animationFrameId);
@@ -545,6 +549,10 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence,
 
       badge.style.setProperty('background-color', iqColor, 'important');
       badge.style.setProperty('color', '#000000', 'important');
+      // Store original background color in CSS variable for hover inversion
+      if (badge.classList.contains('iq-badge-flip')) {
+        badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
+      }
       badge.removeAttribute('data-iq-animating');
       badge.setAttribute('data-iq-animated', 'true');
       badge._animationFrameId = null;
@@ -578,6 +586,17 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
   const lockedWidth = badge.style.width;
   const hasLockedDimensions = lockedHeight && lockedHeight !== 'auto' && lockedWidth && lockedWidth !== 'auto';
 
+  // Preserve or set CSS variable for original background color (for hover inversion)
+  let originalBgColor = badge.style.getPropertyValue('--iq-badge-original-bg');
+  if (!originalBgColor) {
+    // Get current background color from computed style
+    const computedStyle = window.getComputedStyle(badge);
+    originalBgColor = computedStyle.backgroundColor;
+    if (originalBgColor && originalBgColor !== 'rgba(0, 0, 0, 0)' && originalBgColor !== 'transparent') {
+      badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+    }
+  }
+
   if (badge.querySelector('.iq-badge-inner')) {
 
     const frontScore = badge.querySelector('.iq-badge-front .iq-score');
@@ -609,6 +628,10 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
     back.style.top = '0';
   }
   badge.style.setProperty('color', '#000000', 'important');
+  // Ensure CSS variable is preserved
+  if (originalBgColor) {
+    badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+  }
   return;
   }
 
@@ -621,6 +644,15 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
   const beforeMinHeight = badge.style.minHeight;
   const beforeMinWidth = badge.style.minWidth;
   const beforeDisplay = window.getComputedStyle(badge).display;
+
+  // Ensure CSS variable for original background color is set (for hover inversion)
+  if (!originalBgColor) {
+    const computedStyle = window.getComputedStyle(badge);
+    originalBgColor = computedStyle.backgroundColor;
+    if (originalBgColor && originalBgColor !== 'rgba(0, 0, 0, 0)' && originalBgColor !== 'transparent') {
+      badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+    }
+  }
 
   badge.innerHTML = `
     <div class="iq-badge-inner" style="transform: rotateY(0deg);">
@@ -681,6 +713,19 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
   }
 
   badge.style.setProperty('color', '#000000', 'important');
+  // Ensure CSS variable for original background color is preserved (for hover inversion)
+  if (originalBgColor) {
+    badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+  }
+
+  // Add hover handlers for color inversion if not already added
+  if (badge.classList.contains('iq-badge-flip')) {
+    const getBadgeCreation = () => window.BadgeCreation || {};
+    const { addFlipBadgeHoverHandlers } = getBadgeCreation();
+    if (addFlipBadgeHoverHandlers) {
+      addFlipBadgeHoverHandlers(badge);
+    }
+  }
 }
 
 // Export for use in other modules
