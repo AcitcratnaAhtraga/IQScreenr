@@ -341,9 +341,13 @@ function animateCountUp(badge, finalIQ, iqColor) {
         // Add hover handlers for color inversion if badge has flip structure
         if (badge.classList.contains('iq-badge-flip')) {
           const getBadgeCreation = () => window.BadgeCreation || {};
-          const { addFlipBadgeHoverHandlers } = getBadgeCreation();
+          const { addFlipBadgeHoverHandlers, addMobileBadgeHandlers } = getBadgeCreation();
           if (addFlipBadgeHoverHandlers) {
             addFlipBadgeHoverHandlers(badge);
+          }
+          // Also add mobile handlers after animation completes
+          if (addMobileBadgeHandlers) {
+            addMobileBadgeHandlers(badge);
           }
         }
 
