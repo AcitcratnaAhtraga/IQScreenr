@@ -13,6 +13,7 @@ const getIQCache = () => window.IQCache || {};
 const getTextExtraction = () => window.TextExtraction || {};
 const getDebugLog = () => window.DOMHelpers?.debugLog || (() => {});
 const debugLog = getDebugLog();
+const getTweetProcessor = () => window.TweetProcessor || {};
 
 
 // Game state
@@ -51,21 +52,32 @@ async function getCachedGuess(tweetId) {
   }
 
   // Try to get from chrome storage
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return null;
+  }
+
   const storageKey = GUESS_CACHE_PREFIX + key;
   return new Promise((resolve) => {
-    chrome.storage.local.get([storageKey], (result) => {
-      if (chrome.runtime.lastError) {
-        resolve(null);
-        return;
-      }
+    try {
+      chrome.storage.local.get([storageKey], (result) => {
+        if (chrome.runtime.lastError) {
+          resolve(null);
+          return;
+        }
 
-      if (result[storageKey]) {
-        persistentGuessCache.set(key, result[storageKey]);
-        resolve(result[storageKey]);
-      } else {
-        resolve(null);
-      }
-    });
+        if (result[storageKey]) {
+          persistentGuessCache.set(key, result[storageKey]);
+          resolve(result[storageKey]);
+        } else {
+          resolve(null);
+        }
+      });
+    } catch (error) {
+      // Extension context invalidated or other error
+      console.warn('[IQGuessr] Extension context invalidated, returning null for cached guess');
+      resolve(null);
+    }
   });
 }
 
@@ -86,10 +98,19 @@ function cacheRevealedIQ(tweetId) {
   };
 
   // Store in chrome storage
-  const storageKey = REVEALED_CACHE_PREFIX + key;
-  const storageData = {};
-  storageData[storageKey] = revealedEntry;
-  chrome.storage.local.set(storageData);
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return;
+  }
+
+  try {
+    const storageKey = REVEALED_CACHE_PREFIX + key;
+    const storageData = {};
+    storageData[storageKey] = revealedEntry;
+    chrome.storage.local.set(storageData);
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot cache revealed IQ');
+  }
 }
 
 /**
@@ -101,20 +122,31 @@ async function getCachedRevealedIQ(tweetId) {
   const key = generateGuessCacheKey(tweetId);
   if (!key) return null;
 
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return null;
+  }
+
   const storageKey = REVEALED_CACHE_PREFIX + key;
   return new Promise((resolve) => {
-    chrome.storage.local.get([storageKey], (result) => {
-      if (chrome.runtime.lastError) {
-        resolve(null);
-        return;
-      }
+    try {
+      chrome.storage.local.get([storageKey], (result) => {
+        if (chrome.runtime.lastError) {
+          resolve(null);
+          return;
+        }
 
-      if (result[storageKey] && result[storageKey].revealed) {
-        resolve(true);
-      } else {
-        resolve(false);
-      }
-    });
+        if (result[storageKey] && result[storageKey].revealed) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      });
+    } catch (error) {
+      // Extension context invalidated or other error
+      console.warn('[IQGuessr] Extension context invalidated, returning null for cached revealed IQ');
+      resolve(null);
+    }
   });
 }
 
@@ -141,26 +173,48 @@ function cacheGuess(tweetId, guessData) {
   persistentGuessCache.set(key, cacheEntry);
 
   // Store in chrome storage
-  const storageKey = GUESS_CACHE_PREFIX + key;
-  const storageData = {};
-  storageData[storageKey] = cacheEntry;
-  chrome.storage.local.set(storageData);
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return;
+  }
+
+  try {
+    const storageKey = GUESS_CACHE_PREFIX + key;
+    const storageData = {};
+    storageData[storageKey] = cacheEntry;
+    chrome.storage.local.set(storageData);
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot cache guess');
+  }
 }
 
 /**
  * Load all guesses from storage into memory
  */
 function loadGuessCache() {
-  chrome.storage.local.get(null, (items) => {
-    for (const [key, value] of Object.entries(items)) {
-      if (key.startsWith(GUESS_CACHE_PREFIX)) {
-        const cacheKey = key.replace(GUESS_CACHE_PREFIX, '');
-        if (value && typeof value === 'object') {
-          persistentGuessCache.set(cacheKey, value);
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return;
+  }
+
+  try {
+    chrome.storage.local.get(null, (items) => {
+      if (chrome.runtime.lastError) {
+        return;
+      }
+
+      for (const [key, value] of Object.entries(items)) {
+        if (key.startsWith(GUESS_CACHE_PREFIX)) {
+          const cacheKey = key.replace(GUESS_CACHE_PREFIX, '');
+          if (value && typeof value === 'object') {
+            persistentGuessCache.set(cacheKey, value);
+          }
         }
       }
-    }
-  });
+    });
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot load guess cache');
+  }
 }
 
 // Load cache on initialization
@@ -197,9 +251,17 @@ function createGuessBadge() {
 
   // Add click handler to make it editable
   badge.addEventListener('click', (e) => {
+    e.preventDefault();
     e.stopPropagation();
     makeBadgeEditable(badge);
   });
+
+  // Add touchend handler for mobile compatibility
+  badge.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    makeBadgeEditable(badge);
+  }, { passive: false });
 
   return badge;
 }
@@ -257,8 +319,14 @@ async function makeBadgeEditable(badge) {
 
   // Replace score element with input
   scoreElement.replaceWith(input);
-  input.focus();
-  input.select();
+
+  // Ensure input receives focus properly - use setTimeout for mobile compatibility
+  setTimeout(() => {
+    if (input.parentElement && document.activeElement !== input) {
+      input.focus();
+      input.select();
+    }
+  }, 50);
 
   // Track if guess has been submitted to prevent double submission
   let submitted = false;
@@ -270,8 +338,10 @@ async function makeBadgeEditable(badge) {
     }
 
     const value = parseInt(input.value, 10);
+
     if (value >= 55 && value <= 145) {
-      submitted = true; // Mark as submitted immediately
+      // Mark as submitted AFTER validation passes to prevent double submission
+      submitted = true;
       badge.setAttribute('data-iq-guessed', value);
 
 
@@ -303,7 +373,12 @@ async function makeBadgeEditable(badge) {
           : 50; // Default confidence
 
         // Check if we have a stored IQ result (means calculation already happened)
-        const iqResult = tweetElement._iqResult;
+        // Check both actualTweetElement and tweetElement for nested structures
+        const actualTweetElement = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                                 tweetElement.querySelector('article[role="article"]') ||
+                                 tweetElement;
+
+        const iqResult = actualTweetElement._iqResult || tweetElement._iqResult;
 
         // If we have IQ result, use the confidence from there
         if (iqResult && iqResult.confidence !== null && iqResult.confidence !== undefined) {
@@ -321,7 +396,7 @@ async function makeBadgeEditable(badge) {
           cacheGuess(tweetId, { guess: value, confidence: confidence });
         }
 
-        if (iqResult) {
+        if (iqResult && iqResult.iq !== null && iqResult.iq !== undefined) {
           // Get badge manager to get colors
           const badgeManager = getBadgeManager();
           if (badgeManager && badgeManager.getIQColor) {
@@ -333,6 +408,128 @@ async function makeBadgeEditable(badge) {
             setTimeout(() => {
               revealActualScore(badge, iqResult.iq, iqColor, iqResult.confidence, iqResult.result, iqResult.text);
             }, 250);
+          }
+        } else {
+          // If calculation hasn't happened yet, trigger it
+          // Check both actualTweetElement and tweetElement for nested structures
+          const actualTweetElement = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                                   tweetElement.querySelector('article[role="article"]') ||
+                                   tweetElement;
+
+          // If already analyzed but no IQ result, force calculation
+          if (actualTweetElement.hasAttribute('data-iq-analyzed') && !actualTweetElement._iqResult) {
+            // Try to force calculation by removing the analyzed flag and calling processTweet
+            const tweetProcessor = getTweetProcessor();
+            if (tweetProcessor && tweetProcessor.processTweet) {
+              actualTweetElement.removeAttribute('data-iq-analyzed');
+
+              tweetProcessor.processTweet(tweetElement).then(() => {
+                const newIqResult = actualTweetElement._iqResult || tweetElement._iqResult;
+
+                if (newIqResult && newIqResult.iq !== null && newIqResult.iq !== undefined) {
+                  const badgeManager = getBadgeManager();
+                  if (badgeManager && badgeManager.getIQColor) {
+                    const iqColor = getSettings().useConfidenceForColor && newIqResult.confidence
+                      ? badgeManager.getConfidenceColor(newIqResult.confidence)
+                      : badgeManager.getIQColor(newIqResult.iq);
+                    revealActualScore(badge, newIqResult.iq, iqColor, newIqResult.confidence, newIqResult.result, newIqResult.text);
+                  }
+                } else {
+                  // Fallback: Calculate IQ directly
+                  const textExtraction = getTextExtraction();
+                  const extractTweetText = textExtraction ? textExtraction.extractTweetText : null;
+
+                  if (extractTweetText) {
+                    const tweetText = extractTweetText(actualTweetElement);
+
+                    if (tweetText && tweetText.trim().length > 0) {
+                      // Get IQ estimator - need to instantiate it
+                      const IQEstimatorClass = window.ComprehensiveIQEstimatorUltimate;
+                      if (IQEstimatorClass) {
+                        const iqEstimator = new IQEstimatorClass();
+                        iqEstimator.estimate(tweetText).then((result) => {
+                          if (result && result.is_valid && result.iq_estimate !== null) {
+                            const iq = Math.round(result.iq_estimate);
+                            const confidence = result.confidence ? Math.round(result.confidence) : null;
+
+                            // Store result
+                            actualTweetElement._iqResult = {
+                              iq: iq,
+                              result: result,
+                              confidence: confidence,
+                              text: tweetText
+                            };
+
+                            // Reveal score
+                            const badgeManager = getBadgeManager();
+                            if (badgeManager && badgeManager.getIQColor) {
+                              const iqColor = getSettings().useConfidenceForColor && confidence
+                                ? badgeManager.getConfidenceColor(confidence)
+                                : badgeManager.getIQColor(iq);
+                              revealActualScore(badge, iq, iqColor, confidence, result, tweetText);
+                            }
+                          }
+                        }).catch(() => {
+                          // Silently fail
+                        });
+                      }
+                    }
+                  }
+                }
+              }).catch(() => {
+                // Silently fail
+              });
+            }
+
+            // Also wait a bit in case calculation is in progress
+            let checkCount = 0;
+            const checkInterval = setInterval(() => {
+              checkCount++;
+              const currentResult = actualTweetElement._iqResult || tweetElement._iqResult;
+
+              if (currentResult) {
+                clearInterval(checkInterval);
+                const newIqResult = currentResult;
+                if (newIqResult && newIqResult.iq !== null && newIqResult.iq !== undefined) {
+                  const badgeManager = getBadgeManager();
+                  if (badgeManager && badgeManager.getIQColor) {
+                    const iqColor = getSettings().useConfidenceForColor && newIqResult.confidence
+                      ? badgeManager.getConfidenceColor(newIqResult.confidence)
+                      : badgeManager.getIQColor(newIqResult.iq);
+                    revealActualScore(badge, newIqResult.iq, iqColor, newIqResult.confidence, newIqResult.result, newIqResult.text);
+                  }
+                }
+              } else if (checkCount >= 30) {
+                // Timeout after 3 seconds (30 * 100ms)
+                clearInterval(checkInterval);
+              }
+            }, 100);
+          } else {
+            // Not analyzed yet, trigger calculation
+            const tweetProcessor = getTweetProcessor();
+            if (tweetProcessor && tweetProcessor.processTweet) {
+              // Remove analyzed flag temporarily to allow processing
+              const wasAnalyzed = actualTweetElement.hasAttribute('data-iq-analyzed');
+              if (wasAnalyzed) {
+                actualTweetElement.removeAttribute('data-iq-analyzed');
+              }
+
+              tweetProcessor.processTweet(tweetElement).then(() => {
+                // Check both actualTweetElement and tweetElement for nested structures
+                const newIqResult = actualTweetElement._iqResult || tweetElement._iqResult;
+                if (newIqResult && newIqResult.iq !== null && newIqResult.iq !== undefined) {
+                  const badgeManager = getBadgeManager();
+                  if (badgeManager && badgeManager.getIQColor) {
+                    const iqColor = getSettings().useConfidenceForColor && newIqResult.confidence
+                      ? badgeManager.getConfidenceColor(newIqResult.confidence)
+                      : badgeManager.getIQColor(newIqResult.iq);
+                    revealActualScore(badge, newIqResult.iq, iqColor, newIqResult.confidence, newIqResult.result, newIqResult.text);
+                  }
+                }
+              }).catch(() => {
+                // Silently fail
+              });
+            }
           }
         }
       }
@@ -349,12 +546,66 @@ async function makeBadgeEditable(badge) {
     }
   };
 
+  // Track if Enter is being processed to prevent duplicate submissions
+  let enterProcessing = false;
+
+  // Handle Enter key - support multiple event types for better compatibility
+  const handleEnterKey = (e) => {
+    // Check for Enter key in multiple ways for compatibility
+    const isEnter = e.key === 'Enter' ||
+                   e.keyCode === 13 ||
+                   e.which === 13 ||
+                   e.code === 'Enter' ||
+                   (e.type === 'keypress' && (e.keyCode === 13 || e.which === 13));
+
+    if (isEnter) {
+      // Prevent duplicate processing if already handling Enter
+      if (enterProcessing || submitted) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      enterProcessing = true; // Mark as processing to prevent duplicate calls
+
+      // Use setTimeout(0) to ensure this happens after current event loop
+      setTimeout(() => {
+        submitGuess();
+        enterProcessing = false; // Reset after processing
+      }, 0);
+
+      return false;
+    }
+    return true;
+  };
+
+  // Only add keydown listener - keypress can cause duplicate submissions
+  input.addEventListener('keydown', handleEnterKey, true);
+
+  // Also handle Enter via keyup as fallback (some mobile keyboards)
+  input.addEventListener('keyup', (e) => {
+    const isEnter = e.key === 'Enter' || e.keyCode === 13 || e.which === 13 || e.code === 'Enter';
+
+    // Only process if not already submitted and not currently processing
+    if (isEnter && !submitted && !enterProcessing) {
+      e.preventDefault();
+      e.stopPropagation();
+      enterProcessing = true;
+      setTimeout(() => {
+        submitGuess();
+        enterProcessing = false;
+      }, 0);
+    }
+  }, true);
+
+  // Handle Escape key
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    const isEscape = e.key === 'Escape' || e.keyCode === 27 || e.which === 27;
+    if (isEscape) {
       e.preventDefault();
-      submitGuess();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
+      e.stopPropagation();
       submitted = true; // Prevent blur from firing
       // Restore original score element
       const newScoreElement = document.createElement('span');
@@ -366,9 +617,22 @@ async function makeBadgeEditable(badge) {
         input.replaceWith(newScoreElement);
       }
     }
-  });
+  }, true);
 
-  input.addEventListener('blur', submitGuess);
+  // Delay blur handler to allow Enter key to process first
+  let blurTimeout;
+  input.addEventListener('blur', (e) => {
+    // Clear any existing timeout
+    if (blurTimeout) {
+      clearTimeout(blurTimeout);
+    }
+    // Delay blur handling slightly to allow Enter key to process
+    blurTimeout = setTimeout(() => {
+      if (!submitted) {
+        submitGuess();
+      }
+    }, 150);
+  });
 
   // Prevent click events from bubbling up while editing
   input.addEventListener('click', (e) => e.stopPropagation());
@@ -408,6 +672,11 @@ function calculateGuessScore(guess, actual, confidence) {
  * Reveal the actual IQ score with a loading animation
  */
 function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetText) {
+  // Validate actualIQ - if it's invalid or NaN, return early
+  if (!actualIQ || isNaN(actualIQ) || actualIQ < 55 || actualIQ > 145) {
+    return;
+  }
+
   // Mark as calculating to prevent re-editing
   badge.setAttribute('data-iq-calculating', 'true');
 
@@ -491,24 +760,42 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
  * Add score to the total game score
  */
 function addToGameScore(points) {
-  chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-    const currentScore = result.iqGuessrScore || 0;
-    const newScore = currentScore + points;
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot update score');
+    return;
+  }
 
-    chrome.storage.sync.set({ iqGuessrScore: newScore }, () => {
-      // Broadcast to popup if open
-      if (chrome.runtime && chrome.runtime.sendMessage) {
-        try {
-          chrome.runtime.sendMessage({
-            type: 'updateIQGuessrScore',
-            score: newScore
-          });
-        } catch (e) {
-          // Popup might not be listening
-        }
+  try {
+    chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+      if (chrome.runtime.lastError) {
+        return;
+      }
+
+      const currentScore = result.iqGuessrScore || 0;
+      const newScore = currentScore + points;
+
+      try {
+        chrome.storage.sync.set({ iqGuessrScore: newScore }, () => {
+          // Broadcast to popup if open
+          if (chrome.runtime && chrome.runtime.sendMessage) {
+            try {
+              chrome.runtime.sendMessage({
+                type: 'updateIQGuessrScore',
+                score: newScore
+              });
+            } catch (e) {
+              // Popup might not be listening
+            }
+          }
+        });
+      } catch (error) {
+        console.warn('[IQGuessr] Extension context invalidated, cannot save score');
       }
     });
-  });
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot get score');
+  }
 }
 
 /**
@@ -737,39 +1024,82 @@ function addGuessToHistory(tweetId, handle, guess, actualIQ, confidence, score) 
     timestamp: new Date().toISOString()
   };
 
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return;
+  }
+
   // Get existing history
-  chrome.storage.local.get([GUESS_HISTORY_KEY], (result) => {
-    let history = result[GUESS_HISTORY_KEY] || [];
+  try {
+    chrome.storage.local.get([GUESS_HISTORY_KEY], (result) => {
+      if (chrome.runtime.lastError) {
+        return;
+      }
 
-    // Add new entry at the beginning
-    history.unshift(historyEntry);
+      let history = result[GUESS_HISTORY_KEY] || [];
 
-    // Keep only last 1000 guesses to prevent storage bloat
-    if (history.length > 1000) {
-      history = history.slice(0, 1000);
-    }
+      // Add new entry at the beginning
+      history.unshift(historyEntry);
 
-    // Save back to storage
-    chrome.storage.local.set({ [GUESS_HISTORY_KEY]: history }, () => {});
-  });
+      // Keep only last 1000 guesses to prevent storage bloat
+      if (history.length > 1000) {
+        history = history.slice(0, 1000);
+      }
+
+      // Save back to storage
+      try {
+        chrome.storage.local.set({ [GUESS_HISTORY_KEY]: history }, () => {});
+      } catch (error) {
+        console.warn('[IQGuessr] Extension context invalidated, cannot save history');
+      }
+    });
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot get history');
+  }
 }
 
 /**
  * Get all guess history
  */
 function getGuessHistory(callback) {
-  chrome.storage.local.get([GUESS_HISTORY_KEY], (result) => {
-    callback(result[GUESS_HISTORY_KEY] || []);
-  });
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    callback([]);
+    return;
+  }
+
+  try {
+    chrome.storage.local.get([GUESS_HISTORY_KEY], (result) => {
+      if (chrome.runtime.lastError) {
+        callback([]);
+        return;
+      }
+      callback(result[GUESS_HISTORY_KEY] || []);
+    });
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot get history');
+    callback([]);
+  }
 }
 
 /**
  * Clear all guess history
  */
 function clearGuessHistory(callback) {
-  chrome.storage.local.remove([GUESS_HISTORY_KEY], () => {
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
     if (callback) callback();
-  });
+    return;
+  }
+
+  try {
+    chrome.storage.local.remove([GUESS_HISTORY_KEY], () => {
+      if (callback) callback();
+    });
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot clear history');
+    if (callback) callback();
+  }
 }
 
 // Export for use in other modules

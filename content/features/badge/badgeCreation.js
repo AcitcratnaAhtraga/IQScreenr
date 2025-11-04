@@ -518,6 +518,49 @@ function createIQBadge(iq, estimationResult, tweetText) {
     }
   });
 
+  // Skip adding handlers if this is a guess badge (it already has its own handler)
+  const isGuessBadge = badge.classList.contains('iq-badge-guess') || badge.hasAttribute('data-iq-guess');
+
+  if (!isGuessBadge) {
+    // Add click/touch handlers for mobile to prevent navigation and trigger flip
+    const handleBadgeInteraction = (e) => {
+      // Prevent navigation to tweet URL
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Only handle flip animation for badges with confidence data
+      if (badge.classList.contains('iq-badge-flip')) {
+        const inner = badge.querySelector('.iq-badge-inner');
+        if (inner) {
+          const currentTransform = window.getComputedStyle(inner).transform;
+          const isFlipped = currentTransform && currentTransform !== 'none' && currentTransform.includes('180deg');
+
+          // Toggle flip state
+          if (isFlipped) {
+            inner.style.setProperty('transform', 'rotateY(0deg)', 'important');
+          } else {
+            inner.style.setProperty('transform', 'rotateY(180deg)', 'important');
+          }
+
+          // Auto-flip back after 2 seconds on mobile
+          setTimeout(() => {
+            if (inner.style.transform.includes('180deg')) {
+              inner.style.setProperty('transform', 'rotateY(0deg)', 'important');
+            }
+          }, 2000);
+        }
+      }
+    };
+
+    // Add both click and touchend handlers for mobile compatibility
+    badge.addEventListener('click', handleBadgeInteraction, true);
+    badge.addEventListener('touchend', (e) => {
+      handleBadgeInteraction(e);
+      // Also prevent the click event that follows touchend
+      e.preventDefault();
+    }, { passive: false, capture: true });
+  }
+
   return badge;
 }
 

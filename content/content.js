@@ -264,6 +264,64 @@
   }
 
   /**
+   * Attach click handlers to existing badges to prevent navigation
+   */
+  function attachBadgeClickHandlers() {
+    const badges = document.querySelectorAll('.iq-badge:not(.iq-badge-realtime)');
+    badges.forEach(badge => {
+      // Skip if handler already attached
+      if (badge.hasAttribute('data-click-handler-attached')) {
+        return;
+      }
+
+      // Skip guess badges - they already have their own handlers
+      const isGuessBadge = badge.classList.contains('iq-badge-guess') || badge.hasAttribute('data-iq-guess');
+      if (isGuessBadge) {
+        return;
+      }
+
+      badge.setAttribute('data-click-handler-attached', 'true');
+
+      const handleBadgeInteraction = (e) => {
+        // Prevent navigation to tweet URL
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Only handle flip animation for badges with confidence data
+        if (badge.classList.contains('iq-badge-flip')) {
+          const inner = badge.querySelector('.iq-badge-inner');
+          if (inner) {
+            const currentTransform = window.getComputedStyle(inner).transform;
+            const isFlipped = currentTransform && currentTransform !== 'none' && currentTransform.includes('180deg');
+
+            // Toggle flip state
+            if (isFlipped) {
+              inner.style.setProperty('transform', 'rotateY(0deg)', 'important');
+            } else {
+              inner.style.setProperty('transform', 'rotateY(180deg)', 'important');
+            }
+
+            // Auto-flip back after 2 seconds on mobile
+            setTimeout(() => {
+              if (inner.style.transform.includes('180deg')) {
+                inner.style.setProperty('transform', 'rotateY(0deg)', 'important');
+              }
+            }, 2000);
+          }
+        }
+      };
+
+      // Add both click and touchend handlers for mobile compatibility
+      badge.addEventListener('click', handleBadgeInteraction, true);
+      badge.addEventListener('touchend', (e) => {
+        handleBadgeInteraction(e);
+        // Also prevent the click event that follows touchend
+        e.preventDefault();
+      }, { passive: false, capture: true });
+    });
+  }
+
+  /**
    * Apply IQGuessr mode on page load if enabled
    */
   async function applyIQGuessrModeOnLoad() {
@@ -359,6 +417,19 @@
       setTimeout(init, 100); // Retry after modules load
       return;
     }
+
+    // Attach click handlers to existing badges
+    attachBadgeClickHandlers();
+
+    // Set up observer to attach handlers to newly added badges
+    const badgeObserver = new MutationObserver(() => {
+      attachBadgeClickHandlers();
+    });
+
+    badgeObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
 
     if (!realtimeManager || !realtimeManager.setupRealtimeComposeObserver) {
       console.error('RealtimeManager not available');

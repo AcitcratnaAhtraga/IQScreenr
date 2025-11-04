@@ -49,6 +49,11 @@ function triggerPulseAnimation(badge, iqColor) {
  * Animate count-up from 0 to final IQ, then pulse animation
  */
 function animateCountUp(badge, finalIQ, iqColor) {
+  // Validate finalIQ
+  if (!finalIQ || isNaN(finalIQ) || finalIQ < 55 || finalIQ > 145) {
+    return;
+  }
+
   const { hexToRgb, desaturateColor, parseColor, interpolateRgbColor } = getColorUtils();
 
   if (badge.hasAttribute('data-iq-animating') || badge.hasAttribute('data-iq-animated')) {

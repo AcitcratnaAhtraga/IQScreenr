@@ -235,6 +235,8 @@
   max-height: 21px;
   box-sizing: border-box;
   perspective: 1000px;
+  /* Increase touch target area on mobile - add padding around badge */
+  touch-action: manipulation;
 }
 
 /* Ensure badges with flip structure maintain proper height */
@@ -523,6 +525,10 @@ article[data-iq-analyzed] {
     font-size: 11px;
     /* Match desktop padding for consistent vertical alignment */
     padding: 5px 6px 1px 6px;
+    /* Change cursor to pointer on mobile for better UX */
+    cursor: pointer;
+    /* Add margin to create larger touch area */
+    margin: 6px 4px 6px 0;
   }
 
   .iq-icon {
