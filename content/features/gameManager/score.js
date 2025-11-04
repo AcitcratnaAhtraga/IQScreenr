@@ -146,14 +146,22 @@
    * Show score feedback on the badge
    */
   function showScoreFeedback(badge, score, guess, actual) {
+    // Get badge position relative to viewport
+    const badgeRect = badge.getBoundingClientRect();
+
     // Create a temporary overlay showing the score
     const overlay = document.createElement('div');
     overlay.className = 'iq-guessr-feedback';
     overlay.textContent = `+${score}`;
+
+    // Calculate position relative to badge
+    // Position it just above the badge, centered horizontally
+    const topOffset = -20; // Closer to badge (was -30)
+
     overlay.style.cssText = `
-      position: absolute;
-      top: -30px;
-      left: 50%;
+      position: fixed;
+      top: ${badgeRect.top + topOffset}px;
+      left: ${badgeRect.left + (badgeRect.width / 2)}px;
       transform: translateX(-50%);
       background: #000000;
       color: white;
@@ -167,8 +175,8 @@
       pointer-events: none;
     `;
 
-    badge.parentElement.style.position = 'relative';
-    badge.parentElement.appendChild(overlay);
+    // Append to body for fixed positioning context
+    document.body.appendChild(overlay);
 
     // Remove overlay after animation
     setTimeout(() => {
