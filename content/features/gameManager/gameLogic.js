@@ -438,6 +438,9 @@
       return;
     }
 
+    // Round IQ to integer for display (never show decimals)
+    const roundedIQ = Math.round(actualIQ);
+
     // Mark as calculating to prevent re-editing
     badge.setAttribute('data-iq-calculating', 'true');
 
@@ -472,10 +475,13 @@
           badge.setAttribute('data-confidence', confidence);
         }
 
-        // Add debug data for hover
+        // Store rounded IQ on badge attribute for consistency
+        badge.setAttribute('data-iq-score', roundedIQ.toString());
+
+        // Add debug data for hover (keep original decimal for debugging)
         if (result && tweetText) {
           badge._debugData = {
-            iq: actualIQ,
+            iq: actualIQ, // Keep original decimal for debug info
             result: result,
             text: tweetText,
             timestamp: new Date().toISOString()
@@ -489,8 +495,8 @@
           });
         }
 
-        // Use the count-up animation to reveal the score
-        badgeManager.animateCountUp(badge, actualIQ, iqColor);
+        // Use the count-up animation to reveal the score (use rounded IQ for display)
+        badgeManager.animateCountUp(badge, roundedIQ, iqColor);
 
         // Store that this IQ was revealed (so it stays calculated after refresh/iqguessr toggle)
         // This should happen regardless of whether there's a guess
@@ -500,8 +506,9 @@
 
           // Also cache the IQ result by tweet ID as a fallback (in case handle lookup fails)
           // This ensures we can restore the calculated badge even if handle extraction fails
+          // Store rounded IQ in cache for consistency
           const iqResultData = {
-            iq: actualIQ,
+            iq: roundedIQ, // Store rounded IQ for display consistency
             confidence: confidence,
             result: result || {}, // Ensure result exists, use empty object if not
             timestamp: new Date().toISOString()
@@ -509,25 +516,25 @@
           cache.cacheRevealedIQResult(tweetId, iqResultData);
         }
 
-        // Calculate and add score
+        // Calculate and add score (use rounded IQ since that's what user sees)
         if (hasGuess && guessData) {
           const scoreManager = window.GameManagerScore;
           if (scoreManager) {
-            const score = scoreManager.calculateGuessScore(guessData.guess, actualIQ, guessData.confidence);
+            const score = scoreManager.calculateGuessScore(guessData.guess, roundedIQ, guessData.confidence);
             scoreManager.addToGameScore(score);
 
             // Mark badge as compared (has been compared to a guess)
             badge.setAttribute('data-iq-compared', 'true');
 
-            // Add to history
+            // Add to history (use rounded IQ for consistency)
             const tweetId = tweetElement ? tweetElement.getAttribute('data-tweet-id') : null;
             const handle = tweetElement ? tweetElement.getAttribute('data-handle') : null;
             if (tweetId) {
-              scoreManager.addGuessToHistory(tweetId, handle, guessData.guess, actualIQ, guessData.confidence, score);
+              scoreManager.addGuessToHistory(tweetId, handle, guessData.guess, roundedIQ, guessData.confidence, score);
             }
 
-            // Show score feedback
-            scoreManager.showScoreFeedback(badge, score, guessData.guess, actualIQ);
+            // Show score feedback (use rounded IQ since that's what's displayed)
+            scoreManager.showScoreFeedback(badge, score, guessData.guess, roundedIQ);
           }
         }
       }
