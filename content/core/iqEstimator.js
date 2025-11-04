@@ -1216,16 +1216,69 @@ class ComprehensiveIQEstimatorUltimate {
     const baseline = isTweetLength ? this.twitterSentenceBaseline : this.essaySentenceBaseline;
     let iq = 60 + (avgWords - baseline) * 6.0;
 
-    // Detect casual run-on sentences with parentheticals
-    // This pattern indicates casual Twitter style, not sophisticated writing
+    // ENHANCED: Detect casual Twitter run-on sentences
+    // On social media, people string thoughts together without proper punctuation
+    // This is NOT sophisticated writing - it's just how Twitter incentivizes casual communication
+
+    // 1. Detect parenthetical-heavy casual writing
     const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
     const parentheticalRatio = sentenceCount > 0 ? parentheticalCount / sentenceCount : 0;
 
-    // If single sentence with many parentheticals, it's likely casual run-on
+    // 2. Detect LOW punctuation density (indicates run-on, not sophisticated structure)
+    const punctuationMarks = (originalText.match(/[,;:.—-]/g) || []).length;
+    const punctuationDensity = wordCount > 0 ? punctuationMarks / wordCount : 0;
+
+    // 3. Detect casual connective patterns (strings thoughts together)
+    const casualConnectives = /\b(and\s+also|also\s+note|and\s+then|and\s+so|and\s+but)\b/gi;
+    const casualConnectiveCount = (originalText.match(casualConnectives) || []).length;
+
+    // 4. Detect sentences that start with casual connectives (common Twitter pattern)
+    const startsWithCasual = /^(and\s+|also\s+|then\s+|so\s+)/i.test(originalText.trim());
+
+    // Calculate run-on score (higher = more likely to be casual run-on)
+    let runOnScore = 0;
+
+    // Single long sentence with low punctuation = run-on
+    if (sentenceCount === 1 && avgWords > 15) {
+      // Penalty increases with length and decreases with punctuation density
+      // Sophisticated writing uses punctuation to structure long sentences
+      if (punctuationDensity < 0.05) { // Less than 1 punctuation per 20 words
+        // Very likely a run-on
+        runOnScore += (avgWords - 15) * 0.5; // More penalty for longer sentences
+      } else if (punctuationDensity < 0.10) { // Less than 1 punctuation per 10 words
+        // Possibly a run-on
+        runOnScore += (avgWords - 15) * 0.25;
+      }
+
+      // Additional penalty for casual connectives
+      if (startsWithCasual) {
+        runOnScore += 5; // Starting with "And also" etc. is very casual
+      }
+      runOnScore += casualConnectiveCount * 3; // Each casual connective pattern adds penalty
+    }
+
+    // Parenthetical-heavy pattern (existing detection, enhanced)
     if (sentenceCount === 1 && parentheticalRatio >= 0.5 && avgWords > 30) {
-      // Reduce IQ by up to 40% for casual run-ons
-      const reductionFactor = Math.min(0.4, parentheticalRatio * 0.8);
+      runOnScore += 10;
+    }
+
+    // Apply penalty based on run-on score
+    // Higher score = more likely casual run-on = more penalty
+    if (runOnScore > 0) {
+      // Cap penalty at 60% reduction for extreme cases
+      const penaltyPercent = Math.min(0.6, runOnScore / 30); // Scale to 0-0.6
+      const reductionFactor = penaltyPercent;
       iq *= (1 - reductionFactor);
+
+      // Additional penalty: reduce or eliminate length bonus for obvious run-ons
+      if (runOnScore > 15 && avgWords > 20) {
+        // For very obvious run-ons, cap the sentence length bonus
+        // Don't reward length if it's just a run-on
+        const lengthBonus = (avgWords - baseline) * 6.0;
+        if (lengthBonus > 30) { // Only penalize if there's a significant bonus
+          iq -= (lengthBonus - 30) * 0.5; // Reduce excessive length bonus
+        }
+      }
     }
 
     // Boost for sentence variance (variety indicates sophistication)
@@ -1285,6 +1338,7 @@ class ComprehensiveIQEstimatorUltimate {
     const wordCount = features.word_count || (features.tokens?.length || 0);
     const originalText = features.original_text || '';
     const sentenceCount = features.sentence_count || 1;
+    const avgWords = features.avg_words_per_sentence || (wordCount / sentenceCount);
 
     // Use enhanced dependency depth approximation
     const depDepth = features.avg_dependency_depth ||
@@ -1293,6 +1347,50 @@ class ComprehensiveIQEstimatorUltimate {
        ((features.subordinate_clauses || 0) * this.depDepthCalibration.clause_coefficient));
 
     let iq = 53 + (depDepth - 1.795) * 80;
+
+    // ENHANCED: Detect casual Twitter run-on patterns that inflate dependency depth
+    // High dependency depth from run-ons (lack of punctuation) != sophisticated grammar
+    // Sophisticated writing uses punctuation to structure complex sentences
+
+    // 1. Detect LOW punctuation density (indicates run-on)
+    const punctuationMarks = (originalText.match(/[,;:.—-]/g) || []).length;
+    const punctuationDensity = wordCount > 0 ? punctuationMarks / wordCount : 0;
+
+    // 2. Detect casual connective patterns
+    const casualConnectives = /\b(and\s+also|also\s+note|and\s+then|and\s+so|and\s+but)\b/gi;
+    const casualConnectiveCount = (originalText.match(casualConnectives) || []).length;
+    const startsWithCasual = /^(and\s+|also\s+|then\s+|so\s+)/i.test(originalText.trim());
+
+    // 3. Calculate run-on penalty for dependency depth
+    // If dependency depth is high due to run-on (not sophisticated structure), reduce it
+    let runOnDepthPenalty = 0;
+
+    // Single long sentence with low punctuation = run-on inflating depth
+    if (sentenceCount === 1 && avgWords > 15) {
+      // Sophisticated long sentences use punctuation to structure (commas, semicolons, etc.)
+      // Run-ons just string words together without structure
+      if (punctuationDensity < 0.05) {
+        // Very low punctuation = run-on, depth is artificially inflated
+        // Penalty scales with how long the sentence is (longer = more inflated)
+        runOnDepthPenalty = (avgWords - 15) * 0.02; // Reduce depth by up to ~0.18 for 24-word sentence
+      } else if (punctuationDensity < 0.10) {
+        // Moderate punctuation = possibly a run-on
+        runOnDepthPenalty = (avgWords - 15) * 0.01;
+      }
+
+      // Additional penalty for casual connectives (confirms it's a run-on)
+      if (startsWithCasual) {
+        runOnDepthPenalty += 0.15; // Starting with "And also" confirms casual style
+      }
+      runOnDepthPenalty += casualConnectiveCount * 0.08;
+
+      // Apply penalty: reduce the effective dependency depth
+      if (runOnDepthPenalty > 0) {
+        const adjustedDepDepth = Math.max(1.795, depDepth - runOnDepthPenalty);
+        // Recalculate IQ with adjusted depth
+        iq = 53 + (adjustedDepDepth - 1.795) * 80;
+      }
+    }
 
     // Detect parenthetical-heavy casual writing
     const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
