@@ -1262,18 +1262,29 @@
           badge.removeAttribute('data-confidence');
         }
 
-        // Update badge content
+        // Reset animation state to allow re-animation
+        badge.removeAttribute('data-iq-animating');
+        badge.removeAttribute('data-iq-animated');
+
+        // Cancel any existing animation frame
+        if (badge._animationFrameId) {
+          cancelAnimationFrame(badge._animationFrameId);
+          badge._animationFrameId = null;
+        }
+
+        // Prepare badge for count-up animation from 0
+        // Set initial score to 0 before animation
         if (confidence !== null) {
           // Ensure flip structure exists
           if (!badge.querySelector('.iq-badge-inner')) {
             if (updateBadgeWithFlipStructure) {
-              updateBadgeWithFlipStructure(badge, newIQ, confidence);
+              updateBadgeWithFlipStructure(badge, 0, confidence);
             } else {
               badge.innerHTML = `
                 <div class="iq-badge-inner">
                   <div class="iq-badge-front">
                     <span class="iq-label">IQ</span>
-                    <span class="iq-score">${newIQ}</span>
+                    <span class="iq-score">0</span>
                   </div>
                   <div class="iq-badge-back">
                     <span class="iq-label">%</span>
@@ -1283,31 +1294,44 @@
               `;
             }
           } else {
-            // Update existing flip structure
+            // Reset existing flip structure to 0
             const frontScore = badge.querySelector('.iq-badge-front .iq-score');
             const backScore = badge.querySelector('.iq-badge-back .iq-score');
-            if (frontScore) frontScore.textContent = newIQ;
+            if (frontScore) frontScore.textContent = '0';
             if (backScore) backScore.textContent = confidence;
           }
           badge.classList.add('iq-badge-flip');
         } else {
-          // Simple badge without confidence
+          // Simple badge without confidence - reset to 0
           badge.innerHTML = `
             <span class="iq-label">IQ</span>
-            <span class="iq-score">${newIQ}</span>
+            <span class="iq-score">0</span>
           `;
           badge.classList.remove('iq-badge-flip');
         }
 
-        // Update color
-        badge.style.setProperty('background-color', iqColor, 'important');
+        // Set initial color (loading color) - animateCountUp will transition to final color
+        const { hexToRgb, desaturateColor } = badgeManager;
+        if (hexToRgb && desaturateColor) {
+          const darkerRed = '#b71c1c';
+          const rgb = hexToRgb(darkerRed);
+          const desat = desaturateColor(rgb, 0.5);
+          const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
+          badge.style.setProperty('background-color', loadingColor, 'important');
+        } else {
+          badge.style.setProperty('background-color', iqColor, 'important');
+        }
 
-        // Animate if available
-        if (animateCountUp && oldIQ) {
-          const oldIQNum = parseInt(oldIQ, 10);
-          if (!isNaN(oldIQNum)) {
-            animateCountUp(badge, newIQ, iqColor);
+        // Trigger count-up animation from 0 to newIQ
+        if (animateCountUp) {
+          animateCountUp(badge, newIQ, iqColor);
+        } else {
+          // Fallback if animation not available - just set the final value
+          const scoreElement = badge.querySelector('.iq-score') || badge.querySelector('.iq-badge-front .iq-score');
+          if (scoreElement) {
+            scoreElement.textContent = newIQ;
           }
+          badge.style.setProperty('background-color', iqColor, 'important');
         }
 
         console.log(`%c✅ Recalculation complete: ${oldIQ} → ${newIQ}`, 'color: #4caf50; font-weight: bold;');

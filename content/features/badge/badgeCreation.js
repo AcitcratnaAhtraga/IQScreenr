@@ -289,6 +289,40 @@ function logDebugInfo(debugData) {
   const calibrationNote = result.is_twitter_calibrated ? ' (Twitter-adjusted baseline)' : ' (+ variance & readability boosts)';
   console.log(`  Trained Mapping: IQ = 60 + (avg_words - ${sentenceBaseline}) × 6.0${calibrationNote}`);
 
+  // Run-on detection analysis for Sentence Complexity
+  const avgWords = features.avg_words_per_sentence || (sentences.length > 0 ? (tokens.length / sentences.length) : 0);
+  const sentenceCount = sentences.length;
+  const punctuationMarks = (text.match(/[,;:.—-]/g) || []).length;
+  const punctuationDensity = tokens.length > 0 ? punctuationMarks / tokens.length : 0;
+  const casualConnectives = /\b(and\s+also|also\s+note|and\s+then|and\s+so|and\s+but)\b/gi;
+  const casualConnectiveCount = (text.match(casualConnectives) || []).length;
+  const startsWithCasual = /^(and\s+|also\s+|then\s+|so\s+)/i.test(text.trim());
+
+  if (sentenceCount === 1 && avgWords > 15) {
+    let runOnScore = 0;
+    if (punctuationDensity < 0.05) {
+      runOnScore += (avgWords - 15) * 0.5;
+    } else if (punctuationDensity < 0.10) {
+      runOnScore += (avgWords - 15) * 0.25;
+    }
+    if (startsWithCasual) runOnScore += 5;
+    runOnScore += casualConnectiveCount * 3;
+
+    if (runOnScore > 0) {
+      const penaltyPercent = Math.min(0.6, runOnScore / 30);
+      const originalIQ = 60 + (avgWords - sentenceBaseline) * 6.0;
+      const adjustedIQ = originalIQ * (1 - penaltyPercent);
+
+      console.log(`  %c🚫 Run-on Detection (Twitter Casual Pattern):`, 'font-weight: bold; color: #F44336;');
+      console.log(`    Punctuation Density: ${(punctuationDensity * 100).toFixed(1)}% ${punctuationDensity < 0.05 ? '(VERY LOW - likely run-on)' : punctuationDensity < 0.10 ? '(Low - possibly run-on)' : ''}`);
+      console.log(`    Starts with casual connective: ${startsWithCasual ? 'Yes' : 'No'}`);
+      console.log(`    Casual connective patterns: ${casualConnectiveCount}`);
+      console.log(`    Run-on Score: ${runOnScore.toFixed(1)} → Penalty: ${(penaltyPercent * 100).toFixed(1)}%`);
+      console.log(`    Base IQ: ${originalIQ.toFixed(1)} → After penalty: ${adjustedIQ.toFixed(1)}`);
+      console.log(`    %cNote: Casual Twitter run-ons are penalized - they indicate stream-of-consciousness writing, not sophistication`, 'color: #666; font-style: italic;');
+    }
+  }
+
   console.log(`%c⚙️ Grammatical Precision Features:`, 'font-weight: bold; color: #FF5722;');
   if (features.punctuation_complexity !== undefined) {
     console.log(`  Punctuation Complexity: ${features.punctuation_complexity.toFixed(2)} per sentence`);
@@ -305,9 +339,46 @@ function logDebugInfo(debugData) {
     console.log(`    → Optimal range 0.08-0.20 indicates good logical flow`);
   }
   if (features.avg_dependency_depth !== undefined) {
-    console.log(`  Average Dependency Depth: ${features.avg_dependency_depth.toFixed(3)}`);
+    const originalDepDepth = features.avg_dependency_depth;
+    console.log(`  Average Dependency Depth: ${originalDepDepth.toFixed(3)}`);
     console.log(`    → Enhanced approximation (calibrated on Python spaCy results)`);
     console.log(`    → Uses: punctuation, clauses, relative clauses, sentence length, prepositions`);
+
+    // Show run-on adjustments for dependency depth
+    const avgWordsForGrammar = features.avg_words_per_sentence || (sentences.length > 0 ? (tokens.length / sentences.length) : 0);
+    const sentenceCountForGrammar = sentences.length;
+    if (sentenceCountForGrammar === 1 && avgWordsForGrammar > 15) {
+      let depthPenalty = 0;
+      let iqPenalty = 0;
+
+      if (punctuationDensity < 0.05) {
+        depthPenalty = (avgWordsForGrammar - 15) * 0.03;
+        iqPenalty += (avgWordsForGrammar - 15) * 1.5;
+      } else if (punctuationDensity < 0.10) {
+        depthPenalty = (avgWordsForGrammar - 15) * 0.015;
+        iqPenalty += (avgWordsForGrammar - 15) * 0.75;
+      }
+
+      if (startsWithCasual) {
+        depthPenalty += 0.25;
+        iqPenalty += 15;
+      }
+      depthPenalty += casualConnectiveCount * 0.12;
+      iqPenalty += casualConnectiveCount * 8;
+
+      if (depthPenalty > 0 || iqPenalty > 0) {
+        const adjustedDepth = Math.max(1.795, originalDepDepth - depthPenalty);
+        const originalGrammarIQ = 53 + (originalDepDepth - 1.795) * 80;
+        const adjustedGrammarIQ = 53 + (adjustedDepth - 1.795) * 80;
+        const finalGrammarIQ = Math.max(50, adjustedGrammarIQ - iqPenalty);
+
+        console.log(`  %c🚫 Run-on Adjustment (Dependency Depth):`, 'font-weight: bold; color: #F44336;');
+        console.log(`    Depth Penalty: ${depthPenalty.toFixed(3)} → Adjusted Depth: ${adjustedDepth.toFixed(3)}`);
+        console.log(`    Direct IQ Penalty: ${iqPenalty.toFixed(1)} points`);
+        console.log(`    Base Grammar IQ: ${originalGrammarIQ.toFixed(1)} → After adjustments: ${finalGrammarIQ.toFixed(1)}`);
+        console.log(`    %cNote: High dependency depth from run-ons (lack of punctuation) is penalized`, 'color: #666; font-style: italic;');
+      }
+    }
   }
   console.log(`  Trained Mapping: IQ = 53 + (dep_depth - 1.795) × 80 (+ entropy & connectives)`);
 
@@ -341,6 +412,13 @@ function logDebugInfo(debugData) {
                 `(${(result.dimension_scores.grammatical_precision || 100).toFixed(1)} × ${weights.grammatical_precision.toFixed(2)})`);
     console.log(`  = ${calculated.toFixed(2)} → Final: ${iq.toFixed(1)}`);
     console.log(`  %cNote: IQ score is length-independent - quality matters, not quantity`, 'color: #666; font-style: italic;');
+
+    // Show run-on penalty notice if applicable
+    const hasRunOnPenalty = (sentenceCount === 1 && avgWords > 15 &&
+                             (punctuationDensity < 0.10 || startsWithCasual || casualConnectiveCount > 0));
+    if (hasRunOnPenalty) {
+      console.log(`  %c⚠️ Run-on penalties applied: Casual Twitter patterns reduce sentence complexity and grammar scores`, 'color: #FF9800; font-style: italic;');
+    }
   }
   console.groupEnd();
 
@@ -430,6 +508,14 @@ function logDebugInfo(debugData) {
       signalQualityComponents.push(`Vocabulary Sophistication: 0 pts (AoA=${meanAoa.toFixed(2)}, basic)`);
     }
 
+    // Run-on penalty (reduces signal quality for casual Twitter patterns)
+    let runOnSignalPenalty = 0;
+    const avgWordsForSignal = features.avg_words_per_sentence || (sentences.length > 0 ? (tokens.length / sentences.length) : 0);
+    if (sentenceCount === 1 && avgWordsForSignal > 15 && punctuationDensity < 0.05) {
+      runOnSignalPenalty = 5;
+      signalQualityComponents.push(`%cRun-on Penalty: -5 pts (low punctuation density = casual pattern)`, 'color: #F44336;');
+    }
+
     // Sample size penalty
     let sampleSizePenalty = 0;
     if (wordCount < 15) {
@@ -440,7 +526,7 @@ function logDebugInfo(debugData) {
       sampleSizePenalty = 5;
     }
 
-    const signalQualityAfterPenalty = Math.max(0, signalQualityScore - sampleSizePenalty);
+    const signalQualityAfterPenalty = Math.max(0, signalQualityScore - sampleSizePenalty - runOnSignalPenalty);
     const signalQualityNormalized = Math.min(100, (signalQualityAfterPenalty / 55) * 100);
 
     // Sample size constraint multiplier
@@ -515,6 +601,27 @@ function logDebugInfo(debugData) {
     console.log(`  Word Count: ${wordCount} words${constraintNote}`);
     console.log(`  Constraint Multiplier: ${sampleSizeConstraint.toFixed(3)}x`);
     console.log(`  %cNote: Length matters for confidence (not IQ) - more data = more reliable`, 'color: #666; font-style: italic;');
+
+    // Show run-on penalty for confidence (if applicable)
+    const avgWordsForConfidence = features.avg_words_per_sentence || (sentences.length > 0 ? (tokens.length / sentences.length) : 0);
+    if (sentenceCount === 1 && avgWordsForConfidence > 15) {
+      let runOnConfidencePenalty = 0;
+      if (punctuationDensity < 0.05) {
+        runOnConfidencePenalty += (avgWordsForConfidence - 15) * 0.3 + 10;
+      } else if (punctuationDensity < 0.10) {
+        runOnConfidencePenalty += (avgWordsForConfidence - 15) * 0.15 + 5;
+      }
+      if (startsWithCasual) runOnConfidencePenalty += 8;
+      runOnConfidencePenalty += casualConnectiveCount * 5;
+
+      if (runOnConfidencePenalty > 0) {
+        console.log('');
+        console.log(`%c5. Run-on Penalty (Anti-Gaming):`, 'font-weight: bold; color: #FF5722;');
+        console.log(`  Run-on Detection: ${runOnConfidencePenalty.toFixed(1)} pts penalty`);
+        console.log(`  Reason: Casual Twitter run-ons reduce confidence (artificial dimension inflation)`);
+        console.log(`  %cNote: Run-ons create unreliable IQ estimates - confidence reflects this`, 'color: #666; font-style: italic;');
+      }
+    }
 
     console.log('');
     console.log(`%cCombined Calculation:`, 'font-weight: bold;');

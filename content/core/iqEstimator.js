@@ -1573,6 +1573,18 @@ class ComprehensiveIQEstimatorUltimate {
       signalQuality += 0; // Single sentence = limited signal
     }
 
+    // ENHANCED: Detect run-on sentences (low punctuation density = weak signal quality)
+    // Run-ons indicate casual speech patterns, not sophisticated writing
+    // This reduces signal quality because the metrics are less reliable
+    // (variables declared here, reused later in anti-gaming checks)
+    const avgWordsPerSentence = features.avg_words_per_sentence || (wordCount / sentenceCount);
+    let punctuationMarks = (originalText.match(/[,;:.—-]/g) || []).length;
+    let punctuationDensity = wordCount > 0 ? punctuationMarks / wordCount : 0;
+    if (sentenceCount === 1 && avgWordsPerSentence > 15 && punctuationDensity < 0.05) {
+      // Very low punctuation in long sentence = run-on = weaker signal
+      signalQuality -= 5; // Reduce signal quality for obvious run-ons
+    }
+
     // Word sophistication (AoA) - Advanced vocabulary indicates meaningful signal
     const meanAoa = features.mean_aoa || 0;
     if (meanAoa >= 10) {
@@ -1684,18 +1696,47 @@ class ComprehensiveIQEstimatorUltimate {
     }
 
     // Check for meaningless padding (very short sentences, fragments)
-    const avgWordsPerSentence = features.avg_words_per_sentence || 0;
+    // Reuse avgWordsPerSentence already declared in signal quality section
     if (avgWordsPerSentence < 4 && sentenceCount > 3) {
       gamingPenalty += 10; // Fragmentary text = weak signal
     }
 
-    // Single very long sentence might indicate run-on, less reliable
-    if (sentenceCount === 1 && wordCount > 50) {
+        // ENHANCED: Detect casual Twitter run-on patterns (same logic as IQ calculations)
+    // Run-ons create artificial dimension inflation and reduce reliability
+    // Reuse variables already declared in signal quality section above
+    const casualConnectives = /\b(and\s+also|also\s+note|and\s+then|and\s+so|and\s+but)\b/gi;
+    const casualConnectiveCount = (originalText.match(casualConnectives) || []).length;
+    const startsWithCasual = /^(and\s+|also\s+|then\s+|so\s+)/i.test(originalText.trim());
+
+    let runOnConfidencePenalty = 0;
+
+    // Single long sentence with low punctuation = run-on (less reliable)
+    if (sentenceCount === 1 && avgWordsPerSentence > 15) {
+      // Low punctuation density indicates run-on, not sophisticated structure
+      if (punctuationDensity < 0.05) {
+        // Very likely a run-on - significant penalty
+        runOnConfidencePenalty += (avgWordsPerSentence - 15) * 0.3; // Scale with length
+        runOnConfidencePenalty += 10; // Base penalty for run-on pattern
+      } else if (punctuationDensity < 0.10) {
+        // Possibly a run-on
+        runOnConfidencePenalty += (avgWordsPerSentence - 15) * 0.15;
+        runOnConfidencePenalty += 5;
+      }
+
+      // Additional penalty for casual connectives (confirms casual speech pattern)
+      if (startsWithCasual) {
+        runOnConfidencePenalty += 8; // Starting with "And also" = casual, less reliable
+      }
+      runOnConfidencePenalty += casualConnectiveCount * 5; // Each casual connective reduces reliability
+
+      // Parenthetical-heavy pattern (existing check, enhanced)
       const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
       if (parentheticalCount >= 4) {
-        gamingPenalty += 8; // Casual run-on pattern
+        runOnConfidencePenalty += 8; // Casual run-on pattern
       }
     }
+
+    gamingPenalty += runOnConfidencePenalty;
 
     // ========== 5. SAMPLE SIZE CONSTRAINT ==========
     // Short texts inherently have less reliable estimates
