@@ -358,20 +358,6 @@ function createGuessBadge(tweetElement = null) {
     const currentCount = badgeCreationCount.get(tweetId) || 0;
     const newCount = currentCount + 1;
     badgeCreationCount.set(tweetId, newCount);
-
-    // DEBUG: Log when creating a second (or more) badge for the same tweet
-    if (newCount > 1) {
-      const stackTrace = new Error().stack;
-      console.warn('[IQGuessr] 🐛 DUPLICATE BADGE CREATION DETECTED!', {
-        tweetId: tweetId || 'unknown',
-        handle: tweetHandle || 'unknown',
-        creationCount: newCount,
-        badgeType: 'guess',
-        caller: stackTrace?.split('\n')[2]?.trim() || 'unknown',
-        fullStack: stackTrace?.split('\n').slice(1, 8).join('\n'),
-        timestamp: new Date().toISOString()
-      });
-    }
   }
 
   const badge = document.createElement('span');
@@ -1008,19 +994,6 @@ function findExistingGuessBadge(tweetElement) {
                         tweetElement.querySelector('[data-iq-guess="true"]');
   }
 
-  // DEBUG: Log when we find an existing badge (to verify selector works)
-  if (existingGuessBadge) {
-    const tweetId = actualTweetElement?.getAttribute('data-tweet-id');
-    console.log('[IQGuessr] ✓ findExistingGuessBadge found badge:', {
-      tweetId: tweetId || 'unknown',
-      badge: {
-        classes: existingGuessBadge.className,
-        hasDataIqGuess: existingGuessBadge.hasAttribute('data-iq-guess'),
-        position: existingGuessBadge.getBoundingClientRect()
-      }
-    });
-  }
-
   return existingGuessBadge || null;
 }
 
@@ -1057,39 +1030,13 @@ function cleanupDuplicateGuessBadges(tweetElement) {
 
   // If we have duplicates, keep only one
   if (allGuessBadges.length > 1) {
-    // DEBUG: Log duplicate detection
-    const tweetId = actualTweetElement?.getAttribute('data-tweet-id');
-    const tweetHandle = actualTweetElement?.getAttribute('data-handle');
-    console.warn('[IQGuessr] 🐛 DUPLICATE GUESS BADGES DETECTED!', {
-      tweetId: tweetId || 'unknown',
-      handle: tweetHandle || 'unknown',
-      count: allGuessBadges.length,
-      badges: allGuessBadges.map((badge, idx) => ({
-        index: idx,
-        hasDataIqGuessed: badge.hasAttribute('data-iq-guessed'),
-        guessedValue: badge.getAttribute('data-iq-guessed'),
-        parent: badge.parentElement?.tagName + ' ' + (badge.parentElement?.getAttribute('role') || ''),
-        position: badge.getBoundingClientRect(),
-        stackTrace: new Error().stack?.split('\n').slice(1, 5).join('\n')
-      })),
-      timestamp: new Date().toISOString()
-    });
-
     // Prioritize badge that has been interacted with (user typed in a guess)
     const interactedBadge = allGuessBadges.find(badge => badge.hasAttribute('data-iq-guessed'));
 
     // If no interacted badge, prioritize the first one in DOM order
     const badgeToKeep = interactedBadge || allGuessBadges[0];
 
-    console.warn('[IQGuessr] 🐛 Keeping badge:', {
-      index: allGuessBadges.indexOf(badgeToKeep),
-      hasDataIqGuessed: badgeToKeep.hasAttribute('data-iq-guessed'),
-      removing: allGuessBadges.length - 1,
-      position: badgeToKeep.getBoundingClientRect()
-    });
-
     // Remove all others
-    let removedCount = 0;
     for (const badge of allGuessBadges) {
       if (badge !== badgeToKeep) {
         // Double-check it's actually a duplicate (same tweet)
@@ -1102,27 +1049,11 @@ function cleanupDuplicateGuessBadges(tweetElement) {
         // Only remove if it's on the same tweet
         if (!badgeTweetId || !actualTweetId || badgeTweetId === actualTweetId) {
           if (badge.parentElement) {
-            console.warn('[IQGuessr] 🐛 Removing duplicate badge:', {
-              tweetId: badgeTweetId,
-              position: badge.getBoundingClientRect(),
-              isConnected: badge.isConnected
-            });
             badge.remove();
-            removedCount++;
-          } else {
-            console.warn('[IQGuessr] 🐛 Badge already removed (no parent):', {
-              position: badge.getBoundingClientRect()
-            });
           }
         }
       }
     }
-
-    console.warn('[IQGuessr] 🐛 Cleanup complete:', {
-      removed: removedCount,
-      kept: 1,
-      total: allGuessBadges.length
-    });
 
     return badgeToKeep;
   }
@@ -1175,24 +1106,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
     // CRITICAL: Check if there's already a guess badge on this tweet to prevent duplicates
     const existingGuessBadge = findExistingGuessBadge(tweetElement);
     if (existingGuessBadge) {
-      // DEBUG: Log when we find existing badge at start
-      const tweetHandle = tweetElement?.getAttribute('data-handle');
-      console.warn('[IQGuessr] 🐛 Found existing guess badge at START of replaceLoadingBadgeWithGuess', {
-        tweetId: tweetId || 'unknown',
-        handle: tweetHandle || 'unknown',
-        existingBadge: {
-          hasDataIqGuessed: existingGuessBadge.hasAttribute('data-iq-guessed'),
-          position: existingGuessBadge.getBoundingClientRect(),
-          parent: existingGuessBadge.parentElement?.tagName + ' ' + (existingGuessBadge.parentElement?.getAttribute('role') || '')
-        },
-        loadingBadge: {
-          position: loadingBadge.getBoundingClientRect(),
-          parent: loadingBadge.parentElement?.tagName + ' ' + (loadingBadge.parentElement?.getAttribute('role') || '')
-        },
-        caller: new Error().stack?.split('\n')[2]?.trim(),
-        timestamp: new Date().toISOString()
-      });
-
       // There's already a guess badge - remove the loading badge and return the existing one
       if (loadingBadge.parentElement && loadingBadge !== existingGuessBadge) {
         loadingBadge.remove();
@@ -1257,23 +1170,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
             // CRITICAL: Final duplicate check RIGHT BEFORE insertion to prevent race conditions
             const finalCheckBadgeIQ = findExistingGuessBadge(tweetElement);
             if (finalCheckBadgeIQ && finalCheckBadgeIQ !== iqBadge) {
-              // DEBUG: Log race condition detection for IQ badge path
-              const tweetId = tweetElement?.getAttribute('data-tweet-id');
-              const tweetHandle = tweetElement?.getAttribute('data-handle');
-              console.warn('[IQGuessr] 🐛 RACE CONDITION: Found duplicate badge RIGHT BEFORE insertion (cached guess + IQ path)', {
-                tweetId: tweetId || 'unknown',
-                handle: tweetHandle || 'unknown',
-                existingBadge: {
-                  hasDataIqGuessed: finalCheckBadgeIQ.hasAttribute('data-iq-guessed'),
-                  position: finalCheckBadgeIQ.getBoundingClientRect()
-                },
-                newBadge: {
-                  position: iqBadge.getBoundingClientRect()
-                },
-                caller: new Error().stack?.split('\n')[2]?.trim(),
-                timestamp: new Date().toISOString()
-              });
-
               // Another badge was inserted while we were creating this one - remove this one and return the existing
               if (loadingBadge.parentElement) {
                 loadingBadge.remove();
@@ -1294,20 +1190,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
         // Double-check for existing guess badge before creating (race condition protection)
         const existingGuessBadgeCheck = findExistingGuessBadge(tweetElement);
         if (existingGuessBadgeCheck) {
-          // DEBUG: Log when we find existing badge in cached guess path
-          const tweetId = tweetElement?.getAttribute('data-tweet-id');
-          const tweetHandle = tweetElement?.getAttribute('data-handle');
-          console.warn('[IQGuessr] 🐛 Found existing guess badge in cached guess path (no IQ)', {
-            tweetId: tweetId || 'unknown',
-            handle: tweetHandle || 'unknown',
-            existingBadge: {
-              hasDataIqGuessed: existingGuessBadgeCheck.hasAttribute('data-iq-guessed'),
-              position: existingGuessBadgeCheck.getBoundingClientRect()
-            },
-            caller: new Error().stack?.split('\n')[2]?.trim(),
-            timestamp: new Date().toISOString()
-          });
-
           // Badge already exists, just remove loading badge and return existing
           if (loadingBadge.parentElement && loadingBadge !== existingGuessBadgeCheck) {
             loadingBadge.remove();
@@ -1333,23 +1215,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
         // CRITICAL: Final duplicate check RIGHT BEFORE insertion to prevent race conditions
         const finalCheckBadge = findExistingGuessBadge(tweetElement);
         if (finalCheckBadge && finalCheckBadge !== guessBadge) {
-          // DEBUG: Log race condition detection
-          const tweetId = tweetElement?.getAttribute('data-tweet-id');
-          const tweetHandle = tweetElement?.getAttribute('data-handle');
-          console.warn('[IQGuessr] 🐛 RACE CONDITION: Found duplicate badge RIGHT BEFORE insertion (cached guess path)', {
-            tweetId: tweetId || 'unknown',
-            handle: tweetHandle || 'unknown',
-            existingBadge: {
-              hasDataIqGuessed: finalCheckBadge.hasAttribute('data-iq-guessed'),
-              position: finalCheckBadge.getBoundingClientRect()
-            },
-            newBadge: {
-              position: guessBadge.getBoundingClientRect()
-            },
-            caller: new Error().stack?.split('\n')[2]?.trim(),
-            timestamp: new Date().toISOString()
-          });
-
           // Another badge was inserted while we were creating this one - remove this one and return the existing
           if (loadingBadge.parentElement) {
             loadingBadge.remove();
@@ -1420,23 +1285,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
     // CRITICAL: Final duplicate check RIGHT BEFORE insertion to prevent race conditions
     const finalCheckBadge = findExistingGuessBadge(tweetElement);
     if (finalCheckBadge && finalCheckBadge !== guessBadge) {
-      // DEBUG: Log race condition detection
-      const tweetIdForLog = tweetElement?.getAttribute('data-tweet-id');
-      const tweetHandle = tweetElement?.getAttribute('data-handle');
-      console.warn('[IQGuessr] 🐛 RACE CONDITION: Found duplicate badge RIGHT BEFORE insertion (no cached guess path)', {
-        tweetId: tweetIdForLog || 'unknown',
-        handle: tweetHandle || 'unknown',
-        existingBadge: {
-          hasDataIqGuessed: finalCheckBadge.hasAttribute('data-iq-guessed'),
-          position: finalCheckBadge.getBoundingClientRect()
-        },
-        newBadge: {
-          position: guessBadge.getBoundingClientRect()
-        },
-        caller: new Error().stack?.split('\n')[2]?.trim(),
-        timestamp: new Date().toISOString()
-      });
-
       // Another badge was inserted while we were creating this one - remove this one and return the existing
       if (loadingBadge.parentElement) {
         loadingBadge.remove();
