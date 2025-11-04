@@ -949,18 +949,18 @@
     // We'll hook into setProperty instead to avoid changing appearance
     trackedBadgeOriginalStyle = badge.style;
     trackedBadgeStyleProxy = createStyleProxy(badge);
-    
+
     // Intercept setProperty calls to track style changes (but don't replace the style object)
     const originalSetProperty = badge.style.setProperty.bind(badge.style);
     badge.style.setProperty = function(property, value, priority) {
       const oldValue = trackedBadge.style.getPropertyValue(property);
       const result = originalSetProperty(property, value, priority);
-      
+
       // Track style changes (but ignore border changes we make for tracking indicator)
       if (trackedBadge === badge && oldValue !== value && property !== 'border') {
         logChange('Style.setProperty()', { property, value, priority }, oldValue, value);
       }
-      
+
       return result;
     };
 
@@ -1469,7 +1469,7 @@
       currentBadge = badge;
       const rect = badge.getBoundingClientRect();
       showTooltip(badge, e.clientX, e.clientY);
-      
+
       // If this is a tracked badge, also log hover info to track changes
       if (trackedBadge === badge) {
         logToConsole(badge);

@@ -338,6 +338,15 @@ function animateCountUp(badge, finalIQ, iqColor) {
         // Note: We already built the flip structure earlier if needed,
         // but the safety check above ensures it exists if confidence data is present
 
+        // Add hover handlers for color inversion if badge has flip structure
+        if (badge.classList.contains('iq-badge-flip')) {
+          const getBadgeCreation = () => window.BadgeCreation || {};
+          const { addFlipBadgeHoverHandlers } = getBadgeCreation();
+          if (addFlipBadgeHoverHandlers) {
+            addFlipBadgeHoverHandlers(badge);
+          }
+        }
+
         setTimeout(() => {
           triggerPulseAnimation(badge, iqColor);
         }, 200);
@@ -552,6 +561,12 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence,
       // Store original background color in CSS variable for hover inversion
       if (badge.classList.contains('iq-badge-flip')) {
         badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
+        // Add hover handlers for color inversion
+        const getBadgeCreation = () => window.BadgeCreation || {};
+        const { addFlipBadgeHoverHandlers } = getBadgeCreation();
+        if (addFlipBadgeHoverHandlers) {
+          addFlipBadgeHoverHandlers(badge);
+        }
       }
       badge.removeAttribute('data-iq-animating');
       badge.setAttribute('data-iq-animated', 'true');

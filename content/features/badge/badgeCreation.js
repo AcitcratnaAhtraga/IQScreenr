@@ -681,6 +681,8 @@ function addFlipBadgeHoverHandlers(badge) {
       const originalBgColor = originalBg || window.getComputedStyle(badge).backgroundColor;
 
       // Invert: set background to black, text to original background color
+      // Use direct style manipulation to ensure it overrides everything
+      badge.style.backgroundColor = '#000000';
       badge.style.setProperty('background-color', '#000000', 'important');
       badge.style.setProperty('color', originalBgColor, 'important');
 
@@ -709,6 +711,7 @@ function addFlipBadgeHoverHandlers(badge) {
       const originalBgColor = badge.style.getPropertyValue('--iq-badge-original-bg');
       if (originalBgColor) {
         // Restore original colors
+        badge.style.backgroundColor = originalBgColor;
         badge.style.setProperty('background-color', originalBgColor, 'important');
         badge.style.setProperty('color', '#000000', 'important');
 
@@ -733,8 +736,9 @@ function addFlipBadgeHoverHandlers(badge) {
     }
   };
 
-  badge.addEventListener('mouseenter', mouseenterHandler);
-  badge.addEventListener('mouseleave', mouseleaveHandler);
+  // Add handlers - use capture phase to ensure they run before other handlers
+  badge.addEventListener('mouseenter', mouseenterHandler, { capture: true, passive: true });
+  badge.addEventListener('mouseleave', mouseleaveHandler, { capture: true, passive: true });
   badge._hoverHandlersAdded = true;
   badge._hoverHandlers = { mouseenter: mouseenterHandler, mouseleave: mouseleaveHandler };
 }
