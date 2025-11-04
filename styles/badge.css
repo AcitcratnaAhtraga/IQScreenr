@@ -1,5 +1,205 @@
 /**
  * Badge Styling for IQ Scores
+ *
+ * ============================================================================================
+ * BADGE LOCATION CATEGORIZATION - ALL BADGE PLACEMENTS IN THE APPLICATION
+ * ============================================================================================
+ *
+ * This document categorizes ALL locations where IQ badges appear. Use this as a reference
+ * when modifying badge styles or behavior for specific locations.
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 1: TWEET BADGES (Regular Feed Tweets)
+ * --------------------------------------------------------------------------------------------
+ * Location: Home feed, Explore feed, Search results, User profile timeline
+ * Context: Regular tweets displayed in the main feed
+ * Placement: In the engagement bar `[role="group"]` (like/retweet/reply buttons bar)
+ *            - Inserted before the first child of engagement bar
+ *            - Fallback: Before tweet content `div[data-testid="tweetText"]` or `div[lang]`
+ * File Reference: content/features/tweetProcessor.js (lines 670-688, 940-959)
+ * CSS Class: .iq-badge (standard class)
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 2: REPLY BADGES (Reply Tweets)
+ * --------------------------------------------------------------------------------------------
+ * Location: Reply threads, comment sections, reply chains
+ * Context: Tweets that are replies to other tweets
+ * Placement: Same as regular tweets - in engagement bar `[role="group"]` or before tweet content
+ * File Reference: content/features/tweetProcessor.js (lines 670-688, 940-959)
+ * CSS Class: .iq-badge (standard class)
+ * Note: Replies use the same placement logic as regular feed tweets
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 3: NOTIFICATION BADGES (Notifications Page)
+ * --------------------------------------------------------------------------------------------
+ * Subcategory 3.1: Liked Tweet Notifications
+ *   Location: /notifications page - "X liked your post" notifications
+ *   Placement: Below notification text, before tweet content (on its own line)
+ *   File Reference: content/features/tweetProcessor.js (lines 652-689, 754-791, findNotificationBadgePlacement)
+ *
+ * Subcategory 3.2: Reposted Tweet Notifications
+ *   Location: /notifications page - "X reposted" notifications
+ *   Placement: Below notification text, before tweet content (on its own line)
+ *   File Reference: content/features/tweetProcessor.js (lines 652-689, 754-791, findNotificationBadgePlacement)
+ *
+ * Subcategory 3.3: Reply Notifications
+ *   Location: /notifications page - "X replied to you" notifications
+ *   Placement: Below notification text, before tweet content (on its own line)
+ *   File Reference: content/features/tweetProcessor.js (lines 652-689, 754-791, findNotificationBadgePlacement)
+ *
+ * Subcategory 3.4: Quote Tweet Notifications
+ *   Location: /notifications page - "X quoted your post" notifications
+ *   Placement: Below notification text, before tweet content (on its own line)
+ *   File Reference: content/features/tweetProcessor.js (lines 652-689, 754-791, findNotificationBadgePlacement)
+ *
+ * CSS Class: .iq-badge (standard class)
+ * Special Handling: Uses findNotificationBadgePlacement() function for precise positioning
+ *                    Badge is placed on its own line (display: block) below notification text
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 4: TWEET DETAIL PAGE BADGES (Individual Tweet Pages)
+ * --------------------------------------------------------------------------------------------
+ * Location: /status/[tweetId] pages - Individual tweet detail pages
+ * Context: When viewing a single tweet in detail (with replies)
+ * Placement: In engagement bar `[role="group"]` for the main tweet
+ *            Also applies to replies shown on the same page
+ * File Reference: content/features/tweetProcessor.js (lines 670-688, 940-959)
+ * CSS Class: .iq-badge (standard class)
+ * Special CSS: [role="group"] .iq-badge:not(.iq-badge-realtime) (lines 306-311)
+ *              - Ensures proper vertical alignment in engagement bars
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 5: ORIGINAL POSTER BADGES (In Tweet URLs/Status Pages)
+ * --------------------------------------------------------------------------------------------
+ * Location: /status/[tweetId] pages - On the original poster's tweet
+ * Context: The main tweet on a status page (the one in the URL)
+ * Placement: In engagement bar `[role="group"]` of the original tweet article
+ * File Reference: content/features/tweetProcessor.js (lines 670-688, 940-959)
+ * CSS Class: .iq-badge (standard class)
+ * Note: Distinguished from replies by checking if article contains engagement bar
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 6: REAL-TIME BADGES (Compose Boxes - Live Typing)
+ * --------------------------------------------------------------------------------------------
+ * Subcategory 6.1: Home Feed Compose Box
+ *   Location: Home feed - Main compose box at top of feed
+ *   Context: When user types in the compose box on home feed
+ *   Placement: In toolbar `[data-testid="toolBar"]` before first button
+ *   File Reference: content/features/realtime.js (lines 350-608, setupRealtimeComposeObserver)
+ *                   content/features/badge/badgeCreation.js (lines 526-878, createRealtimeBadge)
+ *   CSS Class: .iq-badge.iq-badge-realtime
+ *   Special: Updates in real-time as user types (debounced 300ms)
+ *
+ * Subcategory 6.2: Reply Compose Box (From Feed)
+ *   Location: Home feed, tweet detail pages - Reply compose box
+ *   Context: When user clicks reply and types in the reply compose box
+ *   Placement: In toolbar `[data-testid="toolBar"]` or reply visibility element
+ *   File Reference: content/features/realtime.js (lines 439-484, 526-608)
+ *                   content/features/badge/badgeCreation.js (lines 526-878, createRealtimeBadge)
+ *   CSS Class: .iq-badge.iq-badge-realtime
+ *   Detection: Checked by `isReplyInput` - looks for `article[data-testid="tweet"]` or
+ *              `[aria-label*="Replying to"]` or pathname includes `/status/`
+ *
+ * Subcategory 6.3: Compose Modal (https://x.com/compose/post)
+ *   Location: /compose/post page - Standalone compose modal/page
+ *   Context: When user navigates to compose/post URL or opens compose modal
+ *   Placement: In toolbar `[data-testid="toolBar"]` before first button
+ *   File Reference: content/features/realtime.js (lines 350-608, setupRealtimeComposeObserver)
+ *                   content/features/badge/badgeCreation.js (lines 526-878, createRealtimeBadge)
+ *   CSS Class: .iq-badge.iq-badge-realtime
+ *   Special: Works in modal dialogs `[role="dialog"]` or `[data-testid*="modal"]`
+ *
+ * Subcategory 6.4: Reply Compose Box (From Tweet Detail Page)
+ *   Location: /status/[tweetId] pages - Reply compose box on tweet detail page
+ *   Context: When user replies to a tweet from its detail page
+ *   Placement: In toolbar `[data-testid="toolBar"]` of the reply compose box
+ *   File Reference: content/features/realtime.js (lines 462-484, 526-608)
+ *                   content/features/badge/badgeCreation.js (lines 526-878, createRealtimeBadge)
+ *   CSS Class: .iq-badge.iq-badge-realtime
+ *   Special: Detected by checking if compose box is NOT in original tweet's engagement bar
+ *
+ * Subcategory 6.5: Quote Tweet Compose Box
+ *   Location: Anywhere quote tweet compose box appears
+ *   Context: When user quotes a tweet and types
+ *   Placement: In toolbar `[data-testid="toolBar"]` before first button
+ *   File Reference: content/features/realtime.js (lines 350-608, setupRealtimeComposeObserver)
+ *                   content/features/badge/badgeCreation.js (lines 526-878, createRealtimeBadge)
+ *   CSS Class: .iq-badge.iq-badge-realtime
+ *
+ * Real-time Badge Special Properties:
+ *   - Updates live as user types (debounced 300ms)
+ *   - Shows "X" badge until 5 words typed
+ *   - Shows loading/calculating state during IQ estimation
+ *   - Uses special CSS: .iq-badge-realtime (lines 48-66)
+ *   - Height is dynamically managed to prevent layout shifts
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 7: PROFILE PAGE BADGES (User Profile Pages)
+ * --------------------------------------------------------------------------------------------
+ * Location: /[username] pages - User profile pages (own or others)
+ * Context: User profile pages showing user info and bio
+ * Placement: After username/handle in `div[data-testid="UserName"]` container
+ *            Specifically after the span containing the handle (@username)
+ * File Reference: content/features/profileBadge.js (lines 165-298, addScoreBadge)
+ * CSS Class: .iq-guessr-score-badge (DIFFERENT from .iq-badge)
+ * Note: This is a SCORE badge (IQGuessr total score), not an IQ badge
+ *       Only shows when game mode (IQGuessr) is enabled
+ *       Appears on both own profile and other users' profiles
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 8: USER'S OWN PROFILE PAGE BADGES
+ * --------------------------------------------------------------------------------------------
+ * Location: /[own-username] - User's own profile page
+ * Context: When viewing your own profile
+ * Placement: Same as Category 7 - after username/handle
+ * File Reference: content/features/profileBadge.js (lines 165-298, addScoreBadge)
+ * CSS Class: .iq-guessr-score-badge
+ * Note: Uses same placement logic as viewing other users' profiles
+ *
+ * --------------------------------------------------------------------------------------------
+ * CATEGORY 9: SOMEONE ELSE'S COMMENT/REPLY BADGES
+ * --------------------------------------------------------------------------------------------
+ * Location: Reply threads, comment sections anywhere
+ * Context: Replies/comments from other users in threads
+ * Placement: Same as Category 2 (Reply Badges) - in engagement bar or before content
+ * File Reference: content/features/tweetProcessor.js (lines 670-688, 940-959)
+ * CSS Class: .iq-badge (standard class)
+ * Note: All replies use the same processing logic regardless of who posted them
+ *
+ * --------------------------------------------------------------------------------------------
+ * CSS CLASS REFERENCE
+ * --------------------------------------------------------------------------------------------
+ * .iq-badge                    - Base class for all IQ badges (Categories 1-6, 9)
+ * .iq-badge-realtime           - Real-time badges in compose boxes (Category 6)
+ * .iq-badge-flip               - Badges with confidence data (flip on hover)
+ * .iq-badge-loading            - Loading state badges
+ * .iq-badge-calculating        - Calculating state (with rotating border animation)
+ * .iq-badge-pulse              - Pulse animation when IQ count completes
+ * .iq-guessr-score-badge       - Profile page score badge (Category 7-8)
+ *
+ * --------------------------------------------------------------------------------------------
+ * KEY FILES FOR BADGE PLACEMENT LOGIC
+ * --------------------------------------------------------------------------------------------
+ * content/features/tweetProcessor.js
+ *   - processTweet() - Main function for processing tweets and placing badges
+ *   - findNotificationBadgePlacement() - Special placement for notifications (lines 28-139)
+ *   - ensureCorrectBadgePosition() - Verifies badge position (lines 145-250)
+ *
+ * content/features/realtime.js
+ *   - setupRealtimeComposeObserver() - Monitors for new compose boxes (lines 613-726)
+ *   - setupRealtimeBadge() - Sets up real-time badge for specific input (lines 350-608)
+ *   - updateRealtimeBadge() - Updates badge as user types (lines 22-344)
+ *
+ * content/features/badge/badgeCreation.js
+ *   - createIQBadge() - Creates standard IQ badge (lines 458-521)
+ *   - createRealtimeBadge() - Creates real-time compose badge (lines 526-878)
+ *   - createLoadingBadge() - Creates loading state badge
+ *
+ * content/features/profileBadge.js
+ *   - addScoreBadge() - Adds score badge to profile pages (lines 165-298)
+ *   - findInsertionPoint() - Finds where to insert profile badge (lines 91-159)
+ *
+ * ============================================================================================
  */
 
 .iq-badge {
