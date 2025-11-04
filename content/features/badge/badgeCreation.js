@@ -8,6 +8,7 @@
 
 // Get color utilities
 const getColorUtils = () => window.BadgeColorUtils || {};
+const getTextExtraction = () => window.TextExtraction || {};
 
 /**
  * Create loading badge while IQ is being calculated
@@ -616,6 +617,24 @@ function createRealtimeBadge(inputElement, container) {
       scoreElement.style.setProperty('color', '#000000', 'important');
     }
 
+    // Hide badge if no text has been typed yet
+    // Check input element text to determine if badge should be visible
+    if (inputElement) {
+      const { getInputText } = getTextExtraction();
+      if (getInputText) {
+        const text = getInputText(inputElement).trim();
+        if (!text || text.length === 0) {
+          badge.style.setProperty('display', 'none', 'important');
+        }
+      } else {
+        // If getInputText not available, hide by default
+        badge.style.setProperty('display', 'none', 'important');
+      }
+    } else {
+      // No input element, hide badge
+      badge.style.setProperty('display', 'none', 'important');
+    }
+
     return badge;
   }
 
@@ -624,16 +643,17 @@ function createRealtimeBadge(inputElement, container) {
     badge.className = 'iq-badge iq-badge-realtime iq-badge-flip';
     badge.setAttribute('data-iq-realtime', 'true');
     badge.setAttribute('data-iq-score', '100');
-    badge.setAttribute('data-confidence', '100');
+    badge.setAttribute('data-confidence', '0');
 
-    // Use confidence color for 100% confidence to show maximum green
+    // Use confidence color for 0% confidence (starts at 0% and increases)
     const { getIQColor, getConfidenceColor } = getColorUtils();
-    const initialColor = getConfidenceColor ? getConfidenceColor(100) :
+    const initialColor = getConfidenceColor ? getConfidenceColor(0) :
                         (getIQColor ? getIQColor(100) : '#4CAF50');
 
     badge.style.setProperty('background-color', initialColor, 'important');
     badge.style.setProperty('color', '#000000', 'important');
-    badge.style.setProperty('display', 'inline-flex', 'important');
+    // Hide badge initially - only show when user starts typing
+    badge.style.setProperty('display', 'none', 'important');
     badge.style.setProperty('vertical-align', 'middle', 'important');
     badge.style.setProperty('margin-right', '8px', 'important');
     badge.style.setProperty('height', 'auto', 'important');
@@ -642,7 +662,7 @@ function createRealtimeBadge(inputElement, container) {
     badge.style.setProperty('flex-grow', '0', 'important');
     badge.style.setProperty('align-self', 'flex-start', 'important');
 
-    // Create flip structure with 100 IQ and 100% confidence
+    // Create flip structure with 100 IQ and 0% confidence (starts at 0% and increases)
     badge.innerHTML = `
       <div class="iq-badge-inner" style="transform: rotateY(0deg); transform-style: preserve-3d;">
         <div class="iq-badge-front">
@@ -651,7 +671,7 @@ function createRealtimeBadge(inputElement, container) {
         </div>
         <div class="iq-badge-back">
           <span class="iq-label">%</span>
-          <span class="iq-score">100</span>
+          <span class="iq-score">0</span>
         </div>
       </div>
     `;

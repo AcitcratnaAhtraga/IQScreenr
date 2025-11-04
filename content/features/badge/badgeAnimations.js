@@ -381,7 +381,8 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence,
 
   // Use current background color as starting point, or IQ 100 color if badge just initialized
   const startIQ = oldIQ >= 0 ? oldIQ : 100;
-  const startConfidence = (oldConfidence !== null && oldConfidence !== undefined && oldConfidence >= 0) ? oldConfidence : 100;
+  // For real-time badges, confidence starts at 0% and increases
+  const startConfidence = (oldConfidence !== null && oldConfidence !== undefined && oldConfidence >= 0) ? oldConfidence : 0;
 
   let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                      badge.querySelector('.iq-score');
@@ -398,17 +399,17 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence,
     backScoreElement.textContent = String(startConfidence);
   }
 
-  // Get starting color (either current or 100% confidence color for maximum green)
+  // Get starting color (either current or 0% confidence color for real-time badges)
   let startColorRgb;
   const { getConfidenceColor } = getBadgeManager();
   if (oldIQ < 0 || oldIQ === 100) {
-    // Starting fresh - use 100% confidence color for maximum green
-    const initialColor = getConfidenceColor ? getConfidenceColor(100) :
+    // Starting fresh - use 0% confidence color (starts at 0% and increases)
+    const initialColor = getConfidenceColor ? getConfidenceColor(0) :
                         (getIQColor ? getIQColor(100) : '#4CAF50');
     startColorRgb = parseColor(initialColor);
     badge.style.setProperty('background-color', initialColor, 'important');
   } else {
-    const defaultColor = getConfidenceColor ? getConfidenceColor(100) :
+    const defaultColor = getConfidenceColor ? getConfidenceColor(0) :
                         (getIQColor ? getIQColor(100) : '#4CAF50');
     const currentBgColor = badge.style.backgroundColor || defaultColor;
     startColorRgb = parseColor(currentBgColor);

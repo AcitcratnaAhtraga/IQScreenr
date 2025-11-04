@@ -102,11 +102,28 @@ async function updateRealtimeBadge(inputElement, badge, container) {
 
   const text = getInputText(inputElement).trim();
 
+  // Hide badge if no text has been typed yet
+  if (!text || text.length === 0) {
+    badge.style.setProperty('display', 'none', 'important');
+    badge.removeAttribute('data-iq-score');
+    badge.removeAttribute('data-confidence');
+    if (badge._animationFrameId) {
+      cancelAnimationFrame(badge._animationFrameId);
+      badge._animationFrameId = null;
+    }
+    badge.removeAttribute('data-iq-animating');
+    badge.removeAttribute('data-iq-animated');
+    return;
+  }
+
+  // Show badge now that user has started typing
+  badge.style.setProperty('display', 'inline-flex', 'important');
+
   // Count words in the text
   const wordCount = text.trim() ? text.trim().split(/\s+/).filter(word => word.length > 0).length : 0;
 
   // Show X badge until 5 words are written
-  if (!text || wordCount < 5) {
+  if (wordCount < 5) {
     badge.style.setProperty('background-color', '#000000', 'important');
     badge.style.setProperty('color', '#9e9e9e', 'important');
 
@@ -193,26 +210,26 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
                          badge.querySelector('.iq-score');
       let oldIQ = 100; // Default to 100 as starting point
-      let oldConfidence = 100; // Default to 100% as starting point
+      let oldConfidence = 0; // Default to 0% as starting point (increases as confidence grows)
 
       const isTransitioningFromInvalid = scoreElement && scoreElement.textContent.trim() === '✕';
 
       if (isTransitioningFromInvalid) {
         oldIQ = 100; // Start from 100 even when transitioning from invalid
-        oldConfidence = 100; // Start from 100% confidence
+        oldConfidence = 0; // Start from 0% confidence (will increase)
 
         // Restore flip structure for smooth transition
         if (!badge.querySelector('.iq-badge-inner')) {
-          updateBadgeWithFlipStructure(badge, 100, 100);
+          updateBadgeWithFlipStructure(badge, 100, 0);
         } else {
           const frontScore = badge.querySelector('.iq-badge-front .iq-score');
           const backScore = badge.querySelector('.iq-badge-back .iq-score');
           if (frontScore) frontScore.textContent = '100';
-          if (backScore) backScore.textContent = '100';
+          if (backScore) backScore.textContent = '0';
         }
 
         badge.setAttribute('data-iq-score', '100');
-        badge.setAttribute('data-confidence', '100');
+        badge.setAttribute('data-confidence', '0');
       } else {
         if (badge.hasAttribute('data-iq-score')) {
           const dataScore = parseInt(badge.getAttribute('data-iq-score'), 10);
@@ -245,7 +262,13 @@ async function updateRealtimeBadge(inputElement, badge, container) {
           const dataConfidence = parseInt(badge.getAttribute('data-confidence'), 10);
           if (!isNaN(dataConfidence) && dataConfidence >= 0) {
             oldConfidence = dataConfidence;
+          } else {
+            // If confidence is invalid or not set, start at 0%
+            oldConfidence = 0;
           }
+        } else {
+          // No confidence attribute set, start at 0%
+          oldConfidence = 0;
         }
       }
 
@@ -303,10 +326,10 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       // Animate both IQ and confidence transitions
       animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence, confidence);
     } else {
-      // Keep showing 100 IQ and 100% confidence when result is invalid
+      // Keep showing 100 IQ and 0% confidence when result is invalid (confidence starts at 0%)
       const { getIQColor, getConfidenceColor } = getBadgeManager();
-      // Use confidence color for 100% confidence to show maximum green
-      const initialColor = getConfidenceColor ? getConfidenceColor(100) :
+      // Use confidence color for 0% confidence (starts low)
+      const initialColor = getConfidenceColor ? getConfidenceColor(0) :
                           (getIQColor ? getIQColor(100) : '#4CAF50');
       badge.style.setProperty('background-color', initialColor, 'important');
       badge.style.setProperty('color', '#000000', 'important');
@@ -315,7 +338,7 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       if (!badge.querySelector('.iq-badge-inner')) {
         const { updateBadgeWithFlipStructure } = getBadgeManager();
         if (updateBadgeWithFlipStructure) {
-          updateBadgeWithFlipStructure(badge, 100, 100);
+          updateBadgeWithFlipStructure(badge, 100, 0);
         }
       }
 
@@ -326,7 +349,7 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       }
       const backScore = badge.querySelector('.iq-badge-back .iq-score');
       if (backScore) {
-        backScore.textContent = '100';
+        backScore.textContent = '0';
         backScore.style.setProperty('color', '#000000', 'important');
       }
 
@@ -336,7 +359,7 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       });
 
       badge.setAttribute('data-iq-score', '100');
-      badge.setAttribute('data-confidence', '100');
+      badge.setAttribute('data-confidence', '0');
     }
   } catch (error) {
     console.error('Error updating real-time IQ badge:', error);
@@ -420,7 +443,8 @@ function setupRealtimeMonitoring(inputElement) {
       const existingBadge = container.querySelector('.iq-badge-realtime');
       if (existingBadge) {
         container._iqInputElement = inputElement;
-        existingBadge.style.removeProperty('display');
+        // Don't show badge on focus - only show when user types
+        // updateRealtimeBadge will handle showing it when text is present
         updateRealtimeBadge(inputElement, existingBadge, container);
       } else {
         createRealtimeBadge(inputElement, container);
@@ -602,9 +626,8 @@ function setupRealtimeMonitoring(inputElement) {
     inputElement.addEventListener(eventType, debouncedUpdate, { passive: true });
   });
 
-  setTimeout(() => {
-    updateRealtimeBadge(inputElement, badge, container);
-  }, 500);
+  // Don't call updateRealtimeBadge immediately - wait for user to type
+  // The badge will be shown when user starts typing via the input event handlers
 }
 
 /**

@@ -58,11 +58,23 @@
       const realtimeBadges = document.querySelectorAll('.iq-badge-realtime');
 
       if (showRealtime && settings.showIQBadge) {
-        // Show all realtime badges
+        // Only show realtime badges that have text (updateRealtimeBadge handles showing/hiding based on text)
+        // Don't force display - let updateRealtimeBadge control visibility based on whether user has typed
         realtimeBadges.forEach(badge => {
-          badge.style.setProperty('display', 'inline-flex', 'important');
-          badge.style.setProperty('visibility', 'visible', 'important');
-          badge.style.setProperty('opacity', '1', 'important');
+          // Check if badge has text by checking if it has an IQ score or is showing X
+          const hasScore = badge.hasAttribute('data-iq-score');
+          const scoreElement = badge.querySelector('.iq-score');
+          const hasText = hasScore || (scoreElement && scoreElement.textContent && scoreElement.textContent.trim() !== '');
+
+          // Only show if badge indicates user has typed (has score or shows X)
+          if (hasText) {
+            badge.style.setProperty('display', 'inline-flex', 'important');
+            badge.style.setProperty('visibility', 'visible', 'important');
+            badge.style.setProperty('opacity', '1', 'important');
+          } else {
+            // Hide if no text has been typed yet
+            badge.style.setProperty('display', 'none', 'important');
+          }
         });
         // Restart realtime monitoring if needed
         if (realtimeManager && realtimeManager.setupRealtimeComposeObserver) {
