@@ -521,7 +521,8 @@ article[data-iq-analyzed] {
 @media (max-width: 768px) {
   .iq-badge {
     font-size: 11px;
-    padding: 3px 6px;
+    /* Match desktop padding for consistent vertical alignment */
+    padding: 5px 6px 1px 6px;
   }
 
   .iq-icon {
