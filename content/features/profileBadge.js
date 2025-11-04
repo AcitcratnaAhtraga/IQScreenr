@@ -56,7 +56,7 @@
       display: inline-flex !important;
       align-items: center;
       gap: 4px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+      background: #000000 !important;
       color: white !important;
       padding: 4px 8px;
       border-radius: 6px;
@@ -69,16 +69,18 @@
       opacity: 1 !important;
       position: relative !important;
       z-index: 1000 !important;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.15);
     `;
 
     badge.onmouseenter = () => {
       badge.style.transform = 'scale(1.05)';
-      badge.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+      badge.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.4), 0 6px 12px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2)';
     };
 
     badge.onmouseleave = () => {
       badge.style.transform = 'scale(1)';
-      badge.style.boxShadow = 'none';
+      badge.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.15)';
     };
 
     return badge;
