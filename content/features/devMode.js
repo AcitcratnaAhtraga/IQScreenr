@@ -37,17 +37,17 @@
     const isComposePage = pathname.includes('/compose/post');
     const isProfilePage = /^\/[a-zA-Z0-9_]+(\/(with_replies|media|likes))?\/?$/.test(pathname);
     const isStatusPage = pathname.includes('/status/');
-    
+
     const tweetElement = badge.closest('article[data-testid="tweet"]') ||
                         badge.closest('article[role="article"]') ||
                         badge.closest('article');
-    
+
     const engagementBar = badge.closest('[role="group"]');
     const composeBox = badge.closest('[data-testid="toolBar"]') ||
                        badge.closest('[role="textbox"]') ||
                        badge.closest('[contenteditable="true"]');
     const toolbar = badge.closest('[data-testid="toolBar"]');
-    
+
     // CATEGORY 7 & 8: Profile page badges
     if (badge.classList.contains('iq-guessr-score-badge')) {
       const currentHandle = pathname.match(/^\/([a-zA-Z0-9_]+)/)?.[1];
@@ -58,12 +58,12 @@
         description: 'IQGuessr score badge on profile page'
       };
     }
-    
+
     // CATEGORY 6: Real-time badges (compose boxes)
     if (badge.classList.contains('iq-badge-realtime') || badge.hasAttribute('data-iq-realtime')) {
       let subcategory = null;
       let description = 'Real-time badge in compose box';
-      
+
       // Check for reply compose box
       const replyContext = badge.closest('[aria-label*="Replying to"]') ||
                           (isStatusPage && composeBox && !engagementBar);
@@ -91,7 +91,7 @@
         subcategory = '6.1';
         description = 'Home Feed Compose Box';
       }
-      
+
       return {
         category: 6,
         name: 'Real-time Badge',
@@ -99,19 +99,19 @@
         description: description
       };
     }
-    
+
     // CATEGORY 3: Notification badges
     if (isNotificationsPage && tweetElement) {
       const notificationText = Array.from(tweetElement.querySelectorAll('span, div'))
         .find(el => {
           const text = (el.textContent || '').toLowerCase();
-          return text.includes('liked') || text.includes('reposted') || 
+          return text.includes('liked') || text.includes('reposted') ||
                  text.includes('replied') || text.includes('quoted');
         });
-      
+
       let subcategory = null;
       let description = 'Notification badge';
-      
+
       if (notificationText) {
         const text = notificationText.textContent.toLowerCase();
         if (text.includes('liked')) {
@@ -128,7 +128,7 @@
           description = 'Quote Tweet Notification';
         }
       }
-      
+
       return {
         category: 3,
         name: 'Notification Badge',
@@ -136,30 +136,30 @@
         description: description
       };
     }
-    
+
     // CATEGORY 4 & 5: Tweet detail page badges
     if (isStatusPage && tweetElement) {
       // Check if it's the original poster's tweet (has engagement bar)
-      const isOriginalPoster = engagementBar && 
+      const isOriginalPoster = engagementBar &&
                                engagementBar.querySelector('button[data-testid*="like"]');
-      
+
       return {
         category: isOriginalPoster ? 5 : 4,
         name: isOriginalPoster ? 'Original Poster Badge' : 'Tweet Detail Page Badge',
         subcategory: null,
-        description: isOriginalPoster ? 
+        description: isOriginalPoster ?
           'Badge on original poster\'s tweet in status page' :
           'Badge on tweet detail page (main tweet or reply)'
       };
     }
-    
+
     // CATEGORY 2 & 9: Reply badges
     if (tweetElement) {
       // Check if it's a reply (has reply indicator or is in a thread)
       const isReply = tweetElement.querySelector('[aria-label*="Replying to"]') ||
                      tweetElement.closest('[data-testid="tweet"]')?.previousElementSibling ||
                      engagementBar?.querySelector('button[data-testid*="reply"]');
-      
+
       if (isReply) {
         return {
           category: 9,
@@ -169,7 +169,7 @@
         };
       }
     }
-    
+
     // CATEGORY 1: Regular feed tweets (default)
     if (tweetElement && engagementBar) {
       return {
@@ -179,7 +179,7 @@
         description: 'Regular tweet badge in home feed, explore feed, search results, or profile timeline'
       };
     }
-    
+
     // Default fallback
     return {
       category: null,
@@ -193,13 +193,13 @@
    * Detect Category 10 states (Reloaded Tweet Guessed IQ Badges)
    */
   function detectCategory10State(badge) {
-    const hasCompared = badge.hasAttribute('data-iq-compared') && 
+    const hasCompared = badge.hasAttribute('data-iq-compared') &&
                        badge.getAttribute('data-iq-compared') === 'true';
     const hasIQScore = badge.hasAttribute('data-iq-score');
     const hasGuessed = badge.hasAttribute('data-iq-guessed');
     const isGuessBadge = badge.classList.contains('iq-badge-guess');
     const isCalculated = hasIQScore && !isGuessBadge;
-    
+
     if (isCalculated && hasCompared) {
       return {
         state: '10.1',
@@ -209,7 +209,7 @@
         visualIndicator: 'Pale dark green outline border (rgba(85, 107, 47, 0.6))'
       };
     }
-    
+
     if (isCalculated && !hasCompared) {
       return {
         state: '10.2',
@@ -219,7 +219,7 @@
         visualIndicator: 'Standard calculated badge (no green outline)'
       };
     }
-    
+
     if (isGuessBadge && hasGuessed) {
       return {
         state: '10.3',
@@ -229,7 +229,7 @@
         visualIndicator: 'Gray guess badge (no green outline)'
       };
     }
-    
+
     return null;
   }
 
@@ -364,7 +364,7 @@
       if (tweetId) {
         info.push(`Tweet ID: ${tweetId}`);
       }
-      
+
       // Check if it's a reply
       const isReply = tweetElement.querySelector('[aria-label*="Replying to"]') ||
                      tweetElement.getAttribute('data-reply-to');
@@ -377,7 +377,7 @@
     const engagementBar = badge.closest('[role="group"]');
     if (engagementBar) {
       info.push('Placement: Engagement bar [role="group"] (like/retweet/reply area)');
-      
+
       // Check placement position
       const isFirstChild = engagementBar.firstElementChild === badge;
       if (isFirstChild) {
@@ -503,7 +503,7 @@
     const rect = badge.getBoundingClientRect();
 
     console.group('%c🔍 DEV MODE - Badge Details', 'color: #667eea; font-weight: bold; font-size: 14px;');
-    
+
     // Badge Category
     const category = detectBadgeCategory(badge);
     if (category.category) {
@@ -514,7 +514,7 @@
       console.log(`%cDescription: ${category.description}`, 'color: #9c27b0;');
       console.groupEnd();
     }
-    
+
     // Category 10 State (if applicable)
     const category10State = detectCategory10State(badge);
     if (category10State) {
@@ -526,17 +526,17 @@
       }
       console.groupEnd();
     }
-    
+
     // Badge Type
     console.log('%cType:', 'color: #ff9800; font-weight: bold;', badgeType);
-    
+
     // Badge State
     console.group('%cState:', 'color: #ff9800; font-weight: bold;');
     badgeState.forEach(state => {
       console.log(`%c  • ${state}`, 'color: #ff9800;');
     });
     console.groupEnd();
-    
+
     // Location Info
     console.group('%cLocation:', 'color: #ff9800; font-weight: bold;');
     locationInfo.forEach(info => {

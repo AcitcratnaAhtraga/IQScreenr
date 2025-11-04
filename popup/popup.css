@@ -66,7 +66,7 @@ body {
   height: 20px;
   margin-right: 10px;
   cursor: pointer;
-  accent-color: #2563eb;
+  accent-color: #000000;
 }
 
 .switch-label input[type="checkbox"]:disabled {
@@ -105,8 +105,8 @@ body {
 }
 
 .setting-item-large:hover {
-  border-color: #2563eb;
-  background: #f0f7ff;
+  border-color: #000000;
+  background: #f5f5f5;
 }
 
 .switch-label-large {
@@ -127,7 +127,7 @@ body {
 .iq-guessr-score {
   margin-top: 12px;
   padding: 8px 12px;
-  background: #2563eb;
+  background: #000000;
   color: white;
   border-radius: 6px;
   display: flex;
@@ -158,7 +158,7 @@ body {
 
 .range-value {
   font-weight: 700;
-  color: #2563eb;
+  color: #000000;
   font-size: 15px;
   min-width: 40px;
   text-align: right;
@@ -175,11 +175,11 @@ body {
   align-items: flex-start;
   gap: 8px;
   padding: 10px;
-  background: #eff6ff;
+  background: #f5f5f5;
   border-radius: 6px;
   margin-top: 12px;
   font-size: 12px;
-  color: #1e40af;
+  color: #000000;
 }
 
 .note-icon {
@@ -207,7 +207,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #2563eb;
+  background: #000000;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
@@ -216,7 +216,7 @@ input[type="range"]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #2563eb;
+  background: #000000;
   cursor: pointer;
   border: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -262,13 +262,13 @@ input[type="range"]::-moz-range-thumb {
 .privacy-notice {
   margin-top: 12px;
   padding: 10px;
-  background: #f0f9ff;
+  background: #f5f5f5;
   border-radius: 6px;
   display: flex;
   align-items: flex-start;
   gap: 8px;
   font-size: 12px;
-  color: #0369a1;
+  color: #000000;
 }
 
 .privacy-notice.data-notice {
@@ -291,7 +291,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .privacy-text strong {
-  color: #0369a1;
+  color: #000000;
 }
 
 .color-legend {
@@ -349,7 +349,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .status.saving {
-  color: #2563eb;
+  color: #000000;
 }
 
 .status.error {
@@ -419,7 +419,7 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .range-value {
-    color: #60a5fa;
+    color: #ffffff;
   }
 
   .section-desc {
@@ -427,17 +427,17 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .setting-note {
-    background: #1e3a5f;
-    color: #93c5fd;
+    background: #1f1f1f;
+    color: #ffffff;
   }
 
   .privacy-notice {
-    background: #1e3a5f;
-    color: #93c5fd;
+    background: #1f1f1f;
+    color: #ffffff;
   }
 
   .privacy-text strong {
-    color: #93c5fd;
+    color: #ffffff;
   }
 
   .info-section,
@@ -487,8 +487,8 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .setting-item-large:hover {
-    border-color: #60a5fa;
-    background: #1e3a5f;
+    border-color: #ffffff;
+    background: #2f2f2f;
   }
 
   .switch-text-large {

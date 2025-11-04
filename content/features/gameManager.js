@@ -1022,7 +1022,7 @@ function showScoreFeedback(badge, score, guess, actual) {
     top: -30px;
     left: 50%;
     transform: translateX(-50%);
-    background: #2563eb;
+    background: #000000;
     color: white;
     padding: 4px 8px;
     border-radius: 4px;
