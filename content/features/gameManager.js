@@ -950,6 +950,9 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
         const score = calculateGuessScore(guessData.guess, actualIQ, guessData.confidence);
         addToGameScore(score);
 
+        // Mark badge as compared (has been compared to a guess)
+        badge.setAttribute('data-iq-compared', 'true');
+
         // Add to history
         const tweetId = tweetElement ? tweetElement.getAttribute('data-tweet-id') : null;
         const handle = tweetElement ? tweetElement.getAttribute('data-handle') : null;
@@ -1306,6 +1309,8 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
               guess: cachedGuess.guess,
               confidence: cachedGuess.confidence
             });
+            // Mark badge as compared if there's both a cached guess and revealed IQ
+            iqBadge.setAttribute('data-iq-compared', 'true');
           }
 
           // CRITICAL: Final duplicate check RIGHT BEFORE insertion to prevent race conditions
@@ -1376,6 +1381,9 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
 
             // Create the actual IQ badge with proper parameters
             const iqBadge = badgeManager.createIQBadge(iq, iqResult.result, iqResult.text);
+
+            // Mark badge as compared since there's a cached guess (meaning it was compared)
+            iqBadge.setAttribute('data-iq-compared', 'true');
 
             // Store the guess in memory for reference
             guessManager.set(tweetElement, {

@@ -167,15 +167,101 @@
  * Note: All replies use the same processing logic regardless of who posted them
  *
  * --------------------------------------------------------------------------------------------
+ * CATEGORY 10: RELOADED TWEET GUESSED IQ BADGES (Restored from Cache)
+ * --------------------------------------------------------------------------------------------
+ * Location: Any tweet location (Categories 1-5, 9) after scrolling/reloading
+ * Context: When a tweet that was previously guessed and had its IQ revealed is reloaded
+ *          (e.g., after scrolling down and back up, or page refresh)
+ * State: Badge is restored from cache with calculated IQ score
+ *
+ * Badge States:
+ *   State 10.1: Calculated Badge with Compared Status
+ *     - Badge Type: Calculated IQ badge (.iq-badge-flip or .iq-badge with data-iq-score)
+ *     - Data Attribute: data-iq-compared="true" (indicates guess was compared to IQ)
+ *     - Visual Indicator: Pale dark green outline border (rgba(85, 107, 47, 0.6))
+ *     - CSS Selector: .iq-badge[data-iq-compared] (lines 346-364)
+ *     - Conditions:
+ *       * cachedRevealed=true (IQ was previously revealed)
+ *       * cachedGuess exists (user had submitted a guess)
+ *     - File Reference:
+ *       * content/features/gameManager.js (lines 954, 1313, 1386)
+ *       * content/features/tweetProcessor/processTweet.js (lines 490, 596, 754)
+ *
+ *   State 10.2: Calculated Badge without Compared Status
+ *     - Badge Type: Calculated IQ badge (.iq-badge-flip or .iq-badge with data-iq-score)
+ *     - Data Attribute: No data-iq-compared attribute
+ *     - Visual Indicator: Standard calculated badge styling (no green outline)
+ *     - Conditions:
+ *       * cachedRevealed=true (IQ was previously revealed)
+ *       * No cachedGuess (user revealed IQ without guessing)
+ *     - File Reference: Same as State 10.1
+ *
+ *   State 10.3: Guess Badge (Waiting for IQ Calculation)
+ *     - Badge Type: Guess badge (.iq-badge-guess)
+ *     - Data Attribute: data-iq-guessed="[guess value]"
+ *     - Visual Indicator: Gray guess badge (no green outline)
+ *     - Conditions:
+ *       * cachedGuess exists (user submitted a guess)
+ *       * cachedRevealed=false OR no cachedIQ available
+ *     - File Reference: content/features/gameManager.js (lines 1421-1450)
+ *
+ * Restoration Logic:
+ *   Priority Order:
+ *   1. Check for cachedRevealed=true → Restore calculated badge
+ *      - If cachedGuess exists → Set data-iq-compared="true"
+ *   2. Check for cachedGuess with cachedIQ → Restore calculated badge
+ *      - Always set data-iq-compared="true" (since guess was compared)
+ *   3. Check for cachedGuess only → Restore guess badge
+ *      - Wait for IQ calculation to complete
+ *
+ * Cache Sources:
+ *   - Revealed Status: chrome.storage.local (REVEALED_CACHE_PREFIX + tweetId)
+ *   - IQ Result: chrome.storage.local (REVEALED_IQ_CACHE_PREFIX + tweetId) [fallback]
+ *   - IQ by Handle: window.IQCache (handle-based cache)
+ *   - Guess Data: chrome.storage.local (GUESS_CACHE_PREFIX + tweetId)
+ *
+ * File References:
+ *   - content/features/gameManager.js
+ *     * replaceLoadingBadgeWithGuess() - Main restoration function (lines 1146-1470)
+ *     * getCachedRevealedIQ() - Retrieves revealed status (lines 126-158)
+ *     * getCachedRevealedIQResult() - Retrieves IQ result by tweet ID (lines 190-222)
+ *     * cacheRevealedIQResult() - Caches IQ result by tweet ID (lines 164-183)
+ *   - content/features/tweetProcessor/processTweet.js
+ *     * processTweet() - Restores badges when cachedRevealed=true (lines 420-560)
+ *     * Restores badges when cachedGuess exists (lines 563-650)
+ *
+ * CSS Classes & Attributes:
+ *   - .iq-badge - Base class
+ *   - .iq-badge-flip - Calculated badge with flip animation
+ *   - .iq-badge-guess - Guess badge (input state)
+ *   - [data-iq-compared="true"] - Indicates badge was compared to a guess
+ *   - [data-iq-score] - Stores calculated IQ score
+ *   - [data-iq-guessed] - Stores user's guess value
+ *
+ * Special Notes:
+ *   - The green outline (data-iq-compared) persists across page reloads
+ *   - Badge restoration uses retry logic if IQ cache is still loading (150ms delays)
+ *   - Falls back to tweet-ID-based cache if handle-based lookup fails
+ *   - Badge state is determined by cache priority: cachedRevealed > cachedGuess+cachedIQ > cachedGuess
+ *
+ * --------------------------------------------------------------------------------------------
  * CSS CLASS REFERENCE
  * --------------------------------------------------------------------------------------------
- * .iq-badge                    - Base class for all IQ badges (Categories 1-6, 9)
+ * .iq-badge                    - Base class for all IQ badges (Categories 1-6, 9, 10)
  * .iq-badge-realtime           - Real-time badges in compose boxes (Category 6)
  * .iq-badge-flip               - Badges with confidence data (flip on hover)
+ * .iq-badge-guess              - Guess badge (user input state, Category 10.3)
  * .iq-badge-loading            - Loading state badges
  * .iq-badge-calculating        - Calculating state (with rotating border animation)
  * .iq-badge-pulse              - Pulse animation when IQ count completes
  * .iq-guessr-score-badge       - Profile page score badge (Category 7-8)
+ *
+ * DATA ATTRIBUTES:
+ * [data-iq-compared="true"]    - Badge was compared to a guess (Category 10.1)
+ *                                Visual: Pale dark green outline border (lines 346-364)
+ * [data-iq-score]             - Stores calculated IQ score value
+ * [data-iq-guessed]            - Stores user's guess value (Category 10.3)
+ * [data-iq-calculating]        - Badge is currently calculating IQ
  *
  * --------------------------------------------------------------------------------------------
  * KEY FILES FOR BADGE PLACEMENT LOGIC
@@ -340,6 +426,27 @@
 /* If badge doesn't have flip structure, keep original hover effect */
 .iq-badge:not(.iq-badge-flip):hover {
   transform: scale(1.05);
+}
+
+/* Badges that have been compared to a guess get a pale dark green outline border */
+.iq-badge[data-iq-compared] {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 0 0 2px rgba(85, 107, 47, 0.6),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.iq-badge[data-iq-compared]:hover {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.15),
+    0 0 0 2px rgba(0, 0, 0, 0.4),
+    0 0 0 3px rgba(85, 107, 47, 0.7),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .iq-badge:hover {

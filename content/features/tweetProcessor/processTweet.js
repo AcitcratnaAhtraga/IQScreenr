@@ -485,6 +485,11 @@ async function processTweet(tweetElement) {
 
               const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
 
+              // Mark badge as compared if there's a cached guess (since cachedRevealed=true means it was compared)
+              if (cachedGuess && cachedGuess.guess !== undefined) {
+                iqBadge.setAttribute('data-iq-compared', 'true');
+              }
+
               // Store IQ result on element for reference
               actualTweetElement._iqResult = {
                 iq: iq,
@@ -586,6 +591,9 @@ async function processTweet(tweetElement) {
               const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
 
               const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+
+              // Mark badge as compared since there's a cached guess (meaning it was compared)
+              iqBadge.setAttribute('data-iq-compared', 'true');
 
               // Store IQ result on element for reference (guess is already cached persistently)
               actualTweetElement._iqResult = {
@@ -739,6 +747,12 @@ async function processTweet(tweetElement) {
                         const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
 
                         const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+
+                        // Mark badge as compared if there's a cached guess (since cachedRevealed=true means it was compared)
+                        const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
+                        if (cachedGuess && cachedGuess.guess !== undefined) {
+                          iqBadge.setAttribute('data-iq-compared', 'true');
+                        }
 
                         // Store IQ result on element for reference
                         actualTweetElement._iqResult = {
