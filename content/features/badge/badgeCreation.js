@@ -725,19 +725,9 @@ function addMobileBadgeHandlers(badge) {
     return;
   }
 
-  console.log('%c📱 ATTACHING MOBILE HANDLERS', 'background: #9C27B0; color: white; font-weight: bold; padding: 4px;');
-  console.log('Badge:', badge);
-  console.log('Badge classes:', badge.className);
-  console.log('Has flip class:', badge.classList.contains('iq-badge-flip'));
-  console.log('Is guess badge:', isGuessBadge);
 
   // Add click/touch handlers for mobile to prevent navigation and trigger flip
   const handleBadgeInteraction = (e) => {
-    console.log('%c📱 MOBILE BADGE CLICK/TOUCH', 'background: #4CAF50; color: white; font-weight: bold; padding: 4px;');
-    console.log('Event type:', e.type);
-    console.log('Badge element:', badge);
-    console.log('Has flip class:', badge.classList.contains('iq-badge-flip'));
-
     // Prevent navigation to tweet URL
     e.preventDefault();
     e.stopPropagation();
@@ -745,7 +735,6 @@ function addMobileBadgeHandlers(badge) {
     // Only handle flip animation for badges with confidence data
     if (badge.classList.contains('iq-badge-flip')) {
       const inner = badge.querySelector('.iq-badge-inner');
-      console.log('Inner element found:', !!inner);
 
       if (inner) {
         // Get ALL style values - both computed and inline
@@ -792,56 +781,12 @@ function addMobileBadgeHandlers(badge) {
         const isFlipped = isFlippedByComputedTransform; // Only trust computed transform
         const isShowingConfidence = isInverted || isFlipped;
 
-        console.log('🔍 STATE DETECTION:');
-        console.log('  Background (computed):', computedBg);
-        console.log('  Background (inline style.backgroundColor):', inlineBg);
-        console.log('  Background (inline getPropertyValue):', inlineBgProperty);
-        console.log('  Color (computed):', computedColor);
-        console.log('  Color (inline style.color):', inlineColor);
-        console.log('  Color (inline getPropertyValue):', inlineColorProperty);
-        console.log('  Original BG from CSS var:', originalBgFromVar);
-        console.log('  Transform (computed):', computedTransform);
-        console.log('  Transform (inline):', inlineTransform);
-        console.log('  Badge inline style string:', badge.style.cssText);
-        console.log('🔍 DETECTION RESULTS:');
-        console.log('  isBgBlackComputed:', isBgBlackComputed);
-        console.log('  isBgBlackInline:', isBgBlackInline);
-        console.log('  isColorOriginal:', isColorOriginal);
-        console.log('  isInverted (by color):', isInverted);
-        console.log('  isFlippedByInlineTransform:', isFlippedByInlineTransform);
-        console.log('  isFlippedByComputedTransform:', isFlippedByComputedTransform);
-        console.log('  isFlipped (by transform):', isFlipped);
-        console.log('  isShowingConfidence (combined):', isShowingConfidence);
-        console.log('  Will flip back?', isShowingConfidence);
-
-        // Get current styles before change
-        const beforeBg = window.getComputedStyle(badge).backgroundColor;
-        const beforeColor = window.getComputedStyle(badge).color;
-        const beforeCssVar = badge.style.getPropertyValue('--iq-badge-original-bg');
-        console.log('BEFORE - Background:', beforeBg, 'Color:', beforeColor, 'CSS Var:', beforeCssVar);
-
         // Toggle flip state
         // Use combined detection: if showing confidence (by transform OR color), flip back
         // Otherwise, flip to confidence
-        console.log('🎯 DECISION POINT:');
-        console.log('  isShowingConfidence =', isShowingConfidence);
-        console.log('  Will take branch:', isShowingConfidence ? 'FLIPPING BACK TO IQ' : 'FLIPPING TO CONFIDENCE');
-
         if (isShowingConfidence) {
-          console.log('%c🔄 FLIPPING BACK TO IQ', 'background: #2196F3; color: white; font-weight: bold;');
-
-          // TRACK: Before any changes
-          console.log('📊 TRACKING RESTORE - Step 0: BEFORE ANY CHANGES');
-          console.log('  Badge inline style:', badge.style.cssText);
-          console.log('  Badge computed bg:', window.getComputedStyle(badge).backgroundColor);
-          console.log('  Badge computed color:', window.getComputedStyle(badge).color);
-          console.log('  Inner transform (computed):', window.getComputedStyle(inner).transform);
-          console.log('  Inner transform (inline):', inner.style.transform);
-
           // Flipping back to show IQ - restore original colors
           inner.style.setProperty('transform', 'rotateY(0deg)', 'important');
-          console.log('📊 Step 1: Set transform to 0deg');
-          console.log('  Inner transform (inline after):', inner.style.transform);
 
           // Clear any pending auto-flip timeout
           if (badge._autoFlipTimeout) {
@@ -851,15 +796,8 @@ function addMobileBadgeHandlers(badge) {
 
           // Restore colors immediately (same logic as restoreBadgeColorsOnLeave)
           const originalBgColor = badge.style.getPropertyValue('--iq-badge-original-bg');
-          console.log('📊 Step 2: Original BG color from CSS var:', originalBgColor);
 
-            if (originalBgColor) {
-            console.log('📊 Step 3: Restoring colors...');
-
-            // TRACK: Before removing properties
-            console.log('  Before removeProperty - inline style:', badge.style.cssText);
-            console.log('  Before removeProperty - computed bg:', window.getComputedStyle(badge).backgroundColor);
-
+          if (originalBgColor) {
             // CRITICAL: Disable transition to prevent CSS from animating the color change
             badge.style.setProperty('transition', 'none', 'important');
 
@@ -867,194 +805,96 @@ function addMobileBadgeHandlers(badge) {
             badge.style.removeProperty('background-color');
             badge.style.removeProperty('color');
 
-            // TRACK: After removing properties
-            console.log('  After removeProperty - inline style:', badge.style.cssText);
-            console.log('  After removeProperty - computed bg:', window.getComputedStyle(badge).backgroundColor);
-
             // Then set the new values with !important
             badge.style.setProperty('background-color', originalBgColor, 'important');
             badge.style.setProperty('color', '#000000', 'important');
-
-            // TRACK: After setProperty with !important
-            console.log('  After setProperty(!important) - inline style:', badge.style.cssText);
-            console.log('  After setProperty(!important) - computed bg:', window.getComputedStyle(badge).backgroundColor);
-            console.log('  After setProperty(!important) - computed color:', window.getComputedStyle(badge).color);
 
             // Also set direct property as backup
             badge.style.backgroundColor = originalBgColor;
             badge.style.color = '#000000';
 
-            // TRACK: After direct property assignment
-            console.log('  After direct assignment - inline style:', badge.style.cssText);
-            console.log('  After direct assignment - computed bg:', window.getComputedStyle(badge).backgroundColor);
-            console.log('  After direct assignment - computed color:', window.getComputedStyle(badge).color);
-
             const front = badge.querySelector('.iq-badge-front');
             const back = badge.querySelector('.iq-badge-back');
-            console.log('📊 Step 4: Front element:', !!front, 'Back element:', !!back);
 
             if (front) {
-              console.log('  Front before - inline:', front.style.cssText);
-              console.log('  Front before - computed color:', window.getComputedStyle(front).color);
               front.style.removeProperty('color');
               front.style.setProperty('color', '#000000', 'important');
-              console.log('  Front after - inline:', front.style.cssText);
-              console.log('  Front after - computed color:', window.getComputedStyle(front).color);
-
               const frontLabel = front.querySelector('.iq-label');
               const frontScore = front.querySelector('.iq-score');
               if (frontLabel) {
-                console.log('  FrontLabel before - computed:', window.getComputedStyle(frontLabel).color);
                 frontLabel.style.removeProperty('color');
                 frontLabel.style.setProperty('color', '#000000', 'important');
-                console.log('  FrontLabel after - computed:', window.getComputedStyle(frontLabel).color);
               }
               if (frontScore) {
-                console.log('  FrontScore before - computed:', window.getComputedStyle(frontScore).color);
                 frontScore.style.removeProperty('color');
                 frontScore.style.setProperty('color', '#000000', 'important');
-                console.log('  FrontScore after - computed:', window.getComputedStyle(frontScore).color);
               }
             }
             if (back) {
-              console.log('  Back before - inline:', back.style.cssText);
-              console.log('  Back before - computed color:', window.getComputedStyle(back).color);
               back.style.removeProperty('color');
               back.style.setProperty('color', '#000000', 'important');
-              console.log('  Back after - inline:', back.style.cssText);
-              console.log('  Back after - computed color:', window.getComputedStyle(back).color);
-
               const backLabel = back.querySelector('.iq-label');
               const backScore = back.querySelector('.iq-score');
               if (backLabel) {
-                console.log('  BackLabel before - computed:', window.getComputedStyle(backLabel).color);
                 backLabel.style.removeProperty('color');
                 backLabel.style.setProperty('color', '#000000', 'important');
-                console.log('  BackLabel after - computed:', window.getComputedStyle(backLabel).color);
               }
               if (backScore) {
-                console.log('  BackScore before - computed:', window.getComputedStyle(backScore).color);
                 backScore.style.removeProperty('color');
                 backScore.style.setProperty('color', '#000000', 'important');
-                console.log('  BackScore after - computed:', window.getComputedStyle(backScore).color);
               }
             }
 
             // Force a reflow to ensure styles are applied
             void badge.offsetHeight;
-            console.log('📊 Step 5: After reflow');
-            console.log('  Badge computed bg:', window.getComputedStyle(badge).backgroundColor);
-            console.log('  Badge computed color:', window.getComputedStyle(badge).color);
 
             // Re-enable transition after a short delay to allow immediate color change
             setTimeout(() => {
               badge.style.removeProperty('transition');
-              console.log('📊 Step 5.5: Re-enabled transition');
             }, 10);
 
-            // Check styles after change with multiple timeouts to catch any overrides
-            [10, 50, 100, 200].forEach(delay => {
-              setTimeout(() => {
-                const afterBg = window.getComputedStyle(badge).backgroundColor;
-                const afterColor = window.getComputedStyle(badge).color;
-                const afterInlineBg = badge.style.backgroundColor;
-                const afterInlineBgProp = badge.style.getPropertyValue('background-color');
-                const afterInlineColor = badge.style.color;
-                const afterInlineColorProp = badge.style.getPropertyValue('color');
-                const afterTransform = window.getComputedStyle(inner).transform;
-                const afterInlineTransform = inner.style.transform;
+            // Check styles after change and force correction if needed
+            setTimeout(() => {
+              const afterBg = window.getComputedStyle(badge).backgroundColor;
+              const afterColor = window.getComputedStyle(badge).color;
+              const bgMatches = afterBg === originalBgColor ||
+                              afterBg === originalBgColor.replace('rgb', 'rgba').replace(')', ', 1)') ||
+                              badge.style.backgroundColor === originalBgColor;
+              const colorMatches = afterColor === 'rgb(0, 0, 0)' ||
+                                 afterColor === 'rgba(0, 0, 0, 1)' ||
+                                 badge.style.color === '#000000';
 
-                console.log(`📊 Step 6 (${delay}ms delay) - AFTER RESTORE:`);
-                console.log(`  Background (computed): ${afterBg} (expected: ${originalBgColor})`);
-                console.log(`  Background (inline): ${afterInlineBg}`);
-                console.log(`  Background (inline prop): ${afterInlineBgProp}`);
-                console.log(`  Color (computed): ${afterColor} (expected: rgb(0, 0, 0))`);
-                console.log(`  Color (inline): ${afterInlineColor}`);
-                console.log(`  Color (inline prop): ${afterInlineColorProp}`);
-                console.log(`  Transform (computed): ${afterTransform}`);
-                console.log(`  Transform (inline): ${afterInlineTransform}`);
-                console.log(`  Badge inline style: ${badge.style.cssText}`);
-
-                // Check if restoration was successful - check BOTH computed and inline
-                const bgMatches = afterBg === originalBgColor ||
-                                afterBg === originalBgColor.replace('rgb', 'rgba').replace(')', ', 1)') ||
-                                afterInlineBg === originalBgColor ||
-                                afterInlineBgProp === originalBgColor;
-                const colorMatches = afterColor === 'rgb(0, 0, 0)' ||
-                                   afterColor === 'rgba(0, 0, 0, 1)' ||
-                                   afterInlineColor === '#000000' ||
-                                   afterInlineColorProp === '#000000';
-                const transformMatches = afterTransform === 'matrix(1, 0, 0, 1, 0, 0)' ||
-                                        afterTransform === 'none' ||
-                                        afterInlineTransform.includes('0deg');
-
-                console.log(`  ✅ Background matches: ${bgMatches} (computed: ${afterBg === originalBgColor}, inline: ${afterInlineBg === originalBgColor})`);
-                console.log(`  ✅ Color matches: ${colorMatches} (computed: ${afterColor === 'rgb(0, 0, 0)'}, inline: ${afterInlineColor === '#000000'})`);
-                console.log(`  ✅ Transform matches: ${transformMatches}`);
-
-                // If still not correct, force it again
-                if (delay === 200 && (!bgMatches || !colorMatches)) {
-                  console.warn('⚠️ Colors not restored correctly after 200ms, forcing again...');
-                  console.warn(`  Computed bg: ${afterBg}, Expected: ${originalBgColor}`);
-                  console.warn(`  Inline bg: ${afterInlineBg}, Expected: ${originalBgColor}`);
-                  badge.style.setProperty('transition', 'none', 'important');
-                  badge.style.setProperty('background-color', originalBgColor, 'important');
-                  badge.style.backgroundColor = originalBgColor;
-                  badge.style.setProperty('color', '#000000', 'important');
-                  badge.style.color = '#000000';
-                  console.log('  After force - computed bg:', window.getComputedStyle(badge).backgroundColor);
-                  console.log('  After force - computed color:', window.getComputedStyle(badge).color);
-                  console.log('  After force - inline bg:', badge.style.backgroundColor);
-                  console.log('  After force - inline color:', badge.style.color);
-                  setTimeout(() => {
-                    badge.style.removeProperty('transition');
-                  }, 10);
-                }
-              }, delay);
-            });
-          } else {
-            console.warn('⚠️ No original BG color found in CSS variable!');
+              // If still not correct, force it again
+              if (!bgMatches || !colorMatches) {
+                badge.style.setProperty('transition', 'none', 'important');
+                badge.style.setProperty('background-color', originalBgColor, 'important');
+                badge.style.backgroundColor = originalBgColor;
+                badge.style.setProperty('color', '#000000', 'important');
+                badge.style.color = '#000000';
+                setTimeout(() => {
+                  badge.style.removeProperty('transition');
+                }, 10);
+              }
+            }, 200);
           }
         } else {
-          console.log('%c🔄 FLIPPING TO CONFIDENCE', 'background: #FF9800; color: white; font-weight: bold;');
-
-          // TRACK: Before any changes
-          console.log('📊 TRACKING INVERT - Step 0: BEFORE ANY CHANGES');
-          console.log('  Badge inline style:', badge.style.cssText);
-          console.log('  Badge computed bg:', window.getComputedStyle(badge).backgroundColor);
-          console.log('  Badge computed color:', window.getComputedStyle(badge).color);
-          console.log('  Inner transform (computed):', window.getComputedStyle(inner).transform);
-          console.log('  Inner transform (inline):', inner.style.transform);
-
           // Flipping to show confidence - invert colors
           inner.style.setProperty('transform', 'rotateY(180deg)', 'important');
-          console.log('📊 Step 1: Set transform to 180deg');
-          console.log('  Inner transform (inline after):', inner.style.transform);
 
           // Invert colors immediately (same logic as invertBadgeColorsOnHover)
           let originalBg = badge.style.getPropertyValue('--iq-badge-original-bg');
-          console.log('📊 Step 2: Original BG from CSS var:', originalBg);
 
           if (!originalBg) {
             const computedBg = window.getComputedStyle(badge).backgroundColor;
-            console.log('  Computed BG (fallback):', computedBg);
             if (computedBg && computedBg !== 'rgba(0, 0, 0, 0)' && computedBg !== 'transparent') {
               badge.style.setProperty('--iq-badge-original-bg', computedBg, 'important');
               originalBg = computedBg;
-              console.log('  Stored computed BG in CSS var');
             }
           }
 
           const originalBgColor = originalBg || window.getComputedStyle(badge).backgroundColor;
-          console.log('📊 Step 3: Using original BG color:', originalBgColor);
 
           if (originalBgColor && originalBgColor !== 'rgba(0, 0, 0, 0)' && originalBgColor !== 'transparent') {
-            console.log('📊 Step 4: Inverting colors...');
-
-            // TRACK: Before setting colors
-            console.log('  Before invert - inline style:', badge.style.cssText);
-            console.log('  Before invert - computed bg:', window.getComputedStyle(badge).backgroundColor);
-
             // CRITICAL: Disable transition to prevent CSS from animating the color change
             badge.style.setProperty('transition', 'none', 'important');
 
@@ -1062,93 +902,44 @@ function addMobileBadgeHandlers(badge) {
             badge.style.setProperty('background-color', '#000000', 'important');
             badge.style.setProperty('color', originalBgColor, 'important');
 
-            // TRACK: After setting colors
-            console.log('  After setProperty - inline style:', badge.style.cssText);
-            console.log('  After setProperty - computed bg:', window.getComputedStyle(badge).backgroundColor);
-            console.log('  After setProperty - computed color:', window.getComputedStyle(badge).color);
-            console.log('  Badge style.backgroundColor:', badge.style.backgroundColor);
-            console.log('  Badge style.getPropertyValue:', badge.style.getPropertyValue('background-color'));
-
             const front = badge.querySelector('.iq-badge-front');
             const back = badge.querySelector('.iq-badge-back');
-            console.log('📊 Step 5: Front element:', !!front, 'Back element:', !!back);
 
             if (front) {
-              console.log('  Front before - inline:', front.style.cssText);
-              console.log('  Front before - computed color:', window.getComputedStyle(front).color);
               front.style.setProperty('color', originalBgColor, 'important');
-              console.log('  Front after - inline:', front.style.cssText);
-              console.log('  Front after - computed color:', window.getComputedStyle(front).color);
-
               const frontLabel = front.querySelector('.iq-label');
               const frontScore = front.querySelector('.iq-score');
-              if (frontLabel) {
-                console.log('  FrontLabel before - computed:', window.getComputedStyle(frontLabel).color);
-                frontLabel.style.setProperty('color', originalBgColor, 'important');
-                console.log('  FrontLabel after - computed:', window.getComputedStyle(frontLabel).color);
-              }
-              if (frontScore) {
-                console.log('  FrontScore before - computed:', window.getComputedStyle(frontScore).color);
-                frontScore.style.setProperty('color', originalBgColor, 'important');
-                console.log('  FrontScore after - computed:', window.getComputedStyle(frontScore).color);
-              }
+              if (frontLabel) frontLabel.style.setProperty('color', originalBgColor, 'important');
+              if (frontScore) frontScore.style.setProperty('color', originalBgColor, 'important');
             }
             if (back) {
-              console.log('  Back before - inline:', back.style.cssText);
-              console.log('  Back before - computed color:', window.getComputedStyle(back).color);
               back.style.setProperty('color', originalBgColor, 'important');
-              console.log('  Back after - inline:', back.style.cssText);
-              console.log('  Back after - computed color:', window.getComputedStyle(back).color);
-
               const backLabel = back.querySelector('.iq-label');
               const backScore = back.querySelector('.iq-score');
-              if (backLabel) {
-                console.log('  BackLabel before - computed:', window.getComputedStyle(backLabel).color);
-                backLabel.style.setProperty('color', originalBgColor, 'important');
-                console.log('  BackLabel after - computed:', window.getComputedStyle(backLabel).color);
-              }
-              if (backScore) {
-                console.log('  BackScore before - computed:', window.getComputedStyle(backScore).color);
-                backScore.style.setProperty('color', originalBgColor, 'important');
-                console.log('  BackScore after - computed:', window.getComputedStyle(backScore).color);
-              }
+              if (backLabel) backLabel.style.setProperty('color', originalBgColor, 'important');
+              if (backScore) backScore.style.setProperty('color', originalBgColor, 'important');
             }
 
             // Force a reflow
             void badge.offsetHeight;
-            console.log('📊 Step 6: After reflow');
-            console.log('  Badge computed bg:', window.getComputedStyle(badge).backgroundColor);
-            console.log('  Badge computed color:', window.getComputedStyle(badge).color);
 
             // Re-enable transition after a short delay to allow immediate color change
             setTimeout(() => {
               badge.style.removeProperty('transition');
-              console.log('📊 Step 6.5: Re-enabled transition');
             }, 10);
 
-            // Check styles after change with multiple timeouts to catch any overrides
-            [10, 50, 100, 200].forEach(delay => {
-              setTimeout(() => {
-                const afterBg = window.getComputedStyle(badge).backgroundColor;
-                const afterColor = window.getComputedStyle(badge).color;
-                console.log(`📊 Step 7 (${delay}ms delay) - AFTER INVERT:`);
-                console.log(`  Background: ${afterBg} (expected: rgb(0, 0, 0))`);
-                console.log(`  Color: ${afterColor} (expected: ${originalBgColor})`);
-                console.log(`  Badge style.backgroundColor: ${badge.style.backgroundColor}`);
-                console.log(`  Badge style.getPropertyValue: ${badge.style.getPropertyValue('background-color')}`);
-                console.log(`  Badge inline style: ${badge.style.cssText}`);
-
-                // If still not correct, force it again
-                if (delay === 200 && afterBg !== 'rgb(0, 0, 0)' && afterBg !== 'rgba(0, 0, 0, 1)') {
-                  console.warn('⚠️ Background color not inverted correctly after 200ms, forcing again...');
-                  badge.style.setProperty('background-color', '#000000', 'important');
-                  badge.style.backgroundColor = '#000000';
-                  console.log('  After force - computed bg:', window.getComputedStyle(badge).backgroundColor);
-                }
-              }, delay);
-            });
-          } else {
-            console.warn('⚠️ Invalid original BG color:', originalBgColor);
+            // Check styles after change and force correction if needed
+            setTimeout(() => {
+              const afterBg = window.getComputedStyle(badge).backgroundColor;
+              if (afterBg !== 'rgb(0, 0, 0)' && afterBg !== 'rgba(0, 0, 0, 1)') {
+                badge.style.setProperty('transition', 'none', 'important');
+                badge.style.setProperty('background-color', '#000000', 'important');
+                badge.style.backgroundColor = '#000000';
+                setTimeout(() => {
+                  badge.style.removeProperty('transition');
+                }, 10);
+              }
+            }, 200);
           }
 
           // Auto-flip back after 2 seconds on mobile and restore colors
@@ -1156,151 +947,83 @@ function addMobileBadgeHandlers(badge) {
             clearTimeout(badge._autoFlipTimeout);
           }
           badge._autoFlipTimeout = setTimeout(() => {
-            console.log('📊 AUTO-FLIP TIMEOUT TRIGGERED');
-            console.log('  Inner element exists:', !!inner);
-            console.log('  Inner transform (inline):', inner?.style.transform);
-            console.log('  Inner transform (computed):', inner ? window.getComputedStyle(inner).transform : 'N/A');
-            console.log('  Badge computed bg before:', window.getComputedStyle(badge).backgroundColor);
-            console.log('  Badge computed color before:', window.getComputedStyle(badge).color);
-            console.log('  Badge inline bg:', badge.style.backgroundColor);
-            console.log('  Badge inline bg property:', badge.style.getPropertyValue('background-color'));
-            console.log('  Badge inline color:', badge.style.color);
-            console.log('  Badge inline color property:', badge.style.getPropertyValue('color'));
-            console.log('  Badge inline style:', badge.style.cssText);
-            console.log('  Original BG from CSS var:', badge.style.getPropertyValue('--iq-badge-original-bg'));
-
             const transformCheck = inner && inner.style.transform.includes('180deg');
             const computedTransformCheck = inner && window.getComputedStyle(inner).transform.includes('matrix') &&
                                           !window.getComputedStyle(inner).transform.includes('matrix(1, 0, 0, 1, 0, 0)');
             const isStillInverted = window.getComputedStyle(badge).backgroundColor === 'rgb(0, 0, 0)' ||
                                     window.getComputedStyle(badge).backgroundColor === 'rgba(0, 0, 0, 1)';
 
-            console.log('  Transform check (180deg):', transformCheck);
-            console.log('  Transform check (computed matrix):', computedTransformCheck);
-            console.log('  Is still inverted (by color):', isStillInverted);
-            console.log('  Should restore colors?', transformCheck || computedTransformCheck || isStillInverted);
-
             if (inner && (transformCheck || computedTransformCheck || isStillInverted)) {
-              console.log('📊 AUTO-FLIP: Flipping back to IQ');
               inner.style.setProperty('transform', 'rotateY(0deg)', 'important');
-              console.log('  Inner transform after:', inner.style.transform);
 
               // Restore colors
               const originalBgColor = badge.style.getPropertyValue('--iq-badge-original-bg');
-              console.log('📊 AUTO-FLIP: Original BG color from CSS var:', originalBgColor);
 
               if (originalBgColor) {
-                console.log('📊 AUTO-FLIP: Restoring colors...');
-                console.log('  Before restore - inline style:', badge.style.cssText);
-                console.log('  Before restore - computed bg:', window.getComputedStyle(badge).backgroundColor);
-
                 // CRITICAL: Disable transition to prevent CSS from animating the color change
                 badge.style.setProperty('transition', 'none', 'important');
 
                 // Remove properties first
                 badge.style.removeProperty('background-color');
                 badge.style.removeProperty('color');
-                console.log('  After removeProperty - inline style:', badge.style.cssText);
-                console.log('  After removeProperty - computed bg:', window.getComputedStyle(badge).backgroundColor);
 
                 badge.style.backgroundColor = originalBgColor;
                 badge.style.setProperty('background-color', originalBgColor, 'important');
                 badge.style.setProperty('color', '#000000', 'important');
 
-                console.log('  After setProperty - inline style:', badge.style.cssText);
-                console.log('  After setProperty - computed bg:', window.getComputedStyle(badge).backgroundColor);
-                console.log('  After setProperty - computed color:', window.getComputedStyle(badge).color);
-
                 const front = badge.querySelector('.iq-badge-front');
                 const back = badge.querySelector('.iq-badge-back');
 
                 if (front) {
-                  console.log('📊 AUTO-FLIP: Front element found');
-                  console.log('  Front before - inline:', front.style.cssText);
-                  console.log('  Front before - computed color:', window.getComputedStyle(front).color);
                   front.style.removeProperty('color');
                   front.style.setProperty('color', '#000000', 'important');
-                  console.log('  Front after - inline:', front.style.cssText);
-                  console.log('  Front after - computed color:', window.getComputedStyle(front).color);
-
                   const frontLabel = front.querySelector('.iq-label');
                   const frontScore = front.querySelector('.iq-score');
                   if (frontLabel) {
-                    console.log('  FrontLabel before - computed:', window.getComputedStyle(frontLabel).color);
                     frontLabel.style.removeProperty('color');
                     frontLabel.style.setProperty('color', '#000000', 'important');
-                    console.log('  FrontLabel after - computed:', window.getComputedStyle(frontLabel).color);
                   }
                   if (frontScore) {
-                    console.log('  FrontScore before - computed:', window.getComputedStyle(frontScore).color);
                     frontScore.style.removeProperty('color');
                     frontScore.style.setProperty('color', '#000000', 'important');
-                    console.log('  FrontScore after - computed:', window.getComputedStyle(frontScore).color);
                   }
                 }
                 if (back) {
-                  console.log('📊 AUTO-FLIP: Back element found');
-                  console.log('  Back before - inline:', back.style.cssText);
-                  console.log('  Back before - computed color:', window.getComputedStyle(back).color);
                   back.style.removeProperty('color');
                   back.style.setProperty('color', '#000000', 'important');
-                  console.log('  Back after - inline:', back.style.cssText);
-                  console.log('  Back after - computed color:', window.getComputedStyle(back).color);
-
                   const backLabel = back.querySelector('.iq-label');
                   const backScore = back.querySelector('.iq-score');
                   if (backLabel) {
-                    console.log('  BackLabel before - computed:', window.getComputedStyle(backLabel).color);
                     backLabel.style.removeProperty('color');
                     backLabel.style.setProperty('color', '#000000', 'important');
-                    console.log('  BackLabel after - computed:', window.getComputedStyle(backLabel).color);
                   }
                   if (backScore) {
-                    console.log('  BackScore before - computed:', window.getComputedStyle(backScore).color);
                     backScore.style.removeProperty('color');
                     backScore.style.setProperty('color', '#000000', 'important');
-                    console.log('  BackScore after - computed:', window.getComputedStyle(backScore).color);
                   }
                 }
 
                 // Force a reflow
                 void badge.offsetHeight;
-                console.log('📊 AUTO-FLIP: After reflow');
-                console.log('  Badge computed bg:', window.getComputedStyle(badge).backgroundColor);
-                console.log('  Badge computed color:', window.getComputedStyle(badge).color);
 
                 // Re-enable transition after a short delay to allow immediate color change
                 setTimeout(() => {
                   badge.style.removeProperty('transition');
-                  console.log('📊 AUTO-FLIP: Re-enabled transition');
                 }, 10);
 
-                // Check styles after change with multiple timeouts
-                [10, 50, 100, 200].forEach(delay => {
-                  setTimeout(() => {
-                    const afterBg = window.getComputedStyle(badge).backgroundColor;
-                    const afterColor = window.getComputedStyle(badge).color;
-                    console.log(`📊 AUTO-FLIP (${delay}ms delay) - AFTER RESTORE:`);
-                    console.log(`  Background: ${afterBg} (expected: ${originalBgColor})`);
-                    console.log(`  Color: ${afterColor} (expected: rgb(0, 0, 0))`);
-                    console.log(`  Badge style.backgroundColor: ${badge.style.backgroundColor}`);
-                    console.log(`  Badge style.getPropertyValue: ${badge.style.getPropertyValue('background-color')}`);
-                    console.log(`  Badge inline style: ${badge.style.cssText}`);
-
-                    // If still not correct, force it again
-                    if (delay === 200 && afterBg !== originalBgColor && afterBg !== 'rgb(0, 0, 0)') {
-                      console.warn('⚠️ AUTO-FLIP: Background color not restored correctly after 200ms, forcing again...');
-                      badge.style.setProperty('background-color', originalBgColor, 'important');
-                      badge.style.backgroundColor = originalBgColor;
-                      console.log('  After force - computed bg:', window.getComputedStyle(badge).backgroundColor);
-                    }
-                  }, delay);
-                });
-              } else {
-                console.warn('📊 AUTO-FLIP: No original BG color found in CSS variable!');
+                // Check styles after change and force correction if needed
+                setTimeout(() => {
+                  const afterBg = window.getComputedStyle(badge).backgroundColor;
+                  if (afterBg !== originalBgColor && afterBg !== 'rgb(0, 0, 0)') {
+                    badge.style.setProperty('transition', 'none', 'important');
+                    badge.style.setProperty('background-color', originalBgColor, 'important');
+                    badge.style.backgroundColor = originalBgColor;
+                    setTimeout(() => {
+                      badge.style.removeProperty('transition');
+                    }, 10);
+                  }
+                }, 200);
               }
-            } else {
-              console.log('📊 AUTO-FLIP: Inner not found or not flipped, skipping');
             }
             badge._autoFlipTimeout = null;
           }, 2000);
@@ -1309,36 +1032,15 @@ function addMobileBadgeHandlers(badge) {
     }
   };
 
-  // Add a test click handler first to see if ANY clicks are being captured
-  badge.addEventListener('click', (e) => {
-    console.log('%c🔵 RAW CLICK EVENT FIRED', 'background: #E91E63; color: white; font-weight: bold; padding: 4px;');
-    console.log('Event:', e);
-    console.log('Target:', e.target);
-    console.log('Current target:', e.currentTarget);
-  }, true);
-
   badge.addEventListener('click', handleBadgeInteraction, true);
-  console.log('Added click handler');
 
-  badge.addEventListener('touchend', (e) => {
-    console.log('%c🔵 RAW TOUCHEND EVENT FIRED', 'background: #E91E63; color: white; font-weight: bold; padding: 4px;');
-    console.log('Event:', e);
-    console.log('Target:', e.target);
-    handleBadgeInteraction(e);
-    // Also prevent the click event that follows touchend
-    e.preventDefault();
-  }, { passive: false, capture: true });
-  console.log('Added touchend handler');
+  badge.addEventListener('touchend', handleBadgeInteraction, { capture: true, passive: true });
 
-  // Also add touchstart for debugging
   badge.addEventListener('touchstart', (e) => {
-    console.log('%c🔵 RAW TOUCHSTART EVENT FIRED', 'background: #E91E63; color: white; font-weight: bold; padding: 4px;');
-    console.log('Event:', e);
-    console.log('Target:', e.target);
-  }, { passive: true, capture: true });
-  console.log('Added touchstart handler');
+    // Prevent default to avoid navigation on touch
+    e.preventDefault();
+  }, { capture: true, passive: false });
 
-  console.log('All handlers attached to badge');
   badge._mobileHandlersAdded = true;
 }
 
