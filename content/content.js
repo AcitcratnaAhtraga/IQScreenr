@@ -382,6 +382,20 @@
         }
       }
 
+      // Final cleanup pass: remove any remaining duplicate guess badges across all tweets
+      const allTweets = document.querySelectorAll('article[data-testid="tweet"], article[role="article"]');
+      const processedTweetsForFinalCleanup = new Set();
+      for (const tweet of allTweets) {
+        const tweetId = tweet.getAttribute('data-tweet-id');
+        if (tweetId && !processedTweetsForFinalCleanup.has(tweetId)) {
+          processedTweetsForFinalCleanup.add(tweetId);
+          // Use the cleanup function if available
+          if (gameManager.cleanupDuplicateGuessBadges) {
+            gameManager.cleanupDuplicateGuessBadges(tweet);
+          }
+        }
+      }
+
       // Also handle calculated badges that already exist
       // These should stay as calculated badges (don't convert to guess badges)
       const calculatedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');

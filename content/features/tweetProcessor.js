@@ -1105,10 +1105,20 @@ async function processTweet(tweetElement) {
   if (loadingBadge && settings.showIQBadge) {
     const gameManagerForConversion = getGameManager();
     if (gameManagerForConversion && gameManagerForConversion.isGameModeEnabled && gameManagerForConversion.isGameModeEnabled()) {
+      // Cleanup any existing duplicate guess badges before creating a new one
+      if (gameManagerForConversion.cleanupDuplicateGuessBadges) {
+        gameManagerForConversion.cleanupDuplicateGuessBadges(actualTweetElement);
+      }
+
       // No cached guess+IQ combo found earlier, proceed with normal guess badge replacement
       const guessBadge = await gameManagerForConversion.replaceLoadingBadgeWithGuess(loadingBadge);
       if (guessBadge) {
         loadingBadge = guessBadge;
+
+        // Final cleanup after replacement to catch any race conditions
+        if (gameManagerForConversion.cleanupDuplicateGuessBadges) {
+          gameManagerForConversion.cleanupDuplicateGuessBadges(actualTweetElement);
+        }
       }
     }
   }
