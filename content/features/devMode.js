@@ -10,6 +10,12 @@
   let tooltipElement = null;
   let currentBadge = null;
   let lastLoggedBadge = null;
+  let trackedBadge = null;
+  let mutationObserver = null;
+  let trackedBadgeStyleProxy = null;
+  let trackedBadgeOriginalStyle = null;
+  let changeCount = 0;
+  let ctrlKeyProcessed = false;
 
   /**
    * Check if an element is created by the extension
@@ -448,6 +454,331 @@
   }
 
   /**
+   * Log a change to the tracked badge
+   */
+  function logChange(type, details, oldValue = null, newValue = null) {
+    if (!trackedBadge) return;
+
+    changeCount++;
+    const timestamp = new Date().toISOString();
+
+    console.group(`%c🔴 CHANGE #${changeCount} - ${type}`, 'color: #f44336; font-weight: bold; font-size: 12px;');
+    console.log(`%cTime:`, 'color: #9e9e9e;', new Date(timestamp).toLocaleTimeString());
+
+    if (oldValue !== null && newValue !== null) {
+      console.log(`%cOld Value:`, 'color: #ff9800;', oldValue);
+      console.log(`%cNew Value:`, 'color: #4caf50;', newValue);
+    }
+
+    if (details) {
+      console.log(`%cDetails:`, 'color: #2196f3;', details);
+    }
+
+    console.log(`%cBadge Element:`, 'color: #9e9e9e;', trackedBadge);
+    console.groupEnd();
+  }
+
+  /**
+   * Create a proxy to intercept style changes
+   */
+  function createStyleProxy(badge) {
+    const originalSetProperty = badge.style.setProperty.bind(badge.style);
+
+    return new Proxy(badge.style, {
+      set(target, prop, value) {
+        const oldValue = target[prop];
+        const result = Reflect.set(target, prop, value);
+
+        if (trackedBadge === badge && oldValue !== value) {
+          logChange('Style Property Changed', { property: prop, value: value }, oldValue, value);
+        }
+
+        return result;
+      },
+      get(target, prop) {
+        if (prop === 'setProperty') {
+          return function(property, value, priority) {
+            const oldValue = target.getPropertyValue(property);
+            const result = originalSetProperty(property, value, priority);
+
+            if (trackedBadge === badge && oldValue !== value) {
+              logChange('Style.setProperty()', { property, value, priority }, oldValue, value);
+            }
+
+            return result;
+          };
+        }
+        return Reflect.get(target, prop);
+      }
+    });
+  }
+
+  /**
+   * Start tracking a badge
+   */
+  function startTracking(badge) {
+    if (trackedBadge === badge) {
+      // Already tracking this badge, stop tracking
+      stopTracking();
+      return;
+    }
+
+    // Stop tracking previous badge if any
+    if (trackedBadge) {
+      stopTracking();
+    }
+
+    trackedBadge = badge;
+    changeCount = 0;
+
+    // Create style proxy to intercept style changes
+    trackedBadgeOriginalStyle = badge.style;
+    trackedBadgeStyleProxy = createStyleProxy(badge);
+    badge.style = trackedBadgeStyleProxy;
+
+    // Set up MutationObserver to track DOM changes
+    mutationObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes') {
+          const attrName = mutation.attributeName;
+          const oldValue = mutation.oldValue;
+          const newValue = badge.getAttribute(attrName);
+
+          if (oldValue !== newValue) {
+            logChange('Attribute Changed', { attribute: attrName }, oldValue, newValue);
+          }
+        } else if (mutation.type === 'childList') {
+          if (mutation.addedNodes.length > 0) {
+            logChange('Child Added', {
+              nodes: Array.from(mutation.addedNodes).map(n => n.nodeName + (n.textContent ? `: "${n.textContent.substring(0, 50)}"` : ''))
+            });
+          }
+          if (mutation.removedNodes.length > 0) {
+            logChange('Child Removed', {
+              nodes: Array.from(mutation.removedNodes).map(n => n.nodeName + (n.textContent ? `: "${n.textContent.substring(0, 50)}"` : ''))
+            });
+          }
+        } else if (mutation.type === 'characterData') {
+          logChange('Text Content Changed', {
+            oldText: mutation.oldValue?.substring(0, 100),
+            newText: badge.textContent?.substring(0, 100)
+          }, mutation.oldValue, badge.textContent);
+        }
+      });
+    });
+
+    // Observe all changes
+    mutationObserver.observe(badge, {
+      attributes: true,
+      attributeOldValue: true,
+      childList: true,
+      subtree: true,
+      characterData: true,
+      characterDataOldValue: true
+    });
+
+    // Track classList changes
+    const originalAdd = badge.classList.add.bind(badge.classList);
+    const originalRemove = badge.classList.remove.bind(badge.classList);
+    const originalToggle = badge.classList.toggle.bind(badge.classList);
+
+    badge.classList.add = function(...tokens) {
+      const oldClasses = badge.className;
+      const result = originalAdd(...tokens);
+      const newClasses = badge.className;
+      if (oldClasses !== newClasses) {
+        logChange('Class Added', { classes: tokens.join(', ') }, oldClasses, newClasses);
+      }
+      return result;
+    };
+
+    badge.classList.remove = function(...tokens) {
+      const oldClasses = badge.className;
+      const result = originalRemove(...tokens);
+      const newClasses = badge.className;
+      if (oldClasses !== newClasses) {
+        logChange('Class Removed', { classes: tokens.join(', ') }, oldClasses, newClasses);
+      }
+      return result;
+    };
+
+    badge.classList.toggle = function(token, force) {
+      const oldClasses = badge.className;
+      const hadClass = badge.classList.contains(token);
+      const result = originalToggle(token, force);
+      const newClasses = badge.className;
+      const nowHasClass = badge.classList.contains(token);
+      if (hadClass !== nowHasClass) {
+        logChange('Class Toggled', { class: token, force, nowActive: nowHasClass }, oldClasses, newClasses);
+      }
+      return result;
+    };
+
+    // Track innerHTML changes
+    let innerHTMLDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    if (!innerHTMLDescriptor) {
+      innerHTMLDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'innerHTML');
+    }
+
+    if (innerHTMLDescriptor && innerHTMLDescriptor.set) {
+      const originalSet = innerHTMLDescriptor.set;
+      Object.defineProperty(badge, 'innerHTML', {
+        set: function(value) {
+          const oldValue = this.innerHTML;
+          originalSet.call(this, value);
+          if (oldValue !== value) {
+            logChange('innerHTML Changed', {
+              oldLength: oldValue?.length || 0,
+              newLength: value?.length || 0
+            }, oldValue?.substring(0, 100), value?.substring(0, 100));
+          }
+        },
+        get: function() {
+          return innerHTMLDescriptor.get.call(this);
+        },
+        configurable: true
+      });
+    }
+
+    // Track textContent changes
+    const textContentDescriptor = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+    if (textContentDescriptor && textContentDescriptor.set) {
+      const originalSet = textContentDescriptor.set;
+      Object.defineProperty(badge, 'textContent', {
+        set: function(value) {
+          const oldValue = this.textContent;
+          originalSet.call(this, value);
+          if (oldValue !== value) {
+            logChange('textContent Changed', {
+              oldLength: oldValue?.length || 0,
+              newLength: value?.length || 0
+            }, oldValue?.substring(0, 100), value?.substring(0, 100));
+          }
+        },
+        get: function() {
+          return textContentDescriptor.get.call(this);
+        },
+        configurable: true
+      });
+    }
+
+    // Visual indicator
+    const indicator = document.createElement('div');
+    indicator.id = 'iq-dev-mode-tracking-indicator';
+    indicator.textContent = `🔴 TRACKING: ${getBadgeType(badge)} - Right-click to stop`;
+    indicator.style.cssText = `
+      position: fixed;
+      top: 50px;
+      right: 10px;
+      background: #f44336;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 999998;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      animation: pulse 2s infinite;
+    `;
+
+    // Add pulse animation
+    const style = document.createElement('style');
+    style.id = 'iq-dev-mode-tracking-style';
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(indicator);
+
+    // Also highlight the badge
+    badge.style.setProperty('outline', '3px solid #f44336', 'important');
+    badge.style.setProperty('outline-offset', '2px', 'important');
+
+    console.log('%c🔴 TRACKING STARTED', 'color: #f44336; font-weight: bold; font-size: 14px;');
+    console.log(`%cBadge:`, 'color: #ff9800; font-weight: bold;', badge);
+    console.log(`%cType:`, 'color: #ff9800; font-weight: bold;', getBadgeType(badge));
+    console.log(`%cRight-click the badge again to stop tracking`, 'color: #9e9e9e; font-style: italic;');
+  }
+
+  /**
+   * Stop tracking the current badge
+   */
+  function stopTracking() {
+    if (!trackedBadge) return;
+
+    // Restore original style object
+    if (trackedBadgeStyleProxy && trackedBadgeOriginalStyle) {
+      trackedBadge.style = trackedBadgeOriginalStyle;
+    }
+
+    // Remove highlight
+    trackedBadge.style.removeProperty('outline');
+    trackedBadge.style.removeProperty('outline-offset');
+
+    // Disconnect observer
+    if (mutationObserver) {
+      mutationObserver.disconnect();
+      mutationObserver = null;
+    }
+
+    // Remove visual indicator
+    const indicator = document.getElementById('iq-dev-mode-tracking-indicator');
+    if (indicator) {
+      indicator.remove();
+    }
+
+    const style = document.getElementById('iq-dev-mode-tracking-style');
+    if (style) {
+      style.remove();
+    }
+
+    console.log(`%c🔴 TRACKING STOPPED (${changeCount} changes tracked)`, 'color: #9e9e9e; font-weight: bold; font-size: 14px;');
+
+    trackedBadge = null;
+    trackedBadgeStyleProxy = null;
+    trackedBadgeOriginalStyle = null;
+    changeCount = 0;
+  }
+
+  /**
+   * Handle right-click on badges
+   */
+  function handleContextMenu(e) {
+    if (!devModeActive) return;
+
+    const target = e.target;
+
+    // Check if we're clicking on a badge or inside a badge
+    let badge = null;
+    if (isExtensionElement(target)) {
+      badge = target;
+    } else {
+      badge = target.closest('.iq-badge, .iq-guessr-score-badge');
+      if (badge && !isExtensionElement(badge)) {
+        badge = null;
+      }
+    }
+
+    if (badge) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (trackedBadge === badge) {
+        // Stop tracking
+        stopTracking();
+      } else {
+        // Start tracking
+        startTracking(badge);
+      }
+    }
+  }
+
+  /**
    * Handle mouse move over badges
    */
   function handleMouseMove(e) {
@@ -481,56 +812,91 @@
   }
 
   /**
-   * Handle CTRL key press
+   * Activate dev mode
+   */
+  function activateDevMode() {
+    if (devModeActive) return;
+
+    devModeActive = true;
+    document.addEventListener('mousemove', handleMouseMove, true);
+    document.addEventListener('contextmenu', handleContextMenu, true);
+    document.body.style.cursor = 'crosshair';
+
+    // Show indicator
+    const indicator = document.createElement('div');
+    indicator.id = 'iq-dev-mode-indicator';
+    indicator.textContent = '🔍 DEV MODE ACTIVE - Hover over badges to see details | Right-click to track changes | Press CTRL to toggle off';
+    indicator.style.cssText = `
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #667eea;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 999998;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
+      max-width: 400px;
+    `;
+    document.body.appendChild(indicator);
+  }
+
+  /**
+   * Deactivate dev mode
+   */
+  function deactivateDevMode() {
+    if (!devModeActive) return;
+
+    devModeActive = false;
+    document.removeEventListener('mousemove', handleMouseMove, true);
+    document.removeEventListener('contextmenu', handleContextMenu, true);
+    document.body.style.cursor = '';
+    hideTooltip();
+
+    // Stop tracking if active
+    if (trackedBadge) {
+      stopTracking();
+    }
+
+    // Remove indicator
+    const indicator = document.getElementById('iq-dev-mode-indicator');
+    if (indicator) {
+      indicator.remove();
+    }
+  }
+
+  /**
+   * Handle CTRL key press - toggle dev mode
    */
   function handleKeyDown(e) {
     // Check if CTRL is pressed (without other modifiers that might interfere)
-    if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
-      if (!devModeActive) {
-        devModeActive = true;
-        document.addEventListener('mousemove', handleMouseMove, true);
-        document.body.style.cursor = 'crosshair';
+    // Only process if CTRL key itself is pressed (not just held)
+    if (e.key === 'Control' || e.keyCode === 17 || e.which === 17) {
+      if (!ctrlKeyProcessed) {
+        ctrlKeyProcessed = true;
 
-        // Show indicator
-        const indicator = document.createElement('div');
-        indicator.id = 'iq-dev-mode-indicator';
-        indicator.textContent = '🔍 DEV MODE ACTIVE - Hover over badges to see details';
-        indicator.style.cssText = `
-          position: fixed;
-          top: 10px;
-          right: 10px;
-          background: #667eea;
-          color: white;
-          padding: 8px 16px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: bold;
-          z-index: 999998;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-          pointer-events: none;
-        `;
-        document.body.appendChild(indicator);
+        // Toggle dev mode
+        if (devModeActive) {
+          deactivateDevMode();
+        } else {
+          activateDevMode();
+        }
+
+        // Prevent default to avoid browser shortcuts
+        e.preventDefault();
       }
     }
   }
 
   /**
-   * Handle CTRL key release
+   * Handle CTRL key release - reset processed flag
    */
   function handleKeyUp(e) {
-    if (!e.ctrlKey) {
-      if (devModeActive) {
-        devModeActive = false;
-        document.removeEventListener('mousemove', handleMouseMove, true);
-        document.body.style.cursor = '';
-        hideTooltip();
-
-        // Remove indicator
-        const indicator = document.getElementById('iq-dev-mode-indicator');
-        if (indicator) {
-          indicator.remove();
-        }
-      }
+    if (e.key === 'Control' || e.keyCode === 17 || e.which === 17) {
+      ctrlKeyProcessed = false;
     }
   }
 
@@ -545,15 +911,7 @@
     // Also handle window blur to deactivate dev mode
     window.addEventListener('blur', () => {
       if (devModeActive) {
-        devModeActive = false;
-        document.removeEventListener('mousemove', handleMouseMove, true);
-        document.body.style.cursor = '';
-        hideTooltip();
-
-        const indicator = document.getElementById('iq-dev-mode-indicator');
-        if (indicator) {
-          indicator.remove();
-        }
+        deactivateDevMode();
       }
     });
   }
@@ -569,14 +927,13 @@
   if (typeof window !== 'undefined') {
     window.DevMode = {
       isActive: () => devModeActive,
-      activate: () => {
-        if (!devModeActive) {
-          handleKeyDown({ ctrlKey: true, shiftKey: false, altKey: false, metaKey: false });
-        }
-      },
-      deactivate: () => {
+      activate: activateDevMode,
+      deactivate: deactivateDevMode,
+      toggle: () => {
         if (devModeActive) {
-          handleKeyUp({ ctrlKey: false });
+          deactivateDevMode();
+        } else {
+          activateDevMode();
         }
       }
     };

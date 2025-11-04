@@ -420,9 +420,11 @@ async function processTweet(tweetElement) {
   if (isGameModeEnabled && tweetId && settings.showIQBadge) {
     const cachedGuess = await gameManager.getCachedGuess(tweetId);
     const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
+    console.log(`[processTweet] tweetId=${tweetId}, cachedGuess=`, cachedGuess, `cachedRevealed=`, cachedRevealed);
 
     // If IQ was previously revealed (either with or without a guess), show as calculated
     if (cachedRevealed) {
+      console.log(`[processTweet] cachedRevealed=true, attempting to restore calculated badge`);
 
       // We have revealed IQ - check if we have cached IQ to restore calculated badge
       const { getCachedIQ } = getIQCache();
@@ -439,8 +441,10 @@ async function processTweet(tweetElement) {
 
         if (handle) {
           const cachedIQ = getCachedIQ(handle);
+          console.log(`[processTweet] handle=${handle}, cachedIQ=`, cachedIQ);
           if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
             // We have revealed IQ and cached IQ - restore calculated badge directly
+            console.log(`[processTweet] Creating calculated badge with IQ=${Math.round(cachedIQ.iq_estimate)}`);
 
             const badgeManager = getBadgeManager();
             if (badgeManager && badgeManager.createIQBadge) {

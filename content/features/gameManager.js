@@ -864,6 +864,16 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
       // Use the count-up animation to reveal the score
       badgeManager.animateCountUp(badge, actualIQ, iqColor);
 
+      // Store that this IQ was revealed (so it stays calculated after refresh/iqguessr toggle)
+      // This should happen regardless of whether there's a guess
+      const tweetIdForReveal = tweetElement ? tweetElement.getAttribute('data-tweet-id') : null;
+      if (tweetIdForReveal) {
+        console.log(`[GameManager] revealActualScore: Caching revealed IQ for tweetId=${tweetIdForReveal}`);
+        cacheRevealedIQ(tweetIdForReveal);
+      } else {
+        console.log(`[GameManager] revealActualScore: No tweetId found, cannot cache revealed IQ`);
+      }
+
       // Calculate and add score
       if (hasGuess && guessData) {
         const score = calculateGuessScore(guessData.guess, actualIQ, guessData.confidence);
@@ -876,17 +886,11 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
           addGuessToHistory(tweetId, handle, guessData.guess, actualIQ, guessData.confidence, score);
         }
 
-      // Show score feedback
-      showScoreFeedback(badge, score, guessData.guess, actualIQ);
-
-      // Store that this IQ was revealed (so it stays calculated after refresh/iqguessr toggle)
-      const tweetIdForReveal = tweetElement ? tweetElement.getAttribute('data-tweet-id') : null;
-      if (tweetIdForReveal) {
-        cacheRevealedIQ(tweetIdForReveal);
+        // Show score feedback
+        showScoreFeedback(badge, score, guessData.guess, actualIQ);
       }
     }
-  }
-}, 1500); // 1.5 second loading animation
+  }, 1500); // 1.5 second loading animation
 }
 
 /**
@@ -1065,7 +1069,10 @@ function cleanupDuplicateGuessBadges(tweetElement) {
  * Replace a loading badge with a guess badge if game mode is enabled
  */
 async function replaceLoadingBadgeWithGuess(loadingBadge) {
+  console.log('[GameManager] replaceLoadingBadgeWithGuess called', loadingBadge);
+
   if (!isGameModeEnabled()) {
+    console.log('[GameManager] replaceLoadingBadgeWithGuess: Game mode not enabled');
     return null;
   }
 
@@ -1075,11 +1082,15 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
                       loadingBadge.closest('article');
 
   if (!tweetElement) {
+    console.log('[GameManager] replaceLoadingBadgeWithGuess: No tweet element found');
     return null;
   }
 
   const tweetId = tweetElement.getAttribute('data-tweet-id');
+  console.log('[GameManager] replaceLoadingBadgeWithGuess: tweetId=', tweetId);
+
   if (!tweetId) {
+    console.log('[GameManager] replaceLoadingBadgeWithGuess: No tweet ID found');
     return null;
   }
 
@@ -1103,7 +1114,34 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
   badgeCreationLocks.add(tweetId);
 
   try {
-    // CRITICAL: Check if there's already a guess badge on this tweet to prevent duplicates
+    // CRITICAL: Check if there's already a badge on this tweet (guess or calculated)
+    // Check for nested tweet structure
+    const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                       tweetElement.querySelector('article[role="article"]');
+    const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+
+    // First check for calculated badges (flip badges) - these take priority
+    let existingCalculatedBadge = actualTweetElement.querySelector('.iq-badge-flip') ||
+                                  actualTweetElement.querySelector('.iq-badge[data-iq-score]') ||
+                                  actualTweetElement.querySelector('[data-iq-score]');
+
+    // Also check in outer wrapper if nested
+    if (!existingCalculatedBadge && nestedTweet && nestedTweet !== tweetElement) {
+      existingCalculatedBadge = tweetElement.querySelector('.iq-badge-flip') ||
+                                tweetElement.querySelector('.iq-badge[data-iq-score]') ||
+                                tweetElement.querySelector('[data-iq-score]');
+    }
+
+    if (existingCalculatedBadge) {
+      // There's already a calculated badge - remove the loading badge and return the existing one
+      console.log(`[GameManager] replaceLoadingBadgeWithGuess: Found existing calculated badge, skipping replacement`, existingCalculatedBadge);
+      if (loadingBadge.parentElement && loadingBadge !== existingCalculatedBadge) {
+        loadingBadge.remove();
+      }
+      return existingCalculatedBadge;
+    }
+
+    // Then check for guess badges
     const existingGuessBadge = findExistingGuessBadge(tweetElement);
     if (existingGuessBadge) {
       // There's already a guess badge - remove the loading badge and return the existing one
@@ -1113,9 +1151,96 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
       return existingGuessBadge;
     }
 
+    // CRITICAL: FIRST check if IQ was already revealed (calculated score badge should be shown)
+    // This must happen BEFORE checking for cached guess to ensure calculated badges always take priority
+    const cachedRevealed = await getCachedRevealedIQ(tweetId);
+    console.log(`[GameManager] replaceLoadingBadgeWithGuess: tweetId=${tweetId}, cachedRevealed=`, cachedRevealed);
+
+    if (cachedRevealed) {
+      // IQ was previously revealed - try to restore calculated badge
+      let iqResult = tweetElement._iqResult;
+
+      // If no IQ result on tweet element, try to get from IQ cache
+      if (!iqResult || !iqResult.iq) {
+        const { getCachedIQ } = getIQCache();
+        const { extractTweetHandle, extractTweetText } = getTextExtraction();
+        if (getCachedIQ && extractTweetHandle) {
+          // Try to get handle from attribute first, then extract if needed
+          let handle = tweetElement.getAttribute('data-handle');
+          if (!handle) {
+            handle = extractTweetHandle(tweetElement);
+            // Cache it for future use
+            if (handle) {
+              tweetElement.setAttribute('data-handle', handle);
+            }
+          }
+
+          if (handle) {
+            const cachedIQ = getCachedIQ(handle);
+            console.log(`[GameManager] replaceLoadingBadgeWithGuess: handle=${handle}, cachedIQ=`, cachedIQ ? 'found' : 'not found', cachedIQ);
+            if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+              // Extract tweet text for debug data
+              const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
+              // Convert cached IQ format to match expected format
+              iqResult = {
+                iq: cachedIQ.iq_estimate,
+                result: cachedIQ,
+                confidence: cachedIQ.confidence,
+                text: tweetText
+              };
+              // Store it on the tweet element for future use
+              tweetElement._iqResult = iqResult;
+            }
+          }
+        }
+      }
+
+      if (iqResult && iqResult.iq !== undefined && iqResult.result) {
+        // We have revealed IQ and cached IQ - create calculated badge
+        const badgeManager = getBadgeManager();
+        if (badgeManager && badgeManager.createIQBadge) {
+          const iq = Math.round(iqResult.iq);
+          console.log(`[GameManager] replaceLoadingBadgeWithGuess: Creating calculated badge with IQ=${iq} for revealed tweet`);
+
+          // Create the actual IQ badge with proper parameters
+          const iqBadge = badgeManager.createIQBadge(iq, iqResult.result, iqResult.text);
+
+          // Also check if there's a cached guess to store in memory for reference
+          const cachedGuess = await getCachedGuess(tweetId);
+          if (cachedGuess && cachedGuess.guess !== undefined) {
+            guessManager.set(tweetElement, {
+              guess: cachedGuess.guess,
+              confidence: cachedGuess.confidence
+            });
+          }
+
+          // CRITICAL: Final duplicate check RIGHT BEFORE insertion to prevent race conditions
+          const finalCheckBadgeIQ = findExistingGuessBadge(tweetElement);
+          if (finalCheckBadgeIQ && finalCheckBadgeIQ !== iqBadge) {
+            // Another badge was inserted while we were creating this one - remove this one and return the existing
+            if (loadingBadge.parentElement) {
+              loadingBadge.remove();
+            }
+            return finalCheckBadgeIQ;
+          }
+
+          // Insert it in the same position
+          if (loadingBadge.parentElement) {
+            loadingBadge.parentElement.insertBefore(iqBadge, loadingBadge);
+            loadingBadge.remove();
+          }
+
+          return iqBadge;
+        }
+        } else {
+          console.log(`[GameManager] replaceLoadingBadgeWithGuess: cachedRevealed=true but no IQ result found, will fall through to guess badge logic`);
+        }
+    }
+
     // Get tweet ID (already checked above, but need it for async operations)
     if (tweetId) {
       const cachedGuess = await getCachedGuess(tweetId);
+      console.log(`[GameManager] replaceLoadingBadgeWithGuess: cachedGuess=`, cachedGuess);
       if (cachedGuess && cachedGuess.guess !== undefined) {
         // We have a cached guess, check if there's an actual IQ calculated
         let iqResult = tweetElement._iqResult;
@@ -1154,6 +1279,7 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
 
         if (iqResult && iqResult.iq !== undefined && iqResult.result) {
           // We have the actual IQ, show it instead of a guess badge
+          console.log(`[GameManager] replaceLoadingBadgeWithGuess: Found IQ result (IQ=${iqResult.iq}) for cached guess, creating calculated badge`);
           const badgeManager = getBadgeManager();
           if (badgeManager && badgeManager.createIQBadge) {
             const iq = Math.round(iqResult.iq);
@@ -1187,6 +1313,7 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
           }
         }
         // We have a guess but no IQ yet, create a regular guess badge with the cached value
+        console.log(`[GameManager] replaceLoadingBadgeWithGuess: Cached guess found (${cachedGuess.guess}) but no IQ result, creating guess badge`);
         // Double-check for existing guess badge before creating (race condition protection)
         const existingGuessBadgeCheck = findExistingGuessBadge(tweetElement);
         if (existingGuessBadgeCheck) {
