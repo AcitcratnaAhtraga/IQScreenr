@@ -290,6 +290,51 @@ async function processTweet(tweetElement) {
     return;
   }
 
+  // Check if this is a follow notification and skip processing
+  const isNotificationsPage = window.location.href.includes('/notifications');
+  if (isNotificationsPage) {
+    // Check for follow notification text
+    const allSpans = Array.from(actualTweetElement.querySelectorAll('span'));
+    const allDivs = Array.from(actualTweetElement.querySelectorAll('div'));
+    const allTextElements = [...allSpans, ...allDivs];
+
+    const followNotificationText = allTextElements.find(element => {
+      const text = (element.textContent || '').toLowerCase();
+      return text.includes('followed you') ||
+             text.includes('follows you') ||
+             text.includes('started following') ||
+             text.includes('following you');
+    });
+
+    // If we found follow notification text and there's no actual tweet content, skip processing
+    if (followNotificationText) {
+      const hasTweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweetElement.querySelector('div[lang]');
+
+      // If it's a follow notification without tweet content, skip badge processing
+      if (!hasTweetContent) {
+        // Remove any existing badges that might have been added
+        const existingBadge = actualTweetElement.querySelector('.iq-badge');
+        if (existingBadge && existingBadge.parentElement) {
+          existingBadge.remove();
+        }
+        // Also check outer wrapper for nested structures
+        if (hasNestedStructure) {
+          const outerBadge = tweetElement.querySelector('.iq-badge');
+          if (outerBadge && outerBadge.parentElement) {
+            outerBadge.remove();
+          }
+        }
+        // Mark as analyzed to prevent further processing
+        actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+        if (hasNestedStructure) {
+          tweetElement.setAttribute('data-iq-analyzed', 'true');
+        }
+        return;
+      }
+    }
+  }
+
   // For nested structures, check for badge in both outer wrapper and nested tweet
   // This fixes the issue where badges are placed in outer wrapper but we only search nested tweet
   // Also check for and remove duplicate badges
@@ -377,8 +422,6 @@ async function processTweet(tweetElement) {
   }
 
   let tweetText = extractTweetText(actualTweetElement);
-
-  const isNotificationsPage = window.location.href.includes('/notifications');
 
   // Apply URL removal explicitly here as a safety measure
   // (extractTweetText should already do this, but ensure it happens)
@@ -2072,6 +2115,32 @@ function addLoadingBadgeToTweet(tweet) {
   }
 
   const isNotificationsPage = window.location.href.includes('/notifications');
+
+  // Skip follow notifications
+  if (isNotificationsPage) {
+    const allSpans = Array.from(actualTweet.querySelectorAll('span'));
+    const allDivs = Array.from(actualTweet.querySelectorAll('div'));
+    const allTextElements = [...allSpans, ...allDivs];
+
+    const followNotificationText = allTextElements.find(element => {
+      const text = (element.textContent || '').toLowerCase();
+      return text.includes('followed you') ||
+             text.includes('follows you') ||
+             text.includes('started following') ||
+             text.includes('following you');
+    });
+
+    // If we found follow notification text and there's no actual tweet content, skip
+    if (followNotificationText) {
+      const hasTweetContent = actualTweet.querySelector('div[data-testid="tweetText"]') ||
+                              actualTweet.querySelector('div[lang]');
+      if (!hasTweetContent) {
+        // Mark as analyzed to prevent further processing
+        actualTweet.setAttribute('data-iq-analyzed', 'true');
+        return; // Skip follow notifications
+      }
+    }
+  }
   const loadingBadge = createLoadingBadge();
 
   // Special handling for notification page tweets
@@ -2256,6 +2325,31 @@ function setupObserver() {
               tweet.querySelector('.iq-badge')) {
             return;
           }
+
+          // Skip follow notifications
+          if (isNotificationsPageCheck) {
+            const allSpans = Array.from(tweet.querySelectorAll('span'));
+            const allDivs = Array.from(tweet.querySelectorAll('div'));
+            const allTextElements = [...allSpans, ...allDivs];
+
+            const followNotificationText = allTextElements.find(element => {
+              const text = (element.textContent || '').toLowerCase();
+              return text.includes('followed you') ||
+                     text.includes('follows you') ||
+                     text.includes('started following') ||
+                     text.includes('following you');
+            });
+
+            // If we found follow notification text and there's no actual tweet content, skip
+            if (followNotificationText) {
+              const hasTweetContent = tweet.querySelector('div[data-testid="tweetText"]') ||
+                                      tweet.querySelector('div[lang]');
+              if (!hasTweetContent) {
+                return; // Skip follow notifications
+              }
+            }
+          }
+
           addLoadingBadgeToTweet(tweet);
         });
       }, 0);
