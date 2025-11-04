@@ -1034,7 +1034,7 @@ function addMobileBadgeHandlers(badge) {
 
   badge.addEventListener('click', handleBadgeInteraction, true);
 
-  badge.addEventListener('touchend', handleBadgeInteraction, { capture: true, passive: true });
+  badge.addEventListener('touchend', handleBadgeInteraction, { capture: true, passive: false });
 
   badge.addEventListener('touchstart', (e) => {
     // Prevent default to avoid navigation on touch
