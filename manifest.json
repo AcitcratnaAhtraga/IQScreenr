@@ -53,7 +53,13 @@
         "content/features/tweetProcessor/index.js",
         "content/features/realtime.js",
         "content/features/profileBadge.js",
-        "content/features/devMode.js",
+        "content/features/devMode/utils.js",
+        "content/features/devMode/badgeDetection.js",
+        "content/features/devMode/consoleLogger.js",
+        "content/features/devMode/tooltip.js",
+        "content/features/devMode/changeTracker.js",
+        "content/features/devMode/badgeRecalculator.js",
+        "content/features/devMode/index.js",
         "content/content.js"
       ],
       "css": [
