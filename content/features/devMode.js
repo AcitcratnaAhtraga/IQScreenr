@@ -945,10 +945,24 @@
     trackedBadge = badge;
     changeCount = 0;
 
-    // Create style proxy to intercept style changes
+    // Create style proxy to intercept style changes (but don't replace the style object)
+    // We'll hook into setProperty instead to avoid changing appearance
     trackedBadgeOriginalStyle = badge.style;
     trackedBadgeStyleProxy = createStyleProxy(badge);
-    badge.style = trackedBadgeStyleProxy;
+    
+    // Intercept setProperty calls to track style changes (but don't replace the style object)
+    const originalSetProperty = badge.style.setProperty.bind(badge.style);
+    badge.style.setProperty = function(property, value, priority) {
+      const oldValue = trackedBadge.style.getPropertyValue(property);
+      const result = originalSetProperty(property, value, priority);
+      
+      // Track style changes (but ignore border changes we make for tracking indicator)
+      if (trackedBadge === badge && oldValue !== value && property !== 'border') {
+        logChange('Style.setProperty()', { property, value, priority }, oldValue, value);
+      }
+      
+      return result;
+    };
 
     // Set up MutationObserver to track DOM changes
     mutationObserver = new MutationObserver((mutations) => {
@@ -1109,9 +1123,11 @@
 
     document.body.appendChild(indicator);
 
-    // Also highlight the badge
-    badge.style.setProperty('outline', '3px solid #f44336', 'important');
-    badge.style.setProperty('outline-offset', '2px', 'important');
+    // Only add red border - don't change any other appearance
+    // Use border instead of outline to avoid interfering with layout
+    const currentBorder = badge.style.border;
+    badge.style.setProperty('border', '3px solid #f44336', 'important');
+    badge.setAttribute('data-dev-mode-tracking-border', currentBorder || '');
 
     console.log('%c🔴 TRACKING STARTED', 'color: #f44336; font-weight: bold; font-size: 14px;');
     console.log(`%cBadge:`, 'color: #ff9800; font-weight: bold;', badge);
@@ -1125,14 +1141,19 @@
   function stopTracking() {
     if (!trackedBadge) return;
 
-    // Restore original style object
-    if (trackedBadgeStyleProxy && trackedBadgeOriginalStyle) {
-      trackedBadge.style = trackedBadgeOriginalStyle;
+    // Restore original setProperty if we modified it
+    if (trackedBadgeOriginalStyle && trackedBadgeOriginalStyle.setProperty) {
+      trackedBadge.style.setProperty = trackedBadgeOriginalStyle.setProperty.bind(trackedBadgeOriginalStyle);
     }
 
-    // Remove highlight
-    trackedBadge.style.removeProperty('outline');
-    trackedBadge.style.removeProperty('outline-offset');
+    // Remove highlight (restore original border)
+    const originalBorder = trackedBadge.getAttribute('data-dev-mode-tracking-border');
+    if (originalBorder) {
+      trackedBadge.style.setProperty('border', originalBorder, 'important');
+    } else {
+      trackedBadge.style.removeProperty('border');
+    }
+    trackedBadge.removeAttribute('data-dev-mode-tracking-border');
 
     // Disconnect observer
     if (mutationObserver) {
@@ -1448,6 +1469,11 @@
       currentBadge = badge;
       const rect = badge.getBoundingClientRect();
       showTooltip(badge, e.clientX, e.clientY);
+      
+      // If this is a tracked badge, also log hover info to track changes
+      if (trackedBadge === badge) {
+        logToConsole(badge);
+      }
     } else if (!badge) {
       hideTooltip();
       lastLoggedBadge = null;
