@@ -1364,6 +1364,7 @@ class ComprehensiveIQEstimatorUltimate {
     // 3. Calculate run-on penalty for dependency depth
     // If dependency depth is high due to run-on (not sophisticated structure), reduce it
     let runOnDepthPenalty = 0;
+    let runOnIQPenalty = 0; // Direct IQ penalty for obvious run-ons
 
     // Single long sentence with low punctuation = run-on inflating depth
     if (sentenceCount === 1 && avgWords > 15) {
@@ -1372,23 +1373,35 @@ class ComprehensiveIQEstimatorUltimate {
       if (punctuationDensity < 0.05) {
         // Very low punctuation = run-on, depth is artificially inflated
         // Penalty scales with how long the sentence is (longer = more inflated)
-        runOnDepthPenalty = (avgWords - 15) * 0.02; // Reduce depth by up to ~0.18 for 24-word sentence
+        runOnDepthPenalty = (avgWords - 15) * 0.03; // Increased from 0.02 - more aggressive
+        // Also add direct IQ penalty for very obvious run-ons
+        runOnIQPenalty += (avgWords - 15) * 1.5; // Direct IQ reduction
       } else if (punctuationDensity < 0.10) {
         // Moderate punctuation = possibly a run-on
-        runOnDepthPenalty = (avgWords - 15) * 0.01;
+        runOnDepthPenalty = (avgWords - 15) * 0.015;
+        runOnIQPenalty += (avgWords - 15) * 0.75;
       }
 
       // Additional penalty for casual connectives (confirms it's a run-on)
+      // These patterns strongly indicate casual speech, not sophisticated grammar
       if (startsWithCasual) {
-        runOnDepthPenalty += 0.15; // Starting with "And also" confirms casual style
+        runOnDepthPenalty += 0.25; // Increased from 0.15
+        runOnIQPenalty += 15; // Starting with "And also" is very casual - direct penalty
       }
-      runOnDepthPenalty += casualConnectiveCount * 0.08;
+      runOnDepthPenalty += casualConnectiveCount * 0.12; // Increased from 0.08
+      runOnIQPenalty += casualConnectiveCount * 8; // Each casual connective = direct penalty
 
       // Apply penalty: reduce the effective dependency depth
       if (runOnDepthPenalty > 0) {
         const adjustedDepDepth = Math.max(1.795, depDepth - runOnDepthPenalty);
         // Recalculate IQ with adjusted depth
         iq = 53 + (adjustedDepDepth - 1.795) * 80;
+      }
+
+      // Apply direct IQ penalty for obvious run-ons
+      // Run-ons demonstrate poor grammar control, not sophistication
+      if (runOnIQPenalty > 0) {
+        iq = Math.max(50, iq - runOnIQPenalty);
       }
     }
 

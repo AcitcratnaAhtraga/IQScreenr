@@ -1160,6 +1160,211 @@
   }
 
   /**
+   * Recalculate IQ for a badge
+   */
+  async function recalculateBadge(badge) {
+    if (!badge) return;
+
+    // Check if badge has an IQ score (already calculated)
+    const hasIQScore = badge.hasAttribute('data-iq-score');
+    const isRealtime = badge.classList.contains('iq-badge-realtime') || badge.hasAttribute('data-iq-realtime');
+
+    if (!hasIQScore && !isRealtime) {
+      console.log('%c⚠️ Badge does not have an IQ score to recalculate', 'color: #ff9800; font-weight: bold;');
+      return;
+    }
+
+    console.log('%c🔄 Recalculating badge IQ...', 'color: #2196f3; font-weight: bold;');
+
+    // Get dependencies
+    const getTextExtraction = () => window.TextExtraction || {};
+    const getBadgeManager = () => window.BadgeManager || {};
+    const getSettings = () => window.Settings || {};
+
+    const { extractTweetText, getInputText } = getTextExtraction();
+    const badgeManager = getBadgeManager();
+    const settings = getSettings();
+
+    if (!badgeManager || !badgeManager.createIQBadge) {
+      console.error('BadgeManager not available');
+      return;
+    }
+
+    const iqEstimator = window.ComprehensiveIQEstimatorUltimate ? new window.ComprehensiveIQEstimatorUltimate() : null;
+    if (!iqEstimator) {
+      console.error('IQ Estimator not available');
+      return;
+    }
+
+    let tweetText = null;
+
+    // For real-time badges, get text from input element
+    if (isRealtime) {
+      // Find the associated input element
+      const container = badge.closest('[data-testid="toolBar"]') || badge.parentElement;
+      const inputElement = container?._iqInputElement ||
+                          container?.querySelector('[contenteditable="true"]') ||
+                          container?.querySelector('[role="textbox"]');
+
+      if (inputElement && getInputText) {
+        tweetText = getInputText(inputElement).trim();
+      }
+    } else {
+      // For regular badges, find the tweet element and extract text
+      const tweetElement = badge.closest('article[data-testid="tweet"]') ||
+                          badge.closest('article[role="article"]') ||
+                          badge.closest('article');
+
+      if (tweetElement && extractTweetText) {
+        tweetText = extractTweetText(tweetElement);
+      }
+    }
+
+    if (!tweetText || tweetText.trim().length === 0) {
+      console.log('%c⚠️ Could not extract text for recalculation', 'color: #ff9800; font-weight: bold;');
+      return;
+    }
+
+    // Show loading state
+    const oldIQ = badge.getAttribute('data-iq-score');
+    badge.classList.add('iq-badge-calculating');
+    badge.setAttribute('data-iq-recalculating', 'true');
+
+    try {
+      // Recalculate IQ
+      const result = await iqEstimator.estimate(tweetText);
+
+      if (result.is_valid && result.iq_estimate !== null) {
+        const newIQ = Math.round(result.iq_estimate);
+        const confidence = result.confidence ? Math.round(result.confidence) : null;
+
+        // Update badge with new result
+        const { getIQColor, getConfidenceColor, animateCountUp, updateBadgeWithFlipStructure } = badgeManager;
+
+        // Update debug data
+        badge._debugData = {
+          iq: newIQ,
+          result: result,
+          text: tweetText,
+          timestamp: new Date().toISOString()
+        };
+
+        // Get color
+        const iqColor = (settings.useConfidenceForColor && confidence !== null)
+          ? getConfidenceColor(confidence)
+          : getIQColor(newIQ);
+
+        // Update attributes
+        badge.setAttribute('data-iq-score', newIQ);
+        if (confidence !== null) {
+          badge.setAttribute('data-confidence', confidence);
+        } else {
+          badge.removeAttribute('data-confidence');
+        }
+
+        // Update badge content
+        if (confidence !== null) {
+          // Ensure flip structure exists
+          if (!badge.querySelector('.iq-badge-inner')) {
+            if (updateBadgeWithFlipStructure) {
+              updateBadgeWithFlipStructure(badge, newIQ, confidence);
+            } else {
+              badge.innerHTML = `
+                <div class="iq-badge-inner">
+                  <div class="iq-badge-front">
+                    <span class="iq-label">IQ</span>
+                    <span class="iq-score">${newIQ}</span>
+                  </div>
+                  <div class="iq-badge-back">
+                    <span class="iq-label">%</span>
+                    <span class="iq-score">${confidence}</span>
+                  </div>
+                </div>
+              `;
+            }
+          } else {
+            // Update existing flip structure
+            const frontScore = badge.querySelector('.iq-badge-front .iq-score');
+            const backScore = badge.querySelector('.iq-badge-back .iq-score');
+            if (frontScore) frontScore.textContent = newIQ;
+            if (backScore) backScore.textContent = confidence;
+          }
+          badge.classList.add('iq-badge-flip');
+        } else {
+          // Simple badge without confidence
+          badge.innerHTML = `
+            <span class="iq-label">IQ</span>
+            <span class="iq-score">${newIQ}</span>
+          `;
+          badge.classList.remove('iq-badge-flip');
+        }
+
+        // Update color
+        badge.style.setProperty('background-color', iqColor, 'important');
+
+        // Animate if available
+        if (animateCountUp && oldIQ) {
+          const oldIQNum = parseInt(oldIQ, 10);
+          if (!isNaN(oldIQNum)) {
+            animateCountUp(badge, newIQ, iqColor);
+          }
+        }
+
+        console.log(`%c✅ Recalculation complete: ${oldIQ} → ${newIQ}`, 'color: #4caf50; font-weight: bold;');
+        if (confidence !== null) {
+          console.log(`%c   Confidence: ${confidence}%`, 'color: #4caf50;');
+        }
+      } else {
+        console.log('%c⚠️ Recalculation returned invalid result', 'color: #ff9800; font-weight: bold;', result);
+      }
+    } catch (error) {
+      console.error('Error recalculating badge:', error);
+    } finally {
+      badge.classList.remove('iq-badge-calculating');
+      badge.removeAttribute('data-iq-recalculating');
+    }
+  }
+
+  /**
+   * Handle click on badges (for recalculation in dev mode)
+   */
+  function handleBadgeClick(e) {
+    if (!devModeActive) return;
+
+    const target = e.target;
+
+    // Check if we're clicking on a badge or inside a badge
+    let badge = null;
+    if (isExtensionElement(target)) {
+      badge = target;
+    } else {
+      badge = target.closest('.iq-badge, .iq-guessr-score-badge');
+      if (badge && !isExtensionElement(badge)) {
+        badge = null;
+      }
+    }
+
+    if (badge) {
+      // Check if it's a calculated badge (has IQ score) or real-time badge
+      const hasIQScore = badge.hasAttribute('data-iq-score');
+      const isRealtime = badge.classList.contains('iq-badge-realtime') || badge.hasAttribute('data-iq-realtime');
+
+      // Don't recalculate if it's a guess badge or loading badge
+      const isGuessBadge = badge.classList.contains('iq-badge-guess') || badge.hasAttribute('data-iq-guess');
+      const isLoadingBadge = badge.classList.contains('iq-badge-loading') || badge.hasAttribute('data-iq-loading');
+      const isCalculating = badge.hasAttribute('data-iq-recalculating');
+
+      if ((hasIQScore || isRealtime) && !isGuessBadge && !isLoadingBadge && !isCalculating) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Recalculate the badge
+        recalculateBadge(badge);
+      }
+    }
+  }
+
+  /**
    * Handle right-click on badges
    */
   function handleContextMenu(e) {
@@ -1234,12 +1439,13 @@
     devModeActive = true;
     document.addEventListener('mousemove', handleMouseMove, true);
     document.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('click', handleBadgeClick, true);
     document.body.style.cursor = 'crosshair';
 
     // Show indicator
     const indicator = document.createElement('div');
     indicator.id = 'iq-dev-mode-indicator';
-    indicator.textContent = '🔍 DEV MODE ACTIVE - Hover over badges to see details | Right-click to track changes | Press CTRL to toggle off';
+        indicator.textContent = '🔍 DEV MODE ACTIVE - Hover: details | Click: recalculate | Right-click: track changes | CTRL: toggle off';
     indicator.style.cssText = `
       position: fixed;
       top: 10px;
@@ -1267,6 +1473,7 @@
     devModeActive = false;
     document.removeEventListener('mousemove', handleMouseMove, true);
     document.removeEventListener('contextmenu', handleContextMenu, true);
+    document.removeEventListener('click', handleBadgeClick, true);
     document.body.style.cursor = '';
     hideTooltip();
 
