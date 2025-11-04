@@ -20,6 +20,7 @@ const getTweetProcessor = () => window.TweetProcessor || {};
 const guessManager = new Map(); // tweetElement -> { guess: number, confidence: number }
 const GUESS_CACHE_PREFIX = 'iq_guess_';
 const REVEALED_CACHE_PREFIX = 'iq_revealed_';
+const REVEALED_IQ_CACHE_PREFIX = 'iq_revealed_iq_'; // Store IQ result by tweet ID as fallback
 const GUESS_HISTORY_KEY = 'iqGuessrHistory';
 
 // Track badge creation calls per tweet to detect duplicates
@@ -151,6 +152,69 @@ async function getCachedRevealedIQ(tweetId) {
     } catch (error) {
       // Extension context invalidated or other error
       console.warn('[IQGuessr] Extension context invalidated, returning null for cached revealed IQ');
+      resolve(null);
+    }
+  });
+}
+
+/**
+ * Cache the revealed IQ result by tweet ID as a fallback
+ * This ensures we can restore calculated badges even if handle lookup fails
+ */
+function cacheRevealedIQResult(tweetId, iqResultData) {
+  if (!tweetId || !iqResultData) return;
+
+  const key = generateGuessCacheKey(tweetId);
+  if (!key) return;
+
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return;
+  }
+
+  try {
+    const storageKey = REVEALED_IQ_CACHE_PREFIX + key;
+    const storageData = {};
+    storageData[storageKey] = iqResultData;
+    chrome.storage.local.set(storageData);
+  } catch (error) {
+    console.warn('[IQGuessr] Extension context invalidated, cannot cache revealed IQ result');
+  }
+}
+
+/**
+ * Get cached revealed IQ result by tweet ID (async)
+ * This is a fallback when handle-based lookup fails
+ */
+async function getCachedRevealedIQResult(tweetId) {
+  if (!tweetId) return null;
+
+  const key = generateGuessCacheKey(tweetId);
+  if (!key) return null;
+
+  // Check if extension context is still valid
+  if (!chrome || !chrome.storage || !chrome.runtime || !chrome.runtime.id) {
+    return null;
+  }
+
+  const storageKey = REVEALED_IQ_CACHE_PREFIX + key;
+  return new Promise((resolve) => {
+    try {
+      chrome.storage.local.get([storageKey], (result) => {
+        if (chrome.runtime.lastError) {
+          resolve(null);
+          return;
+        }
+
+        if (result[storageKey]) {
+          resolve(result[storageKey]);
+        } else {
+          resolve(null);
+        }
+      });
+    } catch (error) {
+      // Extension context invalidated or other error
+      console.warn('[IQGuessr] Extension context invalidated, returning null for cached revealed IQ result');
       resolve(null);
     }
   });
@@ -868,10 +932,17 @@ function revealActualScore(badge, actualIQ, iqColor, confidence, result, tweetTe
       // This should happen regardless of whether there's a guess
       const tweetIdForReveal = tweetElement ? tweetElement.getAttribute('data-tweet-id') : null;
       if (tweetIdForReveal) {
-        console.log(`[GameManager] revealActualScore: Caching revealed IQ for tweetId=${tweetIdForReveal}`);
         cacheRevealedIQ(tweetIdForReveal);
-      } else {
-        console.log(`[GameManager] revealActualScore: No tweetId found, cannot cache revealed IQ`);
+
+        // Also cache the IQ result by tweet ID as a fallback (in case handle lookup fails)
+        // This ensures we can restore the calculated badge even if handle extraction fails
+        const iqResultData = {
+          iq: actualIQ,
+          confidence: confidence,
+          result: result || {}, // Ensure result exists, use empty object if not
+          timestamp: new Date().toISOString()
+        };
+        cacheRevealedIQResult(tweetIdForReveal, iqResultData);
       }
 
       // Calculate and add score
@@ -1069,10 +1140,7 @@ function cleanupDuplicateGuessBadges(tweetElement) {
  * Replace a loading badge with a guess badge if game mode is enabled
  */
 async function replaceLoadingBadgeWithGuess(loadingBadge) {
-  console.log('[GameManager] replaceLoadingBadgeWithGuess called', loadingBadge);
-
   if (!isGameModeEnabled()) {
-    console.log('[GameManager] replaceLoadingBadgeWithGuess: Game mode not enabled');
     return null;
   }
 
@@ -1082,15 +1150,12 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
                       loadingBadge.closest('article');
 
   if (!tweetElement) {
-    console.log('[GameManager] replaceLoadingBadgeWithGuess: No tweet element found');
     return null;
   }
 
   const tweetId = tweetElement.getAttribute('data-tweet-id');
-  console.log('[GameManager] replaceLoadingBadgeWithGuess: tweetId=', tweetId);
 
   if (!tweetId) {
-    console.log('[GameManager] replaceLoadingBadgeWithGuess: No tweet ID found');
     return null;
   }
 
@@ -1134,7 +1199,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
 
     if (existingCalculatedBadge) {
       // There's already a calculated badge - remove the loading badge and return the existing one
-      console.log(`[GameManager] replaceLoadingBadgeWithGuess: Found existing calculated badge, skipping replacement`, existingCalculatedBadge);
       if (loadingBadge.parentElement && loadingBadge !== existingCalculatedBadge) {
         loadingBadge.remove();
       }
@@ -1154,7 +1218,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
     // CRITICAL: FIRST check if IQ was already revealed (calculated score badge should be shown)
     // This must happen BEFORE checking for cached guess to ensure calculated badges always take priority
     const cachedRevealed = await getCachedRevealedIQ(tweetId);
-    console.log(`[GameManager] replaceLoadingBadgeWithGuess: tweetId=${tweetId}, cachedRevealed=`, cachedRevealed);
 
     if (cachedRevealed) {
       // IQ was previously revealed - try to restore calculated badge
@@ -1176,8 +1239,40 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
           }
 
           if (handle) {
-            const cachedIQ = getCachedIQ(handle);
-            console.log(`[GameManager] replaceLoadingBadgeWithGuess: handle=${handle}, cachedIQ=`, cachedIQ ? 'found' : 'not found', cachedIQ);
+            let cachedIQ = getCachedIQ(handle);
+
+            // If cachedRevealed=true but cachedIQ is null, wait and retry multiple times (cache might still be loading from storage)
+            if (!cachedIQ && cachedRevealed) {
+              // Try loading from storage directly if cache module has loadCache function
+              const { loadCache } = getIQCache();
+              if (loadCache) {
+                // Force reload from storage
+                loadCache();
+                // Wait a bit for async load to complete
+                await new Promise(resolve => setTimeout(resolve, 150));
+                cachedIQ = getCachedIQ(handle);
+              }
+
+              // If still not found, wait a bit more and retry once more
+              if (!cachedIQ) {
+                await new Promise(resolve => setTimeout(resolve, 150));
+                cachedIQ = getCachedIQ(handle);
+              }
+
+              // If still not found via handle, try fallback: get IQ result directly by tweet ID
+              if (!cachedIQ || !cachedIQ.iq_estimate) {
+                const cachedIQResult = await getCachedRevealedIQResult(tweetId);
+                if (cachedIQResult && cachedIQResult.iq) {
+                  // Convert to expected format - merge result object if it exists
+                  cachedIQ = {
+                    iq_estimate: cachedIQResult.iq,
+                    confidence: cachedIQResult.confidence,
+                    ...(cachedIQResult.result || {})
+                  };
+                }
+              }
+            }
+
             if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
               // Extract tweet text for debug data
               const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
@@ -1200,7 +1295,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
         const badgeManager = getBadgeManager();
         if (badgeManager && badgeManager.createIQBadge) {
           const iq = Math.round(iqResult.iq);
-          console.log(`[GameManager] replaceLoadingBadgeWithGuess: Creating calculated badge with IQ=${iq} for revealed tweet`);
 
           // Create the actual IQ badge with proper parameters
           const iqBadge = badgeManager.createIQBadge(iq, iqResult.result, iqResult.text);
@@ -1232,15 +1326,12 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
 
           return iqBadge;
         }
-        } else {
-          console.log(`[GameManager] replaceLoadingBadgeWithGuess: cachedRevealed=true but no IQ result found, will fall through to guess badge logic`);
         }
     }
 
     // Get tweet ID (already checked above, but need it for async operations)
     if (tweetId) {
       const cachedGuess = await getCachedGuess(tweetId);
-      console.log(`[GameManager] replaceLoadingBadgeWithGuess: cachedGuess=`, cachedGuess);
       if (cachedGuess && cachedGuess.guess !== undefined) {
         // We have a cached guess, check if there's an actual IQ calculated
         let iqResult = tweetElement._iqResult;
@@ -1279,7 +1370,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
 
         if (iqResult && iqResult.iq !== undefined && iqResult.result) {
           // We have the actual IQ, show it instead of a guess badge
-          console.log(`[GameManager] replaceLoadingBadgeWithGuess: Found IQ result (IQ=${iqResult.iq}) for cached guess, creating calculated badge`);
           const badgeManager = getBadgeManager();
           if (badgeManager && badgeManager.createIQBadge) {
             const iq = Math.round(iqResult.iq);
@@ -1313,7 +1403,6 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
           }
         }
         // We have a guess but no IQ yet, create a regular guess badge with the cached value
-        console.log(`[GameManager] replaceLoadingBadgeWithGuess: Cached guess found (${cachedGuess.guess}) but no IQ result, creating guess badge`);
         // Double-check for existing guess badge before creating (race condition protection)
         const existingGuessBadgeCheck = findExistingGuessBadge(tweetElement);
         if (existingGuessBadgeCheck) {
@@ -1557,6 +1646,8 @@ if (typeof window !== 'undefined') {
     cacheGuess,
     cacheRevealedIQ,
     getCachedRevealedIQ,
+    cacheRevealedIQResult,
+    getCachedRevealedIQResult,
     addGuessToHistory,
     getGuessHistory,
     clearGuessHistory,
