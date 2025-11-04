@@ -47,6 +47,12 @@
     const badge = document.createElement('span');
     badge.className = 'iq-guessr-score-badge';
     badge.setAttribute('data-iq-guessr-score', 'true');
+
+    // Attach creation context if available
+    if (window.BadgeCreation && window.BadgeCreation.attachCreationContext) {
+      window.BadgeCreation.attachCreationContext(badge, 'score');
+    }
+
     badge.innerHTML = `
       <span class="score-label">IQGuessr</span>
       <span class="score-value">${score}</span>

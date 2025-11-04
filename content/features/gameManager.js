@@ -433,6 +433,11 @@ function createGuessBadge(tweetElement = null) {
     badge.setAttribute('data-created-for-tweet-id', tweetId);
   }
 
+  // Attach creation context if available
+  if (window.BadgeCreation && window.BadgeCreation.attachCreationContext) {
+    window.BadgeCreation.attachCreationContext(badge, 'guess');
+  }
+
   // Grey background
   badge.style.setProperty('background-color', '#9e9e9e', 'important');
   badge.style.setProperty('color', '#000000', 'important');

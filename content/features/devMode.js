@@ -451,6 +451,16 @@
   }
 
   /**
+   * Get creation context if available
+   */
+  function getCreationContext(badge) {
+    if (badge._creationContext) {
+      return badge._creationContext;
+    }
+    return null;
+  }
+
+  /**
    * Get debug data if available
    */
   function getDebugData(badge) {
@@ -499,10 +509,47 @@
     const locationInfo = getLocationInfo(badge);
     const dataAttrs = getDataAttributes(badge);
     const debugData = getDebugData(badge);
+    const creationContext = getCreationContext(badge);
     const styles = getRelevantStyles(badge);
     const rect = badge.getBoundingClientRect();
 
     console.group('%c🔍 DEV MODE - Badge Details', 'color: #667eea; font-weight: bold; font-size: 14px;');
+
+    // Creation Context
+    if (creationContext) {
+      console.group('%c📍 Creation Origin:', 'color: #e91e63; font-weight: bold;');
+      console.log(`%cBadge Type:`, 'color: #e91e63; font-weight: bold;', creationContext.badgeType);
+      console.log(`%cCreated At:`, 'color: #e91e63; font-weight: bold;', new Date(creationContext.timestamp).toLocaleString());
+      console.log(`%cURL:`, 'color: #e91e63; font-weight: bold;', creationContext.url);
+      console.log(`%cPathname:`, 'color: #e91e63; font-weight: bold;', creationContext.pathname);
+
+      if (creationContext.creator) {
+        console.log(`%cCreator Function:`, 'color: #e91e63; font-weight: bold;', creationContext.creator);
+      }
+
+      if (creationContext.functionNames && creationContext.functionNames.length > 0) {
+        console.group('%cCall Chain:', 'color: #e91e63; font-weight: bold;');
+        creationContext.functionNames.forEach((funcName, index) => {
+          console.log(`%c  ${index + 1}. ${funcName}`, 'color: #e91e63;');
+        });
+        console.groupEnd();
+      }
+
+      if (creationContext.callStack && creationContext.callStack.length > 0) {
+        console.groupCollapsed('%cFull Call Stack:', 'color: #e91e63; font-weight: bold;');
+        creationContext.callStack.forEach((frame, index) => {
+          if (frame.function && frame.file) {
+            console.log(`%c  ${index + 1}. ${frame.function}`, 'color: #e91e63;');
+            console.log(`%c     ${frame.file}:${frame.line}:${frame.column}`, 'color: #9e9e9e; font-size: 10px;');
+          } else if (frame.raw) {
+            console.log(`%c  ${frame.raw}`, 'color: #9e9e9e; font-size: 10px;');
+          }
+        });
+        console.groupEnd();
+      }
+
+      console.groupEnd();
+    }
 
     // Badge Category
     const category = detectBadgeCategory(badge);
@@ -654,12 +701,36 @@
     const locationInfo = getLocationInfo(badge);
     const dataAttrs = getDataAttributes(badge);
     const debugData = getDebugData(badge);
+    const creationContext = getCreationContext(badge);
     const styles = getRelevantStyles(badge);
     const category = detectBadgeCategory(badge);
     const category10State = detectCategory10State(badge);
 
     let content = '<div style="margin-bottom: 8px;">';
     content += '<div style="color: #667eea; font-weight: bold; font-size: 13px; margin-bottom: 8px;">🔍 DEV MODE - Badge Details</div>';
+
+    // Creation Context
+    if (creationContext) {
+      content += '<div style="margin-bottom: 6px; padding: 4px; background: rgba(233, 30, 99, 0.1); border-left: 3px solid #e91e63;">';
+      content += '<span style="color: #e91e63; font-weight: bold;">📍 Creation Origin:</span>';
+      content += '<div style="margin-left: 12px; margin-top: 4px;">';
+      content += `<div style="color: #e91e63;">Badge Type: ${creationContext.badgeType}</div>`;
+      content += `<div style="color: #e91e63;">Created: ${new Date(creationContext.timestamp).toLocaleString()}</div>`;
+      if (creationContext.creator) {
+        content += `<div style="color: #e91e63; font-weight: bold;">Creator: ${creationContext.creator}</div>`;
+      }
+      if (creationContext.functionNames && creationContext.functionNames.length > 0) {
+        content += '<div style="color: #e91e63; margin-top: 4px;">Call Chain:</div>';
+        creationContext.functionNames.slice(0, 5).forEach((funcName, index) => {
+          content += `<div style="color: #e91e63; margin-left: 12px; font-size: 10px;">${index + 1}. ${funcName}</div>`;
+        });
+        if (creationContext.functionNames.length > 5) {
+          content += `<div style="color: #9e9e9e; margin-left: 12px; font-size: 10px;">... and ${creationContext.functionNames.length - 5} more</div>`;
+        }
+      }
+      content += '</div>';
+      content += '</div>';
+    }
 
     // Badge Category
     if (category.category) {
