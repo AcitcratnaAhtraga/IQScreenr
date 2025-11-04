@@ -208,31 +208,58 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       const newIQ = Math.round(result.iq_estimate);
 
       // Store debug data for hover (detailed analysis breakdown)
-      const { logDebugInfo } = getBadgeManager();
-      if (logDebugInfo) {
-        badge._debugData = {
-          iq: newIQ,
-          result: result,
-          text: text,
-          timestamp: new Date().toISOString()
+      // Always update debug data when we have a new result
+      const badgeManager = getBadgeManager();
+      const logDebugInfo = badgeManager?.logDebugInfo || window.BadgeCreation?.logDebugInfo;
+
+      // Always update debug data with latest result (even if logDebugInfo isn't available yet)
+      badge._debugData = {
+        iq: newIQ,
+        result: result,
+        text: text,
+        timestamp: new Date().toISOString()
+      };
+
+      // Set cursor to help to indicate hover will show debug info
+      badge.style.setProperty('cursor', 'help', 'important');
+
+      // Add hover event listener if not already added and logDebugInfo is available
+      if (logDebugInfo && !badge._realtimeDebugHandlerAdded) {
+        // Use a single handler that works for both badge and child elements
+        const hoverHandler = (e) => {
+          // Find the badge element (could be the target or a parent)
+          const badgeElement = e.target.closest('.iq-badge-realtime') || badge;
+
+          // Always check for fresh debug data
+          if (badgeElement._debugData || badge._debugData) {
+            const debugData = badgeElement._debugData || badge._debugData;
+            // logDebugInfo internally checks settings.enableDebugLogging
+            // So we can call it directly like regular badges do
+            try {
+              // Call logDebugInfo - it will check settings internally
+              logDebugInfo(debugData);
+            } catch (err) {
+              console.error('Error logging debug info for real-time badge:', err);
+            }
+          }
         };
 
-        // Set cursor to help to indicate hover will show debug info
-        badge.style.setProperty('cursor', 'help', 'important');
+        // Add listener in capture phase (before other handlers) to ensure it fires
+        // This ensures it runs even if dev mode or other handlers intercept the event
+        // Use capture: true so it runs before dev mode's mousemove handler
+        badge.addEventListener('mouseenter', hoverHandler, { capture: true, passive: true });
+        // Also add in bubble phase as fallback
+        badge.addEventListener('mouseenter', hoverHandler, { capture: false, passive: true });
 
-        // Add hover event listener if not already added
-        if (!badge._realtimeDebugHandlerAdded) {
-          badge.addEventListener('mouseenter', () => {
-            if (badge._debugData) {
-              const settings = getSettings();
-              // Check if debug logging is enabled via settings
-              if (settings.enableDebugLogging !== false) {
-                logDebugInfo(badge._debugData);
-              }
-            }
-          });
-          badge._realtimeDebugHandlerAdded = true;
-        }
+        // Also use mouseover which bubbles to catch hovers on child elements
+        badge.addEventListener('mouseover', (e) => {
+          // Only trigger if we're entering the badge or a child (not leaving)
+          if (badge.contains(e.target) && !badge.contains(e.relatedTarget)) {
+            hoverHandler(e);
+          }
+        }, { capture: true, passive: true });
+
+        badge._realtimeDebugHandlerAdded = true;
       }
 
       let scoreElement = badge.querySelector('.iq-badge-front .iq-score') ||
