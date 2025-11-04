@@ -45,6 +45,7 @@
         "content/features/tweetProcessor/index.js",
         "content/features/realtime.js",
         "content/features/profileBadge.js",
+        "content/features/devMode.js",
         "content/content.js"
       ],
       "css": [

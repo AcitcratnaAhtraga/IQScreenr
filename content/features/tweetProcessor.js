@@ -864,11 +864,29 @@ async function processTweet(tweetElement) {
       ...(hasNestedStructure ? tweetElement.querySelectorAll('.iq-badge') : [])
     ];
 
-    // If multiple badges found, remove duplicates (keep the first one)
+    // If multiple badges found, remove duplicates
+    // For guess badges: prioritize keeping one that has been interacted with (data-iq-guessed)
+    // Otherwise keep the first one
     if (allBadgesForLoadingCheck.length > 1) {
-      for (let i = 1; i < allBadgesForLoadingCheck.length; i++) {
-        if (allBadgesForLoadingCheck[i].parentElement) {
-          allBadgesForLoadingCheck[i].remove();
+      // Check if any are guess badges with data-iq-guessed (user has interacted)
+      const interactedGuessBadge = allBadgesForLoadingCheck.find(badge =>
+        (badge.hasAttribute('data-iq-guess') || badge.classList.contains('iq-badge-guess')) &&
+        badge.hasAttribute('data-iq-guessed')
+      );
+
+      if (interactedGuessBadge) {
+        // Keep the interacted badge, remove all others
+        for (const badge of allBadgesForLoadingCheck) {
+          if (badge !== interactedGuessBadge && badge.parentElement) {
+            badge.remove();
+          }
+        }
+      } else {
+        // No interacted badge, just keep the first one
+        for (let i = 1; i < allBadgesForLoadingCheck.length; i++) {
+          if (allBadgesForLoadingCheck[i].parentElement) {
+            allBadgesForLoadingCheck[i].remove();
+          }
         }
       }
     }

@@ -835,6 +835,27 @@ function showScoreFeedback(badge, score, guess, actual) {
 }
 
 /**
+ * Helper function to find existing guess badge in a tweet element
+ * Returns the existing badge if found, null otherwise
+ */
+function findExistingGuessBadge(tweetElement) {
+  if (!tweetElement) {
+    return null;
+  }
+
+  // Check for nested tweet structure
+  const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                     tweetElement.querySelector('article[role="article"]');
+  const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+
+  // Look for existing guess badges in both outer and nested tweet elements
+  const existingGuessBadge = actualTweetElement.querySelector('.iq-badge[data-iq-guess="true"], .iq-badge-guess') ||
+                            (nestedTweet && nestedTweet !== tweetElement ? tweetElement.querySelector('.iq-badge[data-iq-guess="true"], .iq-badge-guess') : null);
+
+  return existingGuessBadge || null;
+}
+
+/**
  * Replace a loading badge with a guess badge if game mode is enabled
  */
 async function replaceLoadingBadgeWithGuess(loadingBadge) {
@@ -846,6 +867,16 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
   const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
                       loadingBadge.closest('article[role="article"]') ||
                       loadingBadge.closest('article');
+
+  // CRITICAL: Check if there's already a guess badge on this tweet to prevent duplicates
+  const existingGuessBadge = findExistingGuessBadge(tweetElement);
+  if (existingGuessBadge) {
+    // There's already a guess badge - remove the loading badge and return the existing one
+    if (loadingBadge.parentElement && loadingBadge !== existingGuessBadge) {
+      loadingBadge.remove();
+    }
+    return existingGuessBadge;
+  }
 
   if (tweetElement) {
     const tweetId = tweetElement.getAttribute('data-tweet-id');
@@ -912,6 +943,16 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
           }
         }
         // We have a guess but no IQ yet, create a regular guess badge with the cached value
+        // Double-check for existing guess badge before creating (race condition protection)
+        const existingGuessBadgeCheck = findExistingGuessBadge(tweetElement);
+        if (existingGuessBadgeCheck) {
+          // Badge already exists, just remove loading badge and return existing
+          if (loadingBadge.parentElement && loadingBadge !== existingGuessBadgeCheck) {
+            loadingBadge.remove();
+          }
+          return existingGuessBadgeCheck;
+        }
+
         const guessBadge = createGuessBadge();
 
         // Set the cached guess value
@@ -981,6 +1022,16 @@ async function replaceLoadingBadgeWithGuess(loadingBadge) {
   }
 
   // Create a new guess badge (no cached guess, but IQ might be cached for later)
+  // Final check for existing guess badge before creating (race condition protection)
+  const existingGuessBadgeFinal = findExistingGuessBadge(tweetElementForDebug);
+  if (existingGuessBadgeFinal) {
+    // Badge already exists, just remove loading badge and return existing
+    if (loadingBadge.parentElement && loadingBadge !== existingGuessBadgeFinal) {
+      loadingBadge.remove();
+    }
+    return existingGuessBadgeFinal;
+  }
+
   const guessBadge = createGuessBadge();
 
   // Insert it in the same position

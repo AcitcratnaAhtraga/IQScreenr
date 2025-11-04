@@ -654,6 +654,7 @@ async function processTweet(tweetElement) {
     }
 
     // If we already found a badge (any type), don't create a new one
+    // BUT: Check if IQ was revealed and badge should be calculated (not guess)
     if (!loadingBadge) {
       const anyExistingBadge = actualTweetElement.querySelector('.iq-badge') ||
                                (hasNestedStructure ? tweetElement.querySelector('.iq-badge') : null);
@@ -663,6 +664,158 @@ async function processTweet(tweetElement) {
             anyExistingBadge.classList.contains('iq-badge-loading')) {
           loadingBadge = anyExistingBadge;
         } else {
+          // There's a non-loading badge - check if IQ was revealed and should show calculated IQ
+          // If so, verify the badge is showing calculated IQ, not guess
+          console.log('[IQGuessr Debug] Found existing badge, checking if IQ was revealed:', {
+            tweetId: tweetId,
+            isGameModeEnabled: isGameModeEnabled,
+            badgeClasses: anyExistingBadge.className,
+            hasDataIqGuess: anyExistingBadge.hasAttribute('data-iq-guess'),
+            hasDataIqScore: anyExistingBadge.hasAttribute('data-iq-score'),
+            hasDataIqGuessed: anyExistingBadge.hasAttribute('data-iq-guessed')
+          });
+
+          if (isGameModeEnabled && tweetId) {
+            const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
+            console.log('[IQGuessr Debug] Cached revealed check:', {
+              cachedRevealed: cachedRevealed,
+              hasGetCachedRevealedIQ: !!gameManager.getCachedRevealedIQ
+            });
+
+            if (cachedRevealed) {
+              // IQ was revealed - check if badge is showing guess instead of calculated
+              const isGuessBadge = anyExistingBadge.classList.contains('iq-badge-guess') ||
+                                   anyExistingBadge.hasAttribute('data-iq-guess');
+              const hasCalculatedScore = anyExistingBadge.hasAttribute('data-iq-score') &&
+                                        !anyExistingBadge.hasAttribute('data-iq-guessed');
+
+              console.log('[IQGuessr Debug] Badge state check:', {
+                isGuessBadge: isGuessBadge,
+                hasCalculatedScore: hasCalculatedScore,
+                dataIqScore: anyExistingBadge.getAttribute('data-iq-score'),
+                dataIqGuessed: anyExistingBadge.getAttribute('data-iq-guessed'),
+                shouldRestore: isGuessBadge || !hasCalculatedScore
+              });
+
+              // If it's a guess badge or doesn't have calculated score, remove it and restore calculated badge
+              if (isGuessBadge || !hasCalculatedScore) {
+                console.log('[IQGuessr Debug] Badge should be calculated but isnt - restoring calculated badge');
+                // Badge should be calculated but isn't - restore calculated badge
+                const { getCachedIQ } = getIQCache();
+                const { extractTweetHandle, extractTweetText } = getTextExtraction();
+
+                if (getCachedIQ && extractTweetHandle) {
+                  let handle = actualTweetElement.getAttribute('data-handle');
+                  if (!handle) {
+                    handle = extractTweetHandle(actualTweetElement);
+                    if (handle) {
+                      actualTweetElement.setAttribute('data-handle', handle);
+                    }
+                  }
+
+                  console.log('[IQGuessr Debug] Extracted handle:', handle);
+
+                  if (handle) {
+                    const cachedIQ = getCachedIQ(handle);
+                    console.log('[IQGuessr Debug] Cached IQ check:', {
+                      hasCachedIQ: !!cachedIQ,
+                      iqEstimate: cachedIQ?.iq_estimate,
+                      confidence: cachedIQ?.confidence
+                    });
+
+                    if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+                      // We have revealed IQ and cached IQ - restore calculated badge
+                      const badgeManager = getBadgeManager();
+                      console.log('[IQGuessr Debug] Badge manager check:', {
+                        hasBadgeManager: !!badgeManager,
+                        hasCreateIQBadge: !!badgeManager?.createIQBadge
+                      });
+
+                      if (badgeManager && badgeManager.createIQBadge) {
+                        const iq = Math.round(cachedIQ.iq_estimate);
+                        const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
+                        const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+
+                        console.log('[IQGuessr Debug] Creating calculated badge:', {
+                          iq: iq,
+                          confidence: confidence,
+                          hasTweetText: !!tweetText
+                        });
+
+                        const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+
+                        // Store IQ result on element for reference
+                        actualTweetElement._iqResult = {
+                          iq: iq,
+                          result: cachedIQ,
+                          confidence: confidence,
+                          text: tweetText
+                        };
+
+                        console.log('[IQGuessr Debug] Replacing badge:', {
+                          oldBadgeParent: !!anyExistingBadge.parentElement,
+                          oldBadgeClasses: anyExistingBadge.className,
+                          newBadgeClasses: iqBadge.className
+                        });
+
+                        // Replace the incorrect badge
+                        if (anyExistingBadge.parentElement) {
+                          anyExistingBadge.parentElement.insertBefore(iqBadge, anyExistingBadge);
+                          anyExistingBadge.remove();
+                          console.log('[IQGuessr Debug] Badge replaced successfully (parentElement method)');
+                        } else {
+                          // Fallback: just remove old badge and place new one
+                          anyExistingBadge.remove();
+                          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+                          if (engagementBar) {
+                            const firstChild = engagementBar.firstElementChild;
+                            if (firstChild) {
+                              engagementBar.insertBefore(iqBadge, firstChild);
+                            } else {
+                              engagementBar.appendChild(iqBadge);
+                            }
+                            console.log('[IQGuessr Debug] Badge replaced successfully (engagementBar fallback)');
+                          } else {
+                            const tweetContent = actualTweetElement.querySelector('div[data-testid="tweetText"]') ||
+                                                actualTweetElement.querySelector('div[lang]') ||
+                                                actualTweetElement.firstElementChild;
+                            if (tweetContent && tweetContent.parentElement) {
+                              tweetContent.parentElement.insertBefore(iqBadge, tweetContent);
+                              console.log('[IQGuessr Debug] Badge replaced successfully (tweetContent fallback)');
+                            } else {
+                              actualTweetElement.insertBefore(iqBadge, actualTweetElement.firstChild);
+                              console.log('[IQGuessr Debug] Badge replaced successfully (firstChild fallback)');
+                            }
+                          }
+                        }
+
+                        // Mark as analyzed and return
+                        processedTweets.add(actualTweetElement);
+                        actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+                        actualTweetElement.removeAttribute('data-iq-processing');
+                        actualTweetElement.removeAttribute('data-iq-processing-start');
+                        if (hasNestedStructure) {
+                          tweetElement.setAttribute('data-iq-analyzed', 'true');
+                          processedTweets.add(tweetElement);
+                        }
+                        console.log('[IQGuessr Debug] Badge restoration complete, returning');
+                        return;
+                      } else {
+                        console.log('[IQGuessr Debug] BadgeManager.createIQBadge not available');
+                      }
+                    } else {
+                      console.log('[IQGuessr Debug] No cached IQ found or invalid cachedIQ');
+                    }
+                  } else {
+                    console.log('[IQGuessr Debug] Could not extract handle');
+                  }
+                } else {
+                  console.log('[IQGuessr Debug] getCachedIQ or extractTweetHandle not available');
+                }
+              }
+            }
+          }
+
           // There's already a non-loading badge - mark as analyzed and return
           actualTweetElement.setAttribute('data-iq-analyzed', 'true');
           if (hasNestedStructure) {
