@@ -129,23 +129,46 @@
     });
 
     if (settings.showIQBadge && addLoadingBadgeToTweet) {
+      // Batch badge insertions to prevent scroll jumping
+      // Save scroll position before inserting any badges
+      const scrollBeforeBadges = window.scrollY;
+
+      // Insert all badges synchronously to minimize layout shifts
+      const badgesToInsert = [];
       newTweets.forEach((tweet) => {
-        setTimeout(() => {
-          // Only add badge if tweet doesn't already have one and isn't already analyzed
-          if (!tweet.querySelector('.iq-badge')) {
-            let actualTweet = tweet;
-            const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
-                                tweet.querySelector('article[role="article"]');
-            if (nestedTweet && nestedTweet !== tweet) {
-              actualTweet = nestedTweet;
-            }
-            // Don't add badge if tweet is already analyzed (shouldn't happen, but be safe)
-            if (!actualTweet.hasAttribute('data-iq-analyzed')) {
-              addLoadingBadgeToTweet(tweet);
-            }
+        // Only add badge if tweet doesn't already have one and isn't already analyzed
+        if (!tweet.querySelector('.iq-badge')) {
+          let actualTweet = tweet;
+          const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
+                              tweet.querySelector('article[role="article"]');
+          if (nestedTweet && nestedTweet !== tweet) {
+            actualTweet = nestedTweet;
           }
-        }, 0);
+          // Don't add badge if tweet is already analyzed (shouldn't happen, but be safe)
+          if (!actualTweet.hasAttribute('data-iq-analyzed')) {
+            badgesToInsert.push(tweet);
+          }
+        }
       });
+
+      // Insert all badges at once
+      badgesToInsert.forEach((tweet) => {
+        addLoadingBadgeToTweet(tweet);
+      });
+
+      // Restore scroll position after all badges are inserted
+      if (badgesToInsert.length > 0) {
+        requestAnimationFrame(() => {
+          const scrollAfterBadges = window.scrollY;
+          if (Math.abs(scrollAfterBadges - scrollBeforeBadges) > 5) {
+            // Restore scroll position to maintain user's viewport
+            window.scrollTo({
+              top: scrollBeforeBadges,
+              behavior: 'instant'
+            });
+          }
+        });
+      }
     }
 
     if (processTweet) {
