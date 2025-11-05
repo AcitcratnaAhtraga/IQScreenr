@@ -307,7 +307,6 @@
   border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   margin: 0;
   margin-right: 4px;
   vertical-align: middle;
@@ -769,6 +768,11 @@ article[data-iq-analyzed] {
 /* Override badge appearance animation for loading badges */
 .iq-badge.iq-badge-loading {
   animation: none !important; /* Don't animate loading badge appearance */
+}
+
+/* Prevent animation on average IQ badges in popup to avoid pulsating */
+.iq-badge-average.iq-badge-flip {
+  animation: none !important;
 }
 
 /* Loading spinner animation */

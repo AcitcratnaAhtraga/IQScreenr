@@ -596,6 +596,17 @@ document.addEventListener('DOMContentLoaded', () => {
         ? averageData.overallConfidence
         : averageData.averageConfidence || 0;
 
+      // Check if badge already exists with the same data to prevent unnecessary re-renders
+      const existingBadge = badgeContainer.querySelector('.iq-badge-average[data-iq-average="true"]');
+      if (existingBadge) {
+        const existingIQ = existingBadge.getAttribute('data-iq-score');
+        const existingConfidence = existingBadge.getAttribute('data-confidence');
+        if (existingIQ === String(averageIQ) && existingConfidence === String(Math.round(overallConfidence))) {
+          // Badge already exists with same data, no need to recreate
+          return;
+        }
+      }
+
       // Calculate color based on confidence (using same logic as badges)
       const confidenceNorm = overallConfidence / 100;
       let color;
