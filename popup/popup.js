@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
           document.addEventListener('click', handleClickOutside);
         }, 100);
       } catch (error) {
-        console.warn('[IqGuessr] Error showing stats tooltip:', error);
+        console.warn('[IQGuessr] Error showing stats tooltip:', error);
       }
     }
 
@@ -350,22 +350,57 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Initialize defaults if not set
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'iqGuessrScore'], (result) => {
+  Promise.all([
+    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'iqGuessrScore'], resolve)),
+    new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
+    new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
+    new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
+  ]).then(([syncResult, localResult, allSync, allLocal]) => {
+    const result = syncResult;
+    // Get score from multiple sources, convert to number
+    let score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ??
+                allSync.iqGuessrScore ?? allLocal.iqGuessrScore ?? 0;
+
+    // Convert to number if it's a string
+    if (typeof score === 'string') {
+      score = parseFloat(score) || 0;
+    }
+    score = Number(score) || 0;
+
+    // Debug logging
+    if (score === 0 && (allSync.iqGuessrScore || allLocal.iqGuessrScore)) {
+      console.log('[IqGuessr Popup] Score found but was 0:', {
+        syncResult: syncResult.iqGuessrScore,
+        localResult: localResult.iqGuessrScore,
+        allSync: allSync.iqGuessrScore,
+        allLocal: allLocal.iqGuessrScore
+      });
+    }
+
     // Set defaults if this is first run
+    // IMPORTANT: Don't overwrite iqGuessrScore if it already exists
     if (result.showIQBadge === undefined) {
-      chrome.storage.sync.set({
+      const settingsToSet = {
         showIQBadge: true,
         showRealtimeBadge: true,
         useConfidenceForColor: true, // Always enabled
         enableDebugLogging: true,
-        enableIQGuessr: false,
-        iqGuessrScore: 0
-      }, () => {
+        enableIQGuessr: false
+      };
+      // Only set score if it doesn't exist
+      if (score === 0 && !allSync.iqGuessrScore && !allLocal.iqGuessrScore) {
+        settingsToSet.iqGuessrScore = 0;
+      }
+      chrome.storage.sync.set(settingsToSet, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error loading settings', 'error');
         }
       });
-      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: true, enableDebugLogging: true, enableIQGuessr: false, iqGuessrScore: 0 };
+      result.showIQBadge = true;
+      result.showRealtimeBadge = true;
+      result.useConfidenceForColor = true;
+      result.enableDebugLogging = true;
+      result.enableIQGuessr = false;
     }
 
     // Always set useConfidenceForColor to true (it's always enabled now)
@@ -378,10 +413,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
 
     // Update IqGuessr score display
-    updateIQGuessrScore(result.iqGuessrScore || 0);
+    updateIQGuessrScore(score);
 
     // Update dependent checkboxes state
     updateDependentCheckboxes();
+  }).catch((error) => {
+    console.warn('[IqGuessr] Error loading settings:', error);
+    // Fallback: try sync storage only
+    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'iqGuessrScore'], (result) => {
+      document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
+      document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false;
+      document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false;
+      document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true;
+      updateIQGuessrScore(result.iqGuessrScore ?? 0);
+      updateDependentCheckboxes();
+    });
   });
 
   // Handle checkbox changes
@@ -413,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (enableIQGuessrCheckbox) {
     enableIQGuessrCheckbox.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
-      console.log(`[IqGuessr Debug] IqGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
+      console.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
 
       chrome.storage.sync.set({ enableIQGuessr: isEnabled }, () => {
         if (chrome.runtime.lastError) {
@@ -422,9 +468,16 @@ document.addEventListener('DOMContentLoaded', () => {
           showStatus('Settings saved', 'success');
           // Fetch and update score display with actual score from storage
           if (isEnabled) {
-            chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-              const score = result.iqGuessrScore || 0;
+            Promise.all([
+              new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
+              new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
+            ]).then(([syncResult, localResult]) => {
+              const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
               updateIQGuessrScore(score);
+            }).catch(() => {
+              chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+                updateIQGuessrScore(result.iqGuessrScore ?? 0);
+              });
             });
           } else {
             updateIQGuessrScore(0);
@@ -449,32 +502,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle reset button
   document.getElementById('resetSettings').addEventListener('click', () => {
-    if (confirm('Reset all settings to defaults?')) {
-      const defaults = {
-        showIQBadge: true,
-        showRealtimeBadge: true,
-        useConfidenceForColor: true, // Always enabled
-        enableDebugLogging: true,
-        enableIQGuessr: false,
-        iqGuessrScore: 0
-      };
+    // Get current score before resetting
+    Promise.all([
+      new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
+      new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
+    ]).then(([syncResult, localResult]) => {
+      const currentScore = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
 
-      chrome.storage.sync.set(defaults, () => {
-        if (chrome.runtime.lastError) {
-          showStatus('Error resetting settings', 'error');
-        } else {
-          // Update UI
-          document.getElementById('showIQBadge').checked = defaults.showIQBadge;
-          document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
-          document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
-          document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
-          // Update dependent checkboxes state
-          updateDependentCheckboxes();
-          updateIQGuessrScore(defaults.iqGuessrScore);
-          showStatus('Settings reset to defaults', 'success');
-        }
-      });
-    }
+      if (confirm(`Reset all settings to defaults?\n\n⚠️ WARNING: This will reset your IqGuessr score from ${currentScore} to 0!\n\nAre you sure you want to continue?`)) {
+        const defaults = {
+          showIQBadge: true,
+          showRealtimeBadge: true,
+          useConfidenceForColor: true, // Always enabled
+          enableDebugLogging: true,
+          enableIQGuessr: false,
+          iqGuessrScore: 0
+        };
+
+        chrome.storage.sync.set(defaults, () => {
+          if (chrome.runtime.lastError) {
+            showStatus('Error resetting settings', 'error');
+          } else {
+            // Update UI
+            document.getElementById('showIQBadge').checked = defaults.showIQBadge;
+            document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
+            document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
+            document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
+            // Update dependent checkboxes state
+            updateDependentCheckboxes();
+            updateIQGuessrScore(defaults.iqGuessrScore);
+            showStatus('Settings reset to defaults', 'success');
+          }
+        });
+      }
+    });
   });
 
   // Listen for IqGuessr score updates from content script
@@ -494,9 +555,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // When enableIQGuessr is toggled, fetch and display the current score
       if (changes.enableIQGuessr && changes.enableIQGuessr.newValue === true) {
-        chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-          const score = result.iqGuessrScore || 0;
+        Promise.all([
+          new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
+          new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
+        ]).then(([syncResult, localResult]) => {
+          const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
           updateIQGuessrScore(score);
+        }).catch(() => {
+          chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+            updateIQGuessrScore(result.iqGuessrScore ?? 0);
+          });
         });
       }
     }

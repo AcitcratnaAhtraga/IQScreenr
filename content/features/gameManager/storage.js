@@ -10,7 +10,9 @@
    * Check if extension context is still valid
    */
   function isExtensionContextValid() {
-    return chrome && chrome.storage && chrome.runtime && chrome.runtime.id;
+    // Check if chrome.storage is available (primary requirement)
+    // chrome.runtime.id might not always be available in all contexts, so we check for storage first
+    return chrome && chrome.storage && chrome.storage.sync;
   }
 
   /**
@@ -101,8 +103,13 @@
 
     return new Promise((resolve) => {
       try {
-        chrome.runtime.sendMessage(message, () => {
-          // Ignore errors (popup might not be listening)
+        chrome.runtime.sendMessage(message, (response) => {
+          // Ignore errors - popup might not be open
+          if (chrome.runtime.lastError) {
+            // This is expected when popup is closed, silently ignore
+            resolve();
+            return;
+          }
           resolve();
         });
       } catch (error) {

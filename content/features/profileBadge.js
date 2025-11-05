@@ -1,6 +1,6 @@
 /**
  * Profile Badge Feature
- * Adds IqGuessr total score badge on user profile pages
+ * Adds IQGuessr total score badge on user profile pages
  */
 
 (function() {
@@ -41,6 +41,21 @@
   }
 
   /**
+   * Calculate rotation duration based on score
+   * Higher score = faster rotation (shorter duration)
+   * Formula: duration = max(0.05, 3 / (1 + score / 100))
+   * This gives: 0 score = 3s, 100 = 1.5s, 1000 = 0.27s, 10000 = 0.03s, etc.
+   */
+  function calculateRotationDuration(score) {
+    const baseDuration = 3; // Base duration in seconds for score 0
+    const divisor = 10000; // Controls how quickly duration decreases
+    const minDuration = 0.05; // Minimum duration (maximum speed)
+
+    const duration = Math.max(minDuration, baseDuration / (1 + score / divisor));
+    return duration;
+  }
+
+  /**
    * Create a score badge element
    */
   function createScoreBadge(score) {
@@ -53,19 +68,24 @@
       window.BadgeCreation.attachCreationContext(badge, 'score');
     }
 
+    // Calculate rotation speed based on score
+    const rotationDuration = calculateRotationDuration(score);
+
     badge.innerHTML = `
-      <span class="score-label">IqGuessr</span>
-      <span class="score-value">${score}</span>
+      <div style="position: relative; display: inline-block;">
+        <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: 40px; height: 40px; display: block; animation-duration: ${rotationDuration}s;">
+        <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
+      </div>
     `;
 
     badge.style.cssText = `
       display: inline-flex !important;
       align-items: center;
       gap: 4px;
-      background: #000000 !important;
+      background: transparent !important;
       color: white !important;
-      padding: 4px 8px;
-      border-radius: 6px;
+      padding: 0;
+      border-radius: 0;
       font-size: 12px;
       font-weight: 600;
       margin-left: 8px;
@@ -75,18 +95,16 @@
       opacity: 1 !important;
       position: relative !important;
       z-index: 1000 !important;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.15);
+      border: none;
+      box-shadow: none;
     `;
 
     badge.onmouseenter = () => {
-      badge.style.transform = 'scale(1.05)';
-      badge.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.4), 0 6px 12px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2)';
+      badge.style.transform = 'scale(1.1)';
     };
 
     badge.onmouseleave = () => {
       badge.style.transform = 'scale(1)';
-      badge.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.15)';
     };
 
     // Attach stats tooltip handlers
@@ -196,9 +214,32 @@
       return;
     }
 
-    // Get the score from storage
-    chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-      const score = result.iqGuessrScore || 0;
+    // Get the score from storage (check both sync and local, and all keys)
+    Promise.all([
+      new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
+      new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
+      new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
+      new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
+    ]).then(([syncResult, localResult, allSync, allLocal]) => {
+      // Try to get score from multiple sources
+      let score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ??
+                  allSync.iqGuessrScore ?? allLocal.iqGuessrScore ?? 0;
+
+      // Convert to number if it's a string
+      if (typeof score === 'string') {
+        score = parseFloat(score) || 0;
+      }
+      score = Number(score) || 0;
+
+      // Debug logging
+      if (score === 0 && (allSync.iqGuessrScore || allLocal.iqGuessrScore)) {
+        console.log('[IqGuessr] Score found but was 0, checking all storage:', {
+          syncResult,
+          localResult,
+          allSync: allSync.iqGuessrScore,
+          allLocal: allLocal.iqGuessrScore
+        });
+      }
 
       // Find where to insert the badge
       const insertionPoint = findInsertionPoint();
@@ -212,10 +253,30 @@
       // Check if badge already exists anywhere in the DOM
       const existingBadge = document.querySelector('.iq-guessr-score-badge');
       if (existingBadge) {
+        // Calculate new rotation duration based on updated score
+        const rotationDuration = calculateRotationDuration(score);
+
         // Update score in existing badge
         const scoreValue = existingBadge.querySelector('.score-value');
+        const icon = existingBadge.querySelector('.iq-guessr-rotating-icon');
+
         if (scoreValue) {
           scoreValue.textContent = score;
+          // Update rotation speed
+          if (icon) {
+            icon.style.animationDuration = `${rotationDuration}s`;
+          }
+        } else {
+          // If badge structure changed, update the innerHTML
+          const img = existingBadge.querySelector('img');
+          if (img) {
+            existingBadge.innerHTML = `
+              <div style="position: relative; display: inline-block;">
+                <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrInvert.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: 40px; height: 40px; display: block; animation-duration: ${rotationDuration}s;">
+                <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
+              </div>
+            `;
+          }
         }
         // Make sure badge is visible
         existingBadge.style.display = 'inline-flex';
@@ -322,6 +383,38 @@
       }
 
       badgeAdded = true;
+    }).catch((error) => {
+      console.warn('[IqGuessr] Error loading score:', error);
+      // Fallback: try all storage methods
+      chrome.storage.sync.get(null, (allSync) => {
+        chrome.storage.local.get(null, (allLocal) => {
+          let score = allSync.iqGuessrScore ?? allLocal.iqGuessrScore ?? 0;
+
+          // Convert to number
+          if (typeof score === 'string') {
+            score = parseFloat(score) || 0;
+          }
+          score = Number(score) || 0;
+
+          console.log('[IqGuessr] Fallback score retrieval:', { score, allSync: allSync.iqGuessrScore, allLocal: allLocal.iqGuessrScore });
+
+          const existingBadge = document.querySelector('.iq-guessr-score-badge');
+          if (existingBadge) {
+            const scoreValue = existingBadge.querySelector('.score-value');
+            const icon = existingBadge.querySelector('.iq-guessr-rotating-icon');
+
+            if (scoreValue) {
+              scoreValue.textContent = score;
+            }
+
+            // Update rotation speed
+            if (icon) {
+              const rotationDuration = calculateRotationDuration(score);
+              icon.style.animationDuration = `${rotationDuration}s`;
+            }
+          }
+        });
+      });
     });
   }
 
@@ -346,14 +439,29 @@
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === 'sync') {
-        // Handle IqGuessr score updates
+        // Handle IQGuessr score updates
         if (changes.iqGuessrScore) {
-          const newScore = changes.iqGuessrScore.newValue;
+          let newScore = changes.iqGuessrScore.newValue ?? 0;
+
+          // Convert to number
+          if (typeof newScore === 'string') {
+            newScore = parseFloat(newScore) || 0;
+          }
+          newScore = Number(newScore) || 0;
+
           const badge = document.querySelector('.iq-guessr-score-badge');
           if (badge) {
             const scoreValue = badge.querySelector('.score-value');
+            const icon = badge.querySelector('.iq-guessr-rotating-icon');
+
             if (scoreValue) {
               scoreValue.textContent = newScore;
+            }
+
+            // Update rotation speed based on new score
+            if (icon) {
+              const rotationDuration = calculateRotationDuration(newScore);
+              icon.style.animationDuration = `${rotationDuration}s`;
             }
           }
         }
@@ -363,12 +471,12 @@
           const gameModeEnabled = changes.enableIQGuessr.newValue;
 
           if (gameModeEnabled) {
-            // IqGuessr mode enabled - add badge immediately
+            // IQGuessr mode enabled - add badge immediately
             // Use force=true to bypass settings check since settings may not be updated yet
             badgeAdded = false; // Reset flag to allow adding
             addScoreBadge(true); // Force bypass settings check
           } else {
-            // IqGuessr mode disabled - verify storage before removing to avoid race conditions
+            // IQGuessr mode disabled - verify storage before removing to avoid race conditions
             chrome.storage.sync.get(['enableIQGuessr'], (result) => {
               const isActuallyDisabled = result.enableIQGuessr !== true;
 

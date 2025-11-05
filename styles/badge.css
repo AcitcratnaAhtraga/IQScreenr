@@ -746,7 +746,7 @@ article[data-iq-analyzed] {
   animation: pulseGrow 0.3s ease-out;
 }
 
-/* Rotating border animation for IQ Guessr calculation */
+/* Rotating border animation for IqGuessr calculation */
 @keyframes rotatingBorder {
   0% {
     box-shadow:
@@ -804,6 +804,21 @@ article[data-iq-analyzed] {
     opacity: 0;
     transform: translateX(-50%) translateY(-15px);
   }
+}
+
+/* Rotating icon animation for profile score badge */
+@keyframes iconRotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.iq-guessr-rotating-icon {
+  animation: iconRotate 3s linear infinite;
+  transform-origin: center center;
 }
 
 /* IQGuessr Stats Tooltip Styles */

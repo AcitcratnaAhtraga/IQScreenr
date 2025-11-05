@@ -35,7 +35,7 @@
     tooltip.setAttribute('data-iq-guessr-tooltip', 'true');
 
     // Build tooltip content
-    let content = '<div class="stats-header">📊 IQGuessr Stats</div>';
+    let content = '<div class="stats-header">📊 IqGuessr Stats</div>';
     content += '<div class="stats-content">';
 
     if (stats.totalGuesses === 0) {
@@ -234,7 +234,7 @@
 
     // Also allow hover on tooltip itself
     document.addEventListener('mouseenter', (e) => {
-      if (e.target && e.target.closest('.iq-guessr-stats-tooltip')) {
+      if (e.target && e.target.nodeType === Node.ELEMENT_NODE && typeof e.target.closest === 'function' && e.target.closest('.iq-guessr-stats-tooltip')) {
         // Don't hide when hovering over tooltip
       }
     }, true);

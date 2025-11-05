@@ -42,24 +42,92 @@
    * Add score to the total game score
    */
   async function addToGameScore(points) {
+    // Try to use storage abstraction first, fallback to direct chrome.storage if needed
     const storage = window.GameManagerStorage;
-    if (!storage || !storage.isExtensionContextValid()) {
-      console.warn('[IQGuessr] Extension context invalidated, cannot update score');
+
+    // Check if we can use chrome.storage directly
+    const canUseStorage = chrome && chrome.storage && chrome.storage.sync;
+
+    if (!canUseStorage) {
+      console.warn('[IQGuessr] Chrome storage not available, cannot update score');
       return;
     }
 
     try {
-      const result = await storage.getStorage(['iqGuessrScore'], 'sync');
-      const currentScore = result.iqGuessrScore || 0;
+      // Get current score
+      let currentScore = 0;
+
+      if (storage && storage.isExtensionContextValid && storage.isExtensionContextValid()) {
+        // Use abstraction if available
+        const result = await storage.getStorage(['iqGuessrScore'], 'sync');
+        currentScore = result.iqGuessrScore;
+      } else {
+        // Fallback to direct chrome.storage
+        currentScore = await new Promise((resolve) => {
+          chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+            if (chrome.runtime.lastError) {
+              resolve(0);
+            } else {
+              resolve(result.iqGuessrScore || 0);
+            }
+          });
+        });
+      }
+
+      // Convert to number if it's a string
+      if (typeof currentScore === 'string') {
+        currentScore = parseFloat(currentScore) || 0;
+      }
+      currentScore = Number(currentScore) || 0;
+
       const newScore = currentScore + points;
 
-      await storage.setStorage({ iqGuessrScore: newScore }, 'sync');
+      console.log('[IqGuessr] Updating score:', { currentScore, points, newScore });
 
-      // Broadcast to popup if open
-      await storage.sendMessage({
-        type: 'updateIQGuessrScore',
-        score: newScore
-      });
+      // Set new score
+      if (storage && storage.isExtensionContextValid && storage.isExtensionContextValid()) {
+        await storage.setStorage({ iqGuessrScore: newScore }, 'sync');
+
+        // Broadcast to popup if open
+        if (storage.sendMessage) {
+          try {
+            await storage.sendMessage({
+              type: 'updateIQGuessrScore',
+              score: newScore
+            });
+          } catch (e) {
+            // Ignore - popup might not be open
+          }
+        }
+      } else {
+        // Fallback to direct chrome.storage
+        await new Promise((resolve) => {
+          chrome.storage.sync.set({ iqGuessrScore: newScore }, () => {
+            if (chrome.runtime.lastError) {
+              console.warn('[IQGuessr] Error setting score:', chrome.runtime.lastError);
+            }
+            resolve();
+          });
+        });
+
+        // Broadcast to popup if open
+        try {
+          if (chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({
+              type: 'updateIQGuessrScore',
+              score: newScore
+            }, (response) => {
+              // Ignore errors - popup might not be open
+              if (chrome.runtime.lastError) {
+                // This is expected when popup is closed, silently ignore
+                return;
+              }
+            });
+          }
+        } catch (e) {
+          // Ignore message errors
+        }
+      }
     } catch (error) {
       console.warn('[IQGuessr] Error updating score:', error);
     }

@@ -514,12 +514,6 @@
             timestamp: new Date().toISOString()
           };
           cache.cacheRevealedIQResult(tweetId, iqResultData);
-
-          // Broadcast to other tabs that this IQ was revealed
-          const crossTabSync = window.CrossTabSync;
-          if (crossTabSync && crossTabSync.broadcastIQRevealed) {
-            crossTabSync.broadcastIQRevealed(tweetId);
-          }
         }
 
         // Calculate and add score (use rounded IQ since that's what user sees)

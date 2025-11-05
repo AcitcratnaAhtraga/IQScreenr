@@ -273,17 +273,13 @@ input[type="range"]::-moz-range-thumb {
   color: #111827;
 }
 
-.info-content a.citation-link {
-  color: #2563eb;
-  text-decoration: none;
-  border-bottom: 1px dotted #2563eb;
-  transition: all 0.2s ease;
+.info-content a {
+  color: #7c3aed;
+  text-decoration: underline;
 }
 
-.info-content a.citation-link:hover {
-  color: #1d4ed8;
-  border-bottom: 1px solid #1d4ed8;
-  text-decoration: none;
+.info-content a:hover {
+  color: #6d28d9;
 }
 
 .privacy-notice {
@@ -459,17 +455,29 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .setting-note {
-    background: #1f1f1f;
-    color: #ffffff;
+    background: #1a1a1a;
+    color: #e5e5e5;
+    border: 1px solid #2a2a2a;
   }
 
   .privacy-notice {
-    background: #1f1f1f;
-    color: #ffffff;
+    background: #1a1a1a;
+    color: #e5e5e5;
+    border: 1px solid #2a2a2a;
   }
 
   .privacy-text strong {
     color: #ffffff;
+  }
+
+  .privacy-notice.data-notice {
+    background: #2a2417;
+    color: #fbbf24;
+    border-left: 3px solid #fbbf24;
+  }
+
+  .privacy-notice.data-notice .privacy-text strong {
+    color: #fbbf24;
   }
 
   .info-section,
@@ -490,14 +498,13 @@ input[type="range"]::-moz-range-thumb {
     color: #f9fafb;
   }
 
-  .info-content a.citation-link {
-    color: #60a5fa;
-    border-bottom-color: #60a5fa;
+  .info-content a {
+    color: #a78bfa;
+    text-decoration: underline;
   }
 
-  .info-content a.citation-link:hover {
-    color: #93c5fd;
-    border-bottom-color: #93c5fd;
+  .info-content a:hover {
+    color: #c4b5fd;
   }
 
   .legend-item {
@@ -509,14 +516,14 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .btn-secondary {
-    background: #374151;
+    background: #2a2a2a;
     color: #f9fafb;
-    border-color: #4b5563;
+    border-color: #3a3a3a;
   }
 
   .btn-secondary:hover {
-    background: #4b5563;
-    border-color: #6b7280;
+    background: #3a3a3a;
+    border-color: #4a4a4a;
   }
 
   .version {
@@ -524,13 +531,13 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .setting-item-large {
-    border-color: #374151;
+    border-color: #2a2a2a;
     background: #1a1a1a;
   }
 
   .setting-item-large:hover {
-    border-color: #ffffff;
-    background: #2a2a2a;
+    border-color: #3a3a3a;
+    background: #252525;
   }
 
   .switch-text-large {
@@ -540,7 +547,7 @@ input[type="range"]::-moz-range-thumb {
   /* Stats tooltip in popup */
   .popup-stats-tooltip {
     background: #1a1a1a !important;
-    border: 1px solid #374151;
+    border: 1px solid #2a2a2a;
   }
 }
 

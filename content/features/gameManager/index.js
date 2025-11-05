@@ -1,5 +1,5 @@
 /**
- * Game Manager for IQ Guessr
+ * Game Manager for IqGuessr
  * Main entry point that coordinates all game manager modules
  * Handles game logic, scoring, and guess input
  */
@@ -17,7 +17,7 @@
   const getTweetProcessor = () => window.TweetProcessor || {};
 
   /**
-   * Check if IQ Guessr mode is enabled
+   * Check if IqGuessr mode is enabled
    */
   function isGameModeEnabled() {
     const logic = window.GameManagerLogic;

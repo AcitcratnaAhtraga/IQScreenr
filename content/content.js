@@ -1,5 +1,5 @@
 /**
- * IqGuessr Browser Extension - Main Content Script
+ * IQGuessr Browser Extension - Main Content Script
  *
  * This is the orchestrator that coordinates all modules:
  * - Core: dependencyParser, iqEstimator
@@ -146,42 +146,6 @@
       const gameModeEnabled = changes.enableIQGuessr.newValue;
       const gameManager = getGameManager();
       const badgeManager = getBadgeManager();
-
-      // Broadcast mode change to other tabs
-      const crossTabSync = window.CrossTabSync;
-      if (crossTabSync && crossTabSync.broadcastIQGuessrModeChange) {
-        crossTabSync.broadcastIQGuessrModeChange(gameModeEnabled);
-      }
-
-      // If IqGuessr is enabled in any tab, hide revealed IQs to prevent cheating
-      const crossTabSyncForCheck = window.CrossTabSync;
-      const isIQGuessrEnabledAnywhere = crossTabSyncForCheck && crossTabSyncForCheck.isIQGuessrEnabledAnywhere
-        ? crossTabSyncForCheck.isIQGuessrEnabledAnywhere()
-        : gameModeEnabled;
-
-      if (isIQGuessrEnabledAnywhere) {
-        // Hide all revealed IQ badges (calculated badges) to prevent cheating
-        const revealedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
-        revealedBadges.forEach(badge => {
-          // Only hide if it's a revealed IQ (not a guess badge)
-          const isRevealedIQ = badge.hasAttribute('data-iq-score') &&
-                              !badge.hasAttribute('data-iq-guess') &&
-                              !badge.hasAttribute('data-iq-loading');
-          if (isRevealedIQ) {
-            badge.style.setProperty('display', 'none', 'important');
-            badge.style.setProperty('visibility', 'hidden', 'important');
-          }
-        });
-      } else {
-        // Show revealed IQ badges again
-        const revealedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
-        revealedBadges.forEach(badge => {
-          if (settings.showIQBadge) {
-            badge.style.setProperty('display', 'inline-flex', 'important');
-            badge.style.setProperty('visibility', 'visible', 'important');
-          }
-        });
-      }
 
 
       if (!gameModeEnabled && badgeManager && badgeManager.createLoadingBadge) {
@@ -358,7 +322,7 @@
   }
 
   /**
-   * Apply IqGuessr mode on page load if enabled
+   * Apply IQGuessr mode on page load if enabled
    */
   async function applyIQGuessrModeOnLoad() {
     const settings = getSettings();
@@ -501,76 +465,25 @@
       });
     }
 
-    // Listen for cross-tab mode changes
-    window.addEventListener('iqguessr:modeChanged', (event) => {
-      const enabled = event.detail && event.detail.enabled === true;
-      const crossTabSync = window.CrossTabSync;
-      const isIQGuessrEnabledAnywhere = crossTabSync && crossTabSync.isIQGuessrEnabledAnywhere
-        ? crossTabSync.isIQGuessrEnabledAnywhere()
-        : enabled;
-
-      const badgeManager = getBadgeManager();
-      const settings = getSettings();
-
-      if (isIQGuessrEnabledAnywhere) {
-        // Hide all revealed IQ badges to prevent cheating
-        const revealedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
-        revealedBadges.forEach(badge => {
-          const isRevealedIQ = badge.hasAttribute('data-iq-score') &&
-                              !badge.hasAttribute('data-iq-guess') &&
-                              !badge.hasAttribute('data-iq-loading');
-          if (isRevealedIQ) {
-            badge.style.setProperty('display', 'none', 'important');
-            badge.style.setProperty('visibility', 'hidden', 'important');
-          }
-        });
-      } else {
-        // Show revealed IQ badges again
-        const revealedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
-        revealedBadges.forEach(badge => {
-          if (settings.showIQBadge) {
-            badge.style.setProperty('display', 'inline-flex', 'important');
-            badge.style.setProperty('visibility', 'visible', 'important');
-          }
-        });
-      }
-    });
-
     // Process existing tweets immediately to show loading badges as fast as possible
-    function startProcessing() {
-      // Check if IqGuessr is enabled in any tab and hide revealed IQs if so
-      const crossTabSync = window.CrossTabSync;
-      if (crossTabSync && crossTabSync.isIQGuessrEnabledAnywhere) {
-        const isIQGuessrEnabledAnywhere = crossTabSync.isIQGuessrEnabledAnywhere();
-        if (isIQGuessrEnabledAnywhere) {
-          // Hide all revealed IQ badges to prevent cheating
-          const revealedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
-          revealedBadges.forEach(badge => {
-            const isRevealedIQ = badge.hasAttribute('data-iq-score') &&
-                                !badge.hasAttribute('data-iq-guess') &&
-                                !badge.hasAttribute('data-iq-loading');
-            if (isRevealedIQ) {
-              badge.style.setProperty('display', 'none', 'important');
-              badge.style.setProperty('visibility', 'hidden', 'important');
-            }
-          });
-        }
-      }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        // Process immediately - badges should appear as soon as page loads
+        processVisibleTweets();
+        setupObserver();
+        setupRealtimeComposeObserver();
 
-      // Process immediately - badges should appear as soon as page loads
+        // Apply IQGuessr mode if enabled on page load
+        applyIQGuessrModeOnLoad();
+      });
+    } else {
+      // Page already loaded - process immediately
       processVisibleTweets();
       setupObserver();
       setupRealtimeComposeObserver();
 
-      // Apply IqGuessr mode if enabled on page load
+      // Apply IQGuessr mode if enabled on page load
       applyIQGuessrModeOnLoad();
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', startProcessing);
-    } else {
-      // Page already loaded - process immediately
-      startProcessing();
     }
 
     // Also process on scroll (for lazy-loaded content) - with minimal delay
