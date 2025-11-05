@@ -266,24 +266,32 @@
  * --------------------------------------------------------------------------------------------
  * KEY FILES FOR BADGE PLACEMENT LOGIC
  * --------------------------------------------------------------------------------------------
- * content/features/tweetProcessor.js
- *   - processTweet() - Main function for processing tweets and placing badges
- *   - findNotificationBadgePlacement() - Special placement for notifications (lines 28-139)
- *   - ensureCorrectBadgePosition() - Verifies badge position (lines 145-250)
+ * content/features/tweetProcessor/
+ *   index.js - Main entry point that orchestrates all tweet processing modules
+ *   core/processTweet.js
+ *     - processTweet() - Main function for processing tweets and placing badges (line 70)
+ *   badgePlacement/notificationPlacement.js
+ *     - findNotificationBadgePlacement() - Special placement for notifications (line 17)
+ *   badgePlacement/positionCorrection.js
+ *     - ensureCorrectBadgePosition() - Verifies badge position (line 20)
  *
  * content/features/realtime.js
- *   - setupRealtimeComposeObserver() - Monitors for new compose boxes (lines 613-726)
- *   - setupRealtimeBadge() - Sets up real-time badge for specific input (lines 350-608)
- *   - updateRealtimeBadge() - Updates badge as user types (lines 22-344)
+ *   - setupRealtimeComposeObserver() - Monitors for new compose boxes (line 692)
+ *   - setupRealtimeMonitoring() - Sets up real-time badge for specific input (line 428)
+ *   - updateRealtimeBadge() - Updates badge as user types (line 22)
  *
- * content/features/badge/badgeCreation.js
- *   - createIQBadge() - Creates standard IQ badge (lines 458-521)
- *   - createRealtimeBadge() - Creates real-time compose badge (lines 526-878)
- *   - createLoadingBadge() - Creates loading state badge
+ * content/features/badge/badgeCreation/
+ *   index.js - Main module that aggregates all badge creation functionality
+ *   types/iqBadge.js
+ *     - createIQBadge() - Creates standard IQ badge (line 17)
+ *   types/realtimeBadge.js
+ *     - createRealtimeBadge() - Creates real-time compose badge (line 17)
+ *   types/loadingBadge.js
+ *     - createLoadingBadge() - Creates loading state badge (line 16)
  *
  * content/features/profileBadge.js
- *   - addScoreBadge() - Adds score badge to profile pages (lines 165-298)
- *   - findInsertionPoint() - Finds where to insert profile badge (lines 91-159)
+ *   - insertProfileBadge() - Adds score badge to profile pages (line 415)
+ *   - findProfileBadgeInsertionPoint() - Finds where to insert profile badge (line 358)
  *
  * ============================================================================================
  */
@@ -299,6 +307,7 @@
   border-radius: 999px;
   font-size: 10px;
   font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   margin: 0;
   margin-right: 4px;
   vertical-align: middle;
