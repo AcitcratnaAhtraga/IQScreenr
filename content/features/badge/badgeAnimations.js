@@ -284,14 +284,20 @@ function animateCountUp(badge, finalIQ, iqColor) {
           finalColorRgb,
           easedProgress
         );
+        // Set background color during animation (will be removed when animation completes)
         badge.style.setProperty('background-color', currentColor, 'important');
+        // Also update CSS variable so hover can work if user hovers during animation
+        badge.style.setProperty('--iq-badge-bg-color', currentColor);
       } else if (isShowingSpinner) {
         const currentColor = interpolateRgbColor(
           parseColor(loadingColor),
           finalColorRgb,
           easedProgress
         );
+        // Set background color during animation (will be removed when animation completes)
         badge.style.setProperty('background-color', currentColor, 'important');
+        // Also update CSS variable so hover can work if user hovers during animation
+        badge.style.setProperty('--iq-badge-bg-color', currentColor);
       }
 
       const hasReachedFinal = lastDisplayedIQ >= finalIQ;
@@ -310,6 +316,8 @@ function animateCountUp(badge, finalIQ, iqColor) {
         scoreElement.textContent = finalIQ;
         // Use CSS variable for final color - CSS handles styling
         badge.style.setProperty('--iq-badge-bg-color', iqColor);
+        // Remove inline background-color style so CSS hover rules can work
+        badge.style.removeProperty('background-color');
         // Store original background color in CSS variable for hover inversion
         if (badge.classList.contains('iq-badge-flip')) {
           badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
@@ -341,6 +349,17 @@ function animateCountUp(badge, finalIQ, iqColor) {
 
         // Add hover handlers for color inversion if badge has flip structure
         if (badge.classList.contains('iq-badge-flip')) {
+          // Ensure inline background-color is removed so CSS hover rules can work
+          badge.style.removeProperty('background-color');
+          // Ensure CSS variable is set
+          if (!badge.style.getPropertyValue('--iq-badge-bg-color')) {
+            badge.style.setProperty('--iq-badge-bg-color', iqColor);
+          }
+          // Ensure original bg variable is set for hover
+          if (!badge.style.getPropertyValue('--iq-badge-original-bg')) {
+            badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
+          }
+
           const getBadgeCreation = () => window.BadgeCreation || {};
           const { addFlipBadgeHoverHandlers, addMobileBadgeHandlers } = getBadgeCreation();
           if (addFlipBadgeHoverHandlers) {
@@ -563,6 +582,8 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence,
 
       // Use CSS variable instead of inline style - CSS handles styling
       badge.style.setProperty('--iq-badge-bg-color', iqColor);
+      // Remove inline background-color so CSS hover rules can work
+      badge.style.removeProperty('background-color');
       // Store original background color in CSS variable for hover inversion
       if (badge.classList.contains('iq-badge-flip')) {
         badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
@@ -609,13 +630,26 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
   // Preserve or set CSS variable for original background color (for hover inversion)
   let originalBgColor = badge.style.getPropertyValue('--iq-badge-original-bg');
   if (!originalBgColor) {
-    // Get current background color from computed style
-    const computedStyle = window.getComputedStyle(badge);
-    originalBgColor = computedStyle.backgroundColor;
+    // Get current background color from CSS variable first, then computed style
+    const bgColorVar = badge.style.getPropertyValue('--iq-badge-bg-color');
+    if (bgColorVar) {
+      originalBgColor = bgColorVar;
+    } else {
+      // Get current background color from computed style
+      const computedStyle = window.getComputedStyle(badge);
+      originalBgColor = computedStyle.backgroundColor;
+    }
     if (originalBgColor && originalBgColor !== 'rgba(0, 0, 0, 0)' && originalBgColor !== 'transparent') {
       badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+      // Also ensure CSS variable is set
+      if (!bgColorVar) {
+        badge.style.setProperty('--iq-badge-bg-color', originalBgColor);
+      }
     }
   }
+
+  // Remove inline background-color so CSS hover rules can work
+  badge.style.removeProperty('background-color');
 
   if (badge.querySelector('.iq-badge-inner')) {
 
@@ -648,9 +682,13 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
     back.style.top = '0';
   }
   badge.style.setProperty('color', '#000000', 'important');
+  // Remove inline background-color so CSS hover rules can work
+  badge.style.removeProperty('background-color');
   // Ensure CSS variable is preserved
   if (originalBgColor) {
     badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+    // Also ensure CSS variable is set
+    badge.style.setProperty('--iq-badge-bg-color', originalBgColor);
   }
   return;
   }
@@ -667,12 +705,25 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
 
   // Ensure CSS variable for original background color is set (for hover inversion)
   if (!originalBgColor) {
-    const computedStyle = window.getComputedStyle(badge);
-    originalBgColor = computedStyle.backgroundColor;
+    // Get current background color from CSS variable first, then computed style
+    const bgColorVar = badge.style.getPropertyValue('--iq-badge-bg-color');
+    if (bgColorVar) {
+      originalBgColor = bgColorVar;
+    } else {
+      const computedStyle = window.getComputedStyle(badge);
+      originalBgColor = computedStyle.backgroundColor;
+    }
     if (originalBgColor && originalBgColor !== 'rgba(0, 0, 0, 0)' && originalBgColor !== 'transparent') {
       badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+      // Also ensure CSS variable is set
+      if (!bgColorVar) {
+        badge.style.setProperty('--iq-badge-bg-color', originalBgColor);
+      }
     }
   }
+
+  // Remove inline background-color so CSS hover rules can work
+  badge.style.removeProperty('background-color');
 
   badge.innerHTML = `
     <div class="iq-badge-inner" style="transform: rotateY(0deg);">
