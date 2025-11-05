@@ -9,7 +9,8 @@
   const getSettings = () => window.Settings || {};
 
   let storageListenerSetup = false;
-  let profileObserverSetup = false;
+  let profileBadgeObserver = null;
+  let insertProfileBadgeTimeout = null;
 
 
 
@@ -271,6 +272,274 @@
 
 
   /**
+   * Check if we're on the user's own profile page
+   * Compares the current URL handle with the stored handle, or checks for Edit Profile button
+   */
+  function isOwnProfilePage() {
+    return new Promise((resolve) => {
+      // Primary check: Look for Edit Profile button (only appears on own profile)
+      const editProfileButton = document.querySelector('a[data-testid="editProfileButton"]');
+      if (editProfileButton) {
+        resolve(true);
+        return;
+      }
+
+      // Secondary check: Compare URL handle with stored handle
+      const pathname = window.location.pathname;
+      const urlHandle = pathname.match(/^\/([a-zA-Z0-9_]+)/)?.[1];
+
+      if (!urlHandle) {
+        resolve(false);
+        return;
+      }
+
+      // Try multiple possible storage keys for the handle
+      chrome.storage.sync.get(['twitterHandle', 'userHandle', 'handle'], (result) => {
+        const storedHandle = result.twitterHandle || result.userHandle || result.handle;
+        if (storedHandle && storedHandle.toLowerCase() === urlHandle.toLowerCase()) {
+          resolve(true);
+        } else {
+          // If no stored handle matches, check if Edit Profile button exists (it might have been added)
+          setTimeout(() => {
+            const editBtn = document.querySelector('a[data-testid="editProfileButton"]');
+            resolve(!!editBtn);
+          }, 100);
+        }
+      });
+    });
+  }
+
+  /**
+   * Find the insertion point for the badge on own profile page
+   * Should be after profile picture and before Edit Profile button
+   */
+  function findProfileBadgeInsertionPoint() {
+    // Find the Edit Profile button
+    const editProfileButton = document.querySelector('a[data-testid="editProfileButton"]');
+    if (!editProfileButton) {
+      return null;
+    }
+
+    // Find the parent container that contains both the profile picture and the Edit Profile button
+    // The structure is: container > [profile picture container] > [badge wrapper?] > [Edit Profile button]
+    const container = editProfileButton.closest('div[class*="r-1habvwh"]');
+    if (!container) {
+      return null;
+    }
+
+    // Find the profile picture container (UserAvatar container)
+    const profilePicContainer = container.querySelector('[data-testid*="UserAvatar"]');
+    if (!profilePicContainer) {
+      // If we can't find the profile pic container, try to find the parent of edit button
+      const editButtonParent = editProfileButton.parentElement;
+      if (editButtonParent && editButtonParent.parentElement) {
+        return {
+          parent: editButtonParent.parentElement,
+          beforeElement: editButtonParent
+        };
+      }
+      return null;
+    }
+
+    // Find the container that holds both the profile pic and the edit button
+    // This is typically a flex container with class r-18u37iz or similar
+    const flexContainer = profilePicContainer.closest('div[class*="r-18u37iz"]');
+    if (flexContainer) {
+      // Find the container that comes after the profile pic and before the edit button
+      const editButtonParent = editProfileButton.parentElement;
+      if (editButtonParent && editButtonParent.parentElement === flexContainer) {
+        return {
+          parent: flexContainer,
+          beforeElement: editButtonParent
+        };
+      }
+    }
+
+    // Fallback: insert before the edit button's parent
+    const editButtonParent = editProfileButton.parentElement;
+    if (editButtonParent && editButtonParent.parentElement) {
+      return {
+        parent: editButtonParent.parentElement,
+        beforeElement: editButtonParent
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Insert or move the badge to the correct position on own profile page
+   */
+  async function insertProfileBadge() {
+    const settings = getSettings();
+
+    // Check if profile badge is enabled
+    if (!settings.showProfileScoreBadge) {
+      return;
+    }
+
+    // Check if we're on own profile page
+    const isOwnProfile = await isOwnProfilePage();
+    if (!isOwnProfile) {
+      return;
+    }
+
+    // Get or create the badge
+    const badge = await getScoreAndUpdateBadge();
+    if (!badge) {
+      return;
+    }
+
+    // Find insertion point
+    const insertionPoint = findProfileBadgeInsertionPoint();
+    if (!insertionPoint) {
+      return;
+    }
+
+    const { parent, beforeElement } = insertionPoint;
+
+    // Check if badge is already in a wrapper
+    let wrapper = badge.closest('.iq-guessr-profile-badge-wrapper');
+    if (!wrapper) {
+      // Create wrapper if it doesn't exist
+      wrapper = document.createElement('span');
+      wrapper.className = 'iq-guessr-profile-badge-wrapper';
+      wrapper.style.cssText = `
+        display: inline-block !important;
+        height: 0px !important;
+        width: auto !important;
+        overflow: visible !important;
+        vertical-align: middle !important;
+        position: relative !important;
+        margin-left: 8px !important;
+        margin-right: 8px !important;
+      `;
+      // Remove badge from current location if it exists elsewhere
+      if (badge.parentElement) {
+        badge.parentElement.removeChild(badge);
+      }
+      wrapper.appendChild(badge);
+    } else {
+      // Badge is already in a wrapper, check if wrapper is in the correct position
+      if (wrapper.parentElement === parent && wrapper.nextSibling === beforeElement) {
+        return; // Already in correct position
+      }
+      // Remove wrapper from current location
+      if (wrapper.parentElement) {
+        wrapper.parentElement.removeChild(wrapper);
+      }
+    }
+
+    // Update badge positioning styles for profile page
+    badge.style.cssText = `
+      display: inline-flex !important;
+      align-items: center;
+      gap: 4px;
+      background: transparent !important;
+      color: white !important;
+      padding: 0;
+      border-radius: 0;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 0 !important;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      visibility: visible !important;
+      opacity: 1 !important;
+      position: absolute !important;
+      z-index: 1000 !important;
+      top: 50% !important;
+      left: 0px !important;
+      transform: translateY(-50%);
+      border: none;
+      box-shadow: none;
+    `;
+
+    // Insert wrapper before the Edit Profile button's parent
+    try {
+      parent.insertBefore(wrapper, beforeElement);
+    } catch (e) {
+      console.warn('[IqGuessr] Error inserting profile badge:', e);
+    }
+  }
+
+  /**
+   * Set up observer to watch for profile page changes
+   */
+  function setupProfileBadgeObserver() {
+    // Check if we're on a profile page
+    const isProfilePage = /^\/[a-zA-Z0-9_]+(\/(with_replies|media|likes))?\/?$/.test(window.location.pathname);
+    if (!isProfilePage) {
+      // Not on a profile page, clean up observer if it exists
+      if (profileBadgeObserver) {
+        profileBadgeObserver.disconnect();
+        profileBadgeObserver = null;
+      }
+      return;
+    }
+
+    // If observer already exists, just trigger insertion check
+    if (profileBadgeObserver) {
+      insertProfileBadge();
+      return;
+    }
+
+    // Debounced function to insert badge
+    const debouncedInsert = () => {
+      if (insertProfileBadgeTimeout) {
+        clearTimeout(insertProfileBadgeTimeout);
+      }
+      insertProfileBadgeTimeout = setTimeout(() => {
+        insertProfileBadge();
+      }, 300);
+    };
+
+    // Try to insert badge immediately
+    insertProfileBadge();
+
+    // Set up observer to watch for DOM changes (debounced)
+    profileBadgeObserver = new MutationObserver(() => {
+      debouncedInsert();
+    });
+
+    profileBadgeObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also try again after delays to catch late-loading elements
+    setTimeout(() => {
+      insertProfileBadge();
+    }, 1000);
+
+    setTimeout(() => {
+      insertProfileBadge();
+    }, 3000);
+  }
+
+  /**
+   * Handle URL changes (for client-side navigation)
+   */
+  let lastUrl = window.location.href;
+  function checkUrlChange() {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+      lastUrl = currentUrl;
+      // Reset observer and set it up again for new page
+      if (profileBadgeObserver) {
+        profileBadgeObserver.disconnect();
+        profileBadgeObserver = null;
+      }
+      setTimeout(() => {
+        setupProfileBadgeObserver();
+      }, 500);
+    }
+  }
+
+  // Monitor URL changes
+  setInterval(checkUrlChange, 1000);
+
+  /**
    * Monitor storage changes to update the badge
    */
   function setupStorageListener() {
@@ -328,340 +597,16 @@
     storageListenerSetup = true;
   }
 
-  /**
-   * Get the current user's handle from storage or detect from page
-   */
-  function getCurrentUserHandle() {
-    return new Promise((resolve) => {
-      // Try to get from storage first
-      chrome.storage.sync.get(['userHandle', 'twitterHandle'], (result) => {
-        if (result.userHandle) {
-          resolve(result.userHandle);
-          return;
-        }
-        if (result.twitterHandle) {
-          resolve(result.twitterHandle);
-          return;
-        }
-
-        // Try to detect from the page - look for the current user's handle in the sidebar/navigation
-        // Check for nav links that point to the current user's profile
-        const navLinks = document.querySelectorAll('nav a[href^="/"]');
-        for (const link of navLinks) {
-          const href = link.getAttribute('href');
-          if (href && /^\/[a-zA-Z0-9_]+$/.test(href)) {
-            const handle = href.slice(1); // Remove leading slash
-            // Store it for future use
-            chrome.storage.sync.set({ userHandle: handle });
-            resolve(handle);
-            return;
-          }
-        }
-
-        // Fallback: try to get from URL pathname if we're on a profile page
-        const pathname = window.location.pathname;
-        const match = pathname.match(/^\/([a-zA-Z0-9_]+)(?:\/(with_replies|media|likes))?\/?$/);
-        if (match && match[1]) {
-          // Check if there's an "Edit Profile" button (only on own profile)
-          const editProfileButton = findEditProfileButton();
-          if (editProfileButton) {
-            const handle = match[1];
-            chrome.storage.sync.set({ userHandle: handle });
-            resolve(handle);
-            return;
-          }
-        }
-
-        resolve(null);
-      });
-    });
-  }
-
-  /**
-   * Check if we're on the user's own profile page
-   */
-  async function isOwnProfile() {
-    const pathname = window.location.pathname;
-    const match = pathname.match(/^\/([a-zA-Z0-9_]+)(?:\/(with_replies|media|likes))?\/?$/);
-    if (!match || !match[1]) {
-      return false;
-    }
-
-    const currentHandle = match[1];
-    const userHandle = await getCurrentUserHandle();
-
-    // If we have a stored handle, compare it
-    if (userHandle && currentHandle.toLowerCase() === userHandle.toLowerCase()) {
-      return true;
-    }
-
-    // Fallback: check if "Edit Profile" button exists (only appears on own profile)
-    const editProfileButton = findEditProfileButton();
-    return editProfileButton !== null;
-  }
-
-  /**
-   * Find the "Edit Profile" button on the profile page
-   */
-  function findEditProfileButton() {
-    // Try multiple selectors for the Edit Profile button
-    const selectors = [
-      'a[href="/settings/profile"]',
-      'a[href*="/settings/profile"]',
-      'div[role="button"][aria-label*="Edit profile"]',
-      'div[role="button"][aria-label*="Edit Profile"]',
-      'button[aria-label*="edit profile"]',
-      'button[aria-label*="Edit Profile"]'
-    ];
-
-    for (const selector of selectors) {
-      const button = document.querySelector(selector);
-      if (button) {
-        return button;
-      }
-    }
-
-    // Try to find by text content
-    const allButtons = document.querySelectorAll('a, button, div[role="button"]');
-    for (const button of allButtons) {
-      const text = button.textContent?.toLowerCase() || '';
-      if (text.includes('edit profile') || text.includes('editprofile')) {
-        return button;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Add the score badge under the Edit Profile button on own profile page
-   */
-  async function addScoreBadgeToOwnProfile() {
-    const settings = getSettings();
-
-    // Check if feature is enabled
-    if (!settings.showProfileScoreBadge || !settings.enableIQGuessr) {
-      return;
-    }
-
-    // Check if we're on own profile
-    const isOwn = await isOwnProfile();
-    if (!isOwn) {
-      return;
-    }
-
-    // Find the Edit Profile button
-    const editProfileButton = findEditProfileButton();
-    if (!editProfileButton) {
-      return;
-    }
-
-    // Find the profile picture container
-    const profilePicture = document.querySelector('div[data-testid*="UserAvatar-Container"]') ||
-                          document.querySelector('div[data-testid*="UserAvatar"]');
-
-    // Find the container that holds both the profile picture and Edit Profile button
-    // This is the parent container that has both elements as direct or indirect children
-    let container = editProfileButton.parentElement;
-
-    // Look for the container that contains both the profile picture and the button
-    // We need to find a common parent that has both
-    while (container && container !== document.body) {
-      const hasProfilePic = profilePicture && container.contains(profilePicture);
-      const hasButton = container.contains(editProfileButton);
-
-      // Check if this container has both elements
-      if (hasProfilePic && hasButton) {
-        // Make sure this container is the direct parent of both, or find the right level
-        // If the profile picture and button share the same parent, use that
-        if (profilePicture && editProfileButton.parentElement === container) {
-          // They're siblings in this container, perfect
-          break;
-        } else if (profilePicture && profilePicture.parentElement === container &&
-                   editProfileButton.parentElement === container) {
-          // Both are direct children
-          break;
-        }
-      }
-      container = container.parentElement;
-    }
-
-    // If we couldn't find a good container, use the button's parent
-    if (!container || container === document.body) {
-      container = editProfileButton.parentElement;
-    }
-
-    // Check if badge already exists and is already placed correctly
-    const existingBadge = document.querySelector('.iq-guessr-score-badge');
-    if (existingBadge) {
-      // Check if it's already in a wrapper and in the right container
-      const existingWrapper = existingBadge.closest('.iq-guessr-profile-badge-wrapper');
-      if (existingWrapper && container && container.contains(existingWrapper)) {
-        // Badge is already placed correctly, just update it
-        await getScoreAndUpdateBadge();
-        return;
-      }
-      // Badge exists but not in the right place - clean up and remove it
-      // Clean up any position update handlers
-      if (existingBadge._positionUpdateHandler) {
-        window.removeEventListener('resize', existingBadge._positionUpdateHandler);
-        window.removeEventListener('scroll', existingBadge._positionUpdateHandler, true);
-        delete existingBadge._positionUpdateHandler;
-      }
-      // Remove wrapper if it exists
-      if (existingWrapper) {
-        existingWrapper.remove();
-      } else {
-        existingBadge.remove();
-      }
-    }
-
-    // Get or create the badge
-    const badge = await getScoreAndUpdateBadge();
-    if (!badge) {
-      return;
-    }
-
-    // Create a wrapper that takes horizontal space but no vertical space
-    const badgeWrapper = document.createElement('span');
-    badgeWrapper.className = 'iq-guessr-profile-badge-wrapper';
-    badgeWrapper.style.cssText = `
-      display: inline-block !important;
-      height: 0 !important;
-      width: auto !important;
-      overflow: visible !important;
-      vertical-align: middle !important;
-      position: relative !important;
-      margin-left: 8px !important;
-      margin-right: 8px !important;
-    `;
-
-    // Style the badge to be absolutely positioned within the wrapper
-    // This way it doesn't affect vertical layout but still takes horizontal space
-    badge.style.setProperty('position', 'absolute', 'important');
-    badge.style.setProperty('top', '50%', 'important');
-    badge.style.setProperty('left', '0', 'important');
-    badge.style.setProperty('transform', 'translateY(-50%)', 'important');
-    badge.style.setProperty('margin', '0', 'important');
-    badge.style.setProperty('margin-left', '0', 'important');
-    badge.style.setProperty('margin-right', '0', 'important');
-    badge.style.setProperty('display', 'inline-flex', 'important');
-
-    // Put badge inside wrapper
-    badgeWrapper.appendChild(badge);
-
-    // Insert the badge between the profile picture and Edit Profile button
-    // Find where to insert it in the container
-    if (container) {
-      // Get all children of the container
-      const children = Array.from(container.children);
-
-      // Find the index of the Edit Profile button
-      let buttonIndex = -1;
-      for (let i = 0; i < children.length; i++) {
-        if (children[i].contains(editProfileButton) || children[i] === editProfileButton) {
-          buttonIndex = i;
-          break;
-        }
-      }
-
-      // Find the profile picture index
-      let profilePicIndex = -1;
-      if (profilePicture) {
-        for (let i = 0; i < children.length; i++) {
-          if (children[i].contains(profilePicture) || children[i] === profilePicture) {
-            profilePicIndex = i;
-            break;
-          }
-        }
-      }
-
-      // Insert the badge wrapper between profile picture and button
-      if (buttonIndex >= 0) {
-        // Insert before the button's container
-        const targetElement = children[buttonIndex];
-        if (targetElement === editProfileButton) {
-          // Button is direct child, insert before it
-          container.insertBefore(badgeWrapper, editProfileButton);
-        } else {
-          // Button is in a child element, insert before that child
-          container.insertBefore(badgeWrapper, targetElement);
-        }
-      } else {
-        // Fallback: insert before the button
-        if (editProfileButton.parentElement === container) {
-          container.insertBefore(badgeWrapper, editProfileButton);
-        } else {
-          // Insert at the end
-          container.appendChild(badgeWrapper);
-        }
-      }
-    } else {
-      // Last resort: insert before the button
-      if (editProfileButton.parentElement) {
-        editProfileButton.parentElement.insertBefore(badgeWrapper, editProfileButton);
-      }
-    }
-  }
-
-  /**
-   * Set up observer to monitor profile page changes
-   */
-  function setupProfileObserver() {
-    if (profileObserverSetup) {
-      return;
-    }
-
-    // Initial check
-    addScoreBadgeToOwnProfile();
-
-    // Set up MutationObserver to watch for DOM changes
-    const observer = new MutationObserver(() => {
-      addScoreBadgeToOwnProfile();
-    });
-
-    // Start observing
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    // Also check on URL changes (for SPA navigation)
-    let lastUrl = window.location.href;
-    const urlCheckInterval = setInterval(() => {
-      const currentUrl = window.location.href;
-      if (currentUrl !== lastUrl) {
-        lastUrl = currentUrl;
-        // Small delay to let DOM update
-        setTimeout(() => {
-          addScoreBadgeToOwnProfile();
-        }, 500);
-      }
-    }, 1000);
-
-    // Clean up on page unload
-    window.addEventListener('beforeunload', () => {
-      clearInterval(urlCheckInterval);
-      observer.disconnect();
-    });
-
-    profileObserverSetup = true;
-  }
-
   // Set up storage listener on initialization
   setupStorageListener();
 
-  // Set up profile observer when DOM is ready
+  // Set up profile badge observer on initialization
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        setupProfileObserver();
-      }, 1000); // Give page time to render
+      setupProfileBadgeObserver();
     });
   } else {
-    setTimeout(() => {
-      setupProfileObserver();
-    }, 1000);
+    setupProfileBadgeObserver();
   }
 
   // Export for debugging
@@ -671,9 +616,8 @@
       createScoreBadge,
       calculateRotationDuration,
       calculateIconSize,
-      addScoreBadgeToOwnProfile,
-      isOwnProfile,
-      findEditProfileButton
+      insertProfileBadge,
+      isOwnProfilePage
     };
   }
 })();
