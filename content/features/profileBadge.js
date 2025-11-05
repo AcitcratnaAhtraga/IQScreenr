@@ -9,6 +9,7 @@
   const getSettings = () => window.Settings || {};
 
   let storageListenerSetup = false;
+  let profileObserverSetup = false;
 
 
 
@@ -327,8 +328,324 @@
     storageListenerSetup = true;
   }
 
+  /**
+   * Get the current user's handle from storage or detect from page
+   */
+  function getCurrentUserHandle() {
+    return new Promise((resolve) => {
+      // Try to get from storage first
+      chrome.storage.sync.get(['userHandle', 'twitterHandle'], (result) => {
+        if (result.userHandle) {
+          resolve(result.userHandle);
+          return;
+        }
+        if (result.twitterHandle) {
+          resolve(result.twitterHandle);
+          return;
+        }
+
+        // Try to detect from the page - look for the current user's handle in the sidebar/navigation
+        // Check for nav links that point to the current user's profile
+        const navLinks = document.querySelectorAll('nav a[href^="/"]');
+        for (const link of navLinks) {
+          const href = link.getAttribute('href');
+          if (href && /^\/[a-zA-Z0-9_]+$/.test(href)) {
+            const handle = href.slice(1); // Remove leading slash
+            // Store it for future use
+            chrome.storage.sync.set({ userHandle: handle });
+            resolve(handle);
+            return;
+          }
+        }
+
+        // Fallback: try to get from URL pathname if we're on a profile page
+        const pathname = window.location.pathname;
+        const match = pathname.match(/^\/([a-zA-Z0-9_]+)(?:\/(with_replies|media|likes))?\/?$/);
+        if (match && match[1]) {
+          // Check if there's an "Edit Profile" button (only on own profile)
+          const editProfileButton = findEditProfileButton();
+          if (editProfileButton) {
+            const handle = match[1];
+            chrome.storage.sync.set({ userHandle: handle });
+            resolve(handle);
+            return;
+          }
+        }
+
+        resolve(null);
+      });
+    });
+  }
+
+  /**
+   * Check if we're on the user's own profile page
+   */
+  async function isOwnProfile() {
+    const pathname = window.location.pathname;
+    const match = pathname.match(/^\/([a-zA-Z0-9_]+)(?:\/(with_replies|media|likes))?\/?$/);
+    if (!match || !match[1]) {
+      return false;
+    }
+
+    const currentHandle = match[1];
+    const userHandle = await getCurrentUserHandle();
+
+    // If we have a stored handle, compare it
+    if (userHandle && currentHandle.toLowerCase() === userHandle.toLowerCase()) {
+      return true;
+    }
+
+    // Fallback: check if "Edit Profile" button exists (only appears on own profile)
+    const editProfileButton = findEditProfileButton();
+    return editProfileButton !== null;
+  }
+
+  /**
+   * Find the "Edit Profile" button on the profile page
+   */
+  function findEditProfileButton() {
+    // Try multiple selectors for the Edit Profile button
+    const selectors = [
+      'a[href="/settings/profile"]',
+      'a[href*="/settings/profile"]',
+      'div[role="button"][aria-label*="Edit profile"]',
+      'div[role="button"][aria-label*="Edit Profile"]',
+      'button[aria-label*="edit profile"]',
+      'button[aria-label*="Edit Profile"]'
+    ];
+
+    for (const selector of selectors) {
+      const button = document.querySelector(selector);
+      if (button) {
+        return button;
+      }
+    }
+
+    // Try to find by text content
+    const allButtons = document.querySelectorAll('a, button, div[role="button"]');
+    for (const button of allButtons) {
+      const text = button.textContent?.toLowerCase() || '';
+      if (text.includes('edit profile') || text.includes('editprofile')) {
+        return button;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Add the score badge under the Edit Profile button on own profile page
+   */
+  async function addScoreBadgeToOwnProfile() {
+    const settings = getSettings();
+
+    // Check if feature is enabled
+    if (!settings.showProfileScoreBadge || !settings.enableIQGuessr) {
+      return;
+    }
+
+    // Check if we're on own profile
+    const isOwn = await isOwnProfile();
+    if (!isOwn) {
+      return;
+    }
+
+    // Find the Edit Profile button
+    const editProfileButton = findEditProfileButton();
+    if (!editProfileButton) {
+      return;
+    }
+
+    // Find the profile picture - it's usually in a div with data-testid or near the profile header
+    const profilePicture = document.querySelector('div[data-testid="UserAvatar-Container-"]') ||
+                          document.querySelector('div[data-testid*="UserAvatar"]') ||
+                          document.querySelector('div[role="img"][aria-label*="profile picture"]') ||
+                          document.querySelector('a[href*="/"][aria-label*="profile picture"]') ||
+                          null;
+
+    // Find a positioned parent container (relative, absolute, or fixed)
+    // This will be our reference point for absolute positioning
+    let positionedParent = editProfileButton.parentElement;
+    while (positionedParent && positionedParent !== document.body) {
+      const style = window.getComputedStyle(positionedParent);
+      if (style.position === 'relative' || style.position === 'absolute' || style.position === 'fixed') {
+        break;
+      }
+      positionedParent = positionedParent.parentElement;
+    }
+
+    // If no positioned parent found, use the Edit Profile button's parent and make it relative
+    if (!positionedParent || positionedParent === document.body) {
+      positionedParent = editProfileButton.parentElement;
+      if (positionedParent) {
+        const currentPosition = window.getComputedStyle(positionedParent).position;
+        if (currentPosition === 'static') {
+          positionedParent.style.position = 'relative';
+        }
+      }
+    }
+
+    // Check if badge already exists and is already placed
+    const existingBadge = document.querySelector('.iq-guessr-score-badge');
+    if (existingBadge) {
+      // Check if it's already positioned (has absolute positioning)
+      const existingStyle = window.getComputedStyle(existingBadge);
+      if (existingStyle.position === 'absolute') {
+        // Badge is already placed, just update it and reposition if needed
+        await getScoreAndUpdateBadge();
+        // Update position in case layout changed
+        if (existingBadge._positionUpdateHandler) {
+          existingBadge._positionUpdateHandler();
+        }
+        return;
+      }
+      // Badge exists but not in the right place - remove it and re-place it
+      existingBadge.remove();
+    }
+
+    // Get or create the badge
+    const badge = await getScoreAndUpdateBadge();
+    if (!badge) {
+      return;
+    }
+
+    // Insert the badge before the Edit Profile button in the DOM
+    // But position it absolutely so it doesn't affect layout
+    if (editProfileButton.parentElement) {
+      // Insert before the button
+      editProfileButton.parentElement.insertBefore(badge, editProfileButton);
+    } else {
+      // Fallback: append to positioned parent
+      if (positionedParent) {
+        positionedParent.appendChild(badge);
+      }
+    }
+
+    // Position the badge absolutely between profile picture and Edit Profile button
+    // Calculate position based on profile picture and button positions
+    const updateBadgePosition = () => {
+      if (!badge.parentElement || !editProfileButton.parentElement) {
+        return; // Badge or button removed from DOM
+      }
+
+      const buttonRect = editProfileButton.getBoundingClientRect();
+      const parentRect = positionedParent ? positionedParent.getBoundingClientRect() : { top: 0, left: 0 };
+
+      let profilePicRect = null;
+      if (profilePicture) {
+        profilePicRect = profilePicture.getBoundingClientRect();
+      }
+
+      // Calculate vertical position - align with the button's vertical center
+      const buttonCenterY = buttonRect.top + (buttonRect.height / 2);
+      const top = buttonCenterY - parentRect.top;
+
+      // Calculate horizontal position - center between profile picture and button
+      let left;
+      if (profilePicRect) {
+        // Center between profile picture right edge and button left edge
+        const profilePicRight = profilePicRect.right - parentRect.left;
+        const buttonLeft = buttonRect.left - parentRect.left;
+        const centerX = profilePicRight + (buttonLeft - profilePicRight) / 2;
+        left = centerX;
+      } else {
+        // Fallback: center between left edge and button
+        const buttonLeft = buttonRect.left - parentRect.left;
+        left = buttonLeft / 2;
+      }
+
+      // Get badge dimensions to center it properly
+      const badgeRect = badge.getBoundingClientRect();
+      const badgeWidth = badgeRect.width || 0;
+      const badgeHeight = badgeRect.height || 0;
+
+      // Adjust position to center the badge on the calculated point
+      left = left - (badgeWidth / 2);
+      const adjustedTop = top - (badgeHeight / 2);
+
+      // Update positioning properties (preserving other styles from createScoreBadge)
+      badge.style.setProperty('position', 'absolute', 'important');
+      badge.style.setProperty('top', `${adjustedTop}px`, 'important');
+      badge.style.setProperty('left', `${left}px`, 'important');
+      badge.style.setProperty('margin', '0', 'important');
+      badge.style.setProperty('margin-left', '0', 'important');
+      badge.style.setProperty('z-index', '1000', 'important');
+      badge.style.setProperty('pointer-events', 'auto', 'important');
+    };
+
+    // Update position immediately
+    updateBadgePosition();
+
+    // Update position on window resize or scroll (in case layout changes)
+    const positionUpdateHandler = () => {
+      updateBadgePosition();
+    };
+    window.addEventListener('resize', positionUpdateHandler);
+    window.addEventListener('scroll', positionUpdateHandler, true);
+
+    // Store the handler so we can clean it up if needed
+    badge._positionUpdateHandler = positionUpdateHandler;
+  }
+
+  /**
+   * Set up observer to monitor profile page changes
+   */
+  function setupProfileObserver() {
+    if (profileObserverSetup) {
+      return;
+    }
+
+    // Initial check
+    addScoreBadgeToOwnProfile();
+
+    // Set up MutationObserver to watch for DOM changes
+    const observer = new MutationObserver(() => {
+      addScoreBadgeToOwnProfile();
+    });
+
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Also check on URL changes (for SPA navigation)
+    let lastUrl = window.location.href;
+    const urlCheckInterval = setInterval(() => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        // Small delay to let DOM update
+        setTimeout(() => {
+          addScoreBadgeToOwnProfile();
+        }, 500);
+      }
+    }, 1000);
+
+    // Clean up on page unload
+    window.addEventListener('beforeunload', () => {
+      clearInterval(urlCheckInterval);
+      observer.disconnect();
+    });
+
+    profileObserverSetup = true;
+  }
+
   // Set up storage listener on initialization
   setupStorageListener();
+
+  // Set up profile observer when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        setupProfileObserver();
+      }, 1000); // Give page time to render
+    });
+  } else {
+    setTimeout(() => {
+      setupProfileObserver();
+    }, 1000);
+  }
 
   // Export for debugging
   if (typeof window !== 'undefined') {
@@ -336,7 +653,10 @@
       getScoreAndUpdateBadge,
       createScoreBadge,
       calculateRotationDuration,
-      calculateIconSize
+      calculateIconSize,
+      addScoreBadgeToOwnProfile,
+      isOwnProfile,
+      findEditProfileButton
     };
   }
 })();
