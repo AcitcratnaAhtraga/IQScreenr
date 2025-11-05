@@ -457,6 +457,24 @@
   color: var(--iq-badge-original-bg, #ffffff) !important;
 }
 
+/* Ensure average IQ badge hover works - more specific selector */
+.iq-badge.iq-badge-average.iq-badge-flip:hover {
+  background-color: #000000 !important;
+  color: var(--iq-badge-original-bg, #ffffff) !important;
+}
+
+.iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-front,
+.iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-back {
+  color: var(--iq-badge-original-bg, #ffffff) !important;
+}
+
+.iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-front .iq-label,
+.iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-front .iq-score,
+.iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-back .iq-label,
+.iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-back .iq-score {
+  color: var(--iq-badge-original-bg, #ffffff) !important;
+}
+
 /* If badge doesn't have flip structure, keep original hover effect */
 .iq-badge:not(.iq-badge-flip):hover {
   transform: scale(1.05);

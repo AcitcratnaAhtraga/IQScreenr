@@ -280,6 +280,12 @@
         return;
       }
 
+      // Skip average IQ badges - they use CSS-only hover effects
+      const isAverageBadge = badge.classList.contains('iq-badge-average') || badge.hasAttribute('data-iq-average');
+      if (isAverageBadge) {
+        return;
+      }
+
       badge.setAttribute('data-click-handler-attached', 'true');
 
       const handleBadgeInteraction = (e) => {

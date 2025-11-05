@@ -60,17 +60,18 @@
       display: inline-flex !important;
       align-items: center;
       gap: 4px;
-      background-color: ${color} !important;
+      background-color: ${color};
       color: #000000 !important;
       padding: 4px 8px;
       border-radius: 4px;
       font-size: 12px;
       font-weight: 600;
       cursor: help;
-      transition: all 0.2s ease;
+      /* Transition handled by CSS - no inline override needed */
       visibility: visible !important;
       opacity: 1 !important;
       margin-left: 8px;
+      line-height: 1.2;
     `;
 
     badge.innerHTML = `
@@ -86,14 +87,26 @@
       </div>
     `;
 
+    // Add line-height to inner elements for proper text positioning
+    const labelElements = badge.querySelectorAll('.iq-label');
+    const scoreElements = badge.querySelectorAll('.iq-score');
+    labelElements.forEach(el => {
+      el.style.lineHeight = '1';
+    });
+    scoreElements.forEach(el => {
+      el.style.lineHeight = '1.2';
+    });
+
     // Store original background color in CSS variable for hover inversion
     badge.style.setProperty('--iq-badge-original-bg', color, 'important');
 
-    // Add hover handlers for flip animation
-    const addFlipBadgeHoverHandlers = window.BadgeCreationHandlers?.addFlipBadgeHoverHandlers;
-    if (addFlipBadgeHoverHandlers) {
-      addFlipBadgeHoverHandlers(badge);
-    }
+    // Don't add any JavaScript handlers - CSS handles both flip animation and color inversion
+    // The CSS hover rules in badge.css handle everything automatically
+    // Mobile touch support is also handled by CSS (touch events work with :hover on modern browsers)
+
+    // Mark badge to prevent handlers from being added
+    badge.setAttribute('data-no-js-handlers', 'true');
+    badge._skipHandlers = true;
 
     return badge;
   }
@@ -265,8 +278,6 @@
       return;
     }
 
-    console.log('[AverageIQBadge] Attempting to insert badge on own profile page');
-
     // Get average IQ
     const { getAverageIQ } = getUserAverageIQ();
     if (!getAverageIQ) {
@@ -280,11 +291,8 @@
       if (existingBadge) {
         existingBadge.remove();
       }
-      console.log('[AverageIQBadge] No average IQ data available yet');
       return;
     }
-
-    console.log('[AverageIQBadge] Average IQ data:', averageData);
 
     const averageIQ = averageData.averageIQ;
     const overallConfidence = averageData.overallConfidence !== null && averageData.overallConfidence !== undefined
@@ -295,7 +303,35 @@
     const existingWrapper = document.querySelector('.iq-badge-average[data-iq-average="true"]')?.parentElement;
     let badge = document.querySelector('.iq-badge-average[data-iq-average="true"]');
     if (badge) {
-      // Update existing badge
+      // If badge has handlers attached, recreate it to remove them
+      // This ensures clean state without conflicting handlers
+      if (badge._hoverHandlers || badge._mobileHandlersAdded || !badge.hasAttribute('data-no-js-handlers')) {
+        // Remove old badge and create a new one
+        const wrapper = badge.parentElement;
+        badge.remove();
+        badge = createAverageIQBadge(averageIQ, overallConfidence);
+        if (wrapper) {
+          wrapper.appendChild(badge);
+        }
+        return;
+      }
+
+      // Check if values actually changed - if not, skip update to avoid infinite loop
+      const currentIQ = parseInt(badge.getAttribute('data-iq-score'), 10);
+      const currentConfidence = parseInt(badge.getAttribute('data-confidence'), 10);
+      if (currentIQ === averageIQ && currentConfidence === Math.round(overallConfidence)) {
+        // Values haven't changed, no need to update
+        return;
+      }
+
+      // Temporarily disconnect observer to prevent infinite loop
+      const wasObserving = badgeObserver && badgeObserver._isObserving;
+      if (badgeObserver) {
+        badgeObserver.disconnect();
+        badgeObserver._isObserving = false;
+      }
+
+      // Update existing badge (no handlers attached)
       badge.setAttribute('data-iq-score', averageIQ);
       badge.setAttribute('data-confidence', overallConfidence);
       const frontScore = badge.querySelector('.iq-badge-front .iq-score');
@@ -307,9 +343,37 @@
       const badgeManager = getBadgeManager();
       const { getConfidenceColor } = badgeManager || {};
       const color = getConfidenceColor ? getConfidenceColor(overallConfidence) : '#4caf50';
-      badge.style.setProperty('background-color', color, 'important');
+      // Don't use !important on background-color so CSS hover rules can override it
+      badge.style.setProperty('background-color', color);
       badge.style.setProperty('--iq-badge-original-bg', color, 'important');
+
+      // Transition is handled by CSS - don't set it inline
+
+      // Mark badge to prevent handlers
+      badge.setAttribute('data-no-js-handlers', 'true');
+      badge._skipHandlers = true;
+
+      // Reconnect observer after a short delay
+      if (wasObserving) {
+        setTimeout(() => {
+          if (badgeObserver && !badgeObserver._isObserving) {
+            badgeObserver.observe(document.body, {
+              childList: true,
+              subtree: true
+            });
+            badgeObserver._isObserving = true;
+          }
+        }, 100);
+      }
+
       return;
+    }
+
+    // Temporarily disconnect observer to prevent infinite loop
+    const wasObserving = badgeObserver && badgeObserver._isObserving;
+    if (badgeObserver) {
+      badgeObserver.disconnect();
+      badgeObserver._isObserving = false;
     }
 
     // Create new badge
@@ -324,7 +388,18 @@
     // Find insertion point
     const insertionPoint = findBadgeInsertionPoint();
     if (!insertionPoint) {
-      console.warn('[AverageIQBadge] Could not find insertion point for badge');
+      // Reconnect observer if insertion failed
+      if (wasObserving) {
+        setTimeout(() => {
+          if (badgeObserver && !badgeObserver._isObserving) {
+            badgeObserver.observe(document.body, {
+              childList: true,
+              subtree: true
+            });
+            badgeObserver._isObserving = true;
+          }
+        }, 100);
+      }
       return;
     }
 
@@ -332,7 +407,18 @@
 
     // Verify elements exist
     if (!parent || !afterElement || !parent.contains(afterElement)) {
-      console.warn('[AverageIQBadge] Invalid insertion point elements');
+      // Reconnect observer if insertion failed
+      if (wasObserving) {
+        setTimeout(() => {
+          if (badgeObserver && !badgeObserver._isObserving) {
+            badgeObserver.observe(document.body, {
+              childList: true,
+              subtree: true
+            });
+            badgeObserver._isObserving = true;
+          }
+        }, 100);
+      }
       return;
     }
 
@@ -343,9 +429,21 @@
       } else {
         parent.appendChild(badgeWrapper);
       }
-      console.log('[AverageIQBadge] Badge inserted successfully');
     } catch (e) {
-      console.warn('[AverageIQBadge] Error inserting badge:', e);
+      // Silently fail
+    }
+
+    // Reconnect observer after a short delay
+    if (wasObserving) {
+      setTimeout(() => {
+        if (badgeObserver && !badgeObserver._isObserving) {
+          badgeObserver.observe(document.body, {
+            childList: true,
+            subtree: true
+          });
+          badgeObserver._isObserving = true;
+        }
+      }, 100);
     }
   }
 
@@ -384,14 +482,38 @@
     insertAverageIQBadge();
 
     // Set up observer to watch for DOM changes (debounced)
-    badgeObserver = new MutationObserver(() => {
-      debouncedInsert();
+    badgeObserver = new MutationObserver((mutations) => {
+      // Ignore mutations that come from our own badge element
+      const shouldIgnore = mutations.some(mutation => {
+        // Check if mutation is related to our badge
+        const badge = document.querySelector('.iq-badge-average[data-iq-average="true"]');
+        if (!badge) return false;
+
+        // Check if any added/removed nodes are part of our badge tree
+        for (const node of [...(mutation.addedNodes || []), ...(mutation.removedNodes || [])]) {
+          if (node === badge || badge.contains(node) || (node.nodeType === 1 && node.closest('.iq-badge-average[data-iq-average="true"]'))) {
+            return true;
+          }
+        }
+
+        // Check if the target is part of our badge
+        if (mutation.target && (mutation.target === badge || badge.contains(mutation.target))) {
+          return true;
+        }
+
+        return false;
+      });
+
+      if (!shouldIgnore) {
+        debouncedInsert();
+      }
     });
 
     badgeObserver.observe(document.body, {
       childList: true,
       subtree: true
     });
+    badgeObserver._isObserving = true;
 
     // Also try again after delays to catch late-loading elements
     setTimeout(() => {
