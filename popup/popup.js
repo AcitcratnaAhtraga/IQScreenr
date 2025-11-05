@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const showProfileScoreBadge = document.getElementById('showProfileScoreBadge');
     const enableDebugLogging = document.getElementById('enableDebugLogging');
 
+    if (!showIQBadge || !enableIQGuessr || !showProfileScoreBadge || !enableDebugLogging) {
+      return; // Required elements not found
+    }
+
     const isEnabled = showIQBadge.checked;
     // Real-time badge is hidden, but keep logic intact for backend
     if (showRealtimeBadge) {
@@ -509,6 +513,8 @@ document.addEventListener('DOMContentLoaded', () => {
           showStatus('Error saving setting', 'error');
         } else {
           showStatus('Settings saved', 'success');
+          // Update dependent checkboxes state (enables/disables profile score badge checkbox)
+          updateDependentCheckboxes();
           // Fetch and update score display with actual score from storage
           if (isEnabled) {
             Promise.all([
@@ -755,19 +761,32 @@ document.addEventListener('DOMContentLoaded', () => {
         updateIQGuessrScore(changes.iqGuessrScore.newValue);
       }
 
-      // When enableIQGuessr is toggled, fetch and display the current score
-      if (changes.enableIQGuessr && changes.enableIQGuessr.newValue === true) {
-        Promise.all([
-          new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
-          new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
-        ]).then(([syncResult, localResult]) => {
-          const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
-          updateIQGuessrScore(score);
-        }).catch(() => {
-          chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-            updateIQGuessrScore(result.iqGuessrScore ?? 0);
+      // When enableIQGuessr is toggled, update dependent checkboxes and fetch score
+      if (changes.enableIQGuessr) {
+        // Update checkbox state first
+        const enableIQGuessrCheckbox = document.getElementById('enableIQGuessr');
+        if (enableIQGuessrCheckbox) {
+          enableIQGuessrCheckbox.checked = changes.enableIQGuessr.newValue === true;
+        }
+        // Update dependent checkboxes (enables/disables profile score badge checkbox)
+        updateDependentCheckboxes();
+
+        // Fetch and display the current score if enabled
+        if (changes.enableIQGuessr.newValue === true) {
+          Promise.all([
+            new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
+            new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
+          ]).then(([syncResult, localResult]) => {
+            const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
+            updateIQGuessrScore(score);
+          }).catch(() => {
+            chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+              updateIQGuessrScore(result.iqGuessrScore ?? 0);
+            });
           });
-        });
+        } else {
+          updateIQGuessrScore(0);
+        }
       }
     }
   });
