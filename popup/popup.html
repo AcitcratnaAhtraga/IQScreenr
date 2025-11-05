@@ -23,7 +23,8 @@
         </label>
         <p class="setting-desc">Display IQ scores next to tweets as you browse</p>
       </div>
-      <div class="setting-item">
+      <!-- Real-time IQ Badge option temporarily disabled/hidden -->
+      <div class="setting-item" style="display: none;">
         <label class="switch-label">
           <input type="checkbox" id="showRealtimeBadge" checked>
           <span class="switch-text" title="See live IQ estimates while typing in compose boxes, updating as you type.">Show Real-time IQ Badge</span>
@@ -35,7 +36,7 @@
           <input type="checkbox" id="showAverageIQ">
           <span class="switch-text" title="Display your average IQ calculated from all your tweets. Shows as a badge with IQ score on hover flips to confidence percentage.">Show your average IQ</span>
         </label>
-        <p class="setting-desc">Display your average IQ badge (in settings and on profile page)</p>
+        <p class="setting-desc">Display your average IQ badge (in settings and on profile page, for you only)</p>
         <div id="averageIQBadge" class="average-iq-badge-container" style="display: none; margin-top: 8px; margin-left: 30px;"></div>
       </div>
       <div class="setting-item setting-item-large">
@@ -51,8 +52,10 @@
         <div class="setting-item setting-item-sub" style="margin-left: 24px; margin-top: 8px;">
           <label class="switch-label">
             <input type="checkbox" id="showProfileScoreBadge" checked>
-            <span class="switch-text">Show score badge on profile page</span>
+            <span class="switch-text">Show score on profile page</span>
           </label>
+                      <p class="setting-desc">Display (for you only) an ever-growing and faster-turning badge as your score increases</p>
+
         </div>
       </div>
       <div class="setting-item">

@@ -20,13 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper function to update dependent checkboxes enabled/disabled state
   function updateDependentCheckboxes() {
     const showIQBadge = document.getElementById('showIQBadge');
-    const showRealtimeBadge = document.getElementById('showRealtimeBadge');
+    const showRealtimeBadge = document.getElementById('showRealtimeBadge'); // Hidden/disabled
     const enableIQGuessr = document.getElementById('enableIQGuessr');
     const showProfileScoreBadge = document.getElementById('showProfileScoreBadge');
     const enableDebugLogging = document.getElementById('enableDebugLogging');
 
     const isEnabled = showIQBadge.checked;
-    showRealtimeBadge.disabled = !isEnabled;
+    // Real-time badge is hidden, but keep logic intact for backend
+    if (showRealtimeBadge) {
+      showRealtimeBadge.disabled = !isEnabled;
+    }
     enableIQGuessr.disabled = !isEnabled;
     enableDebugLogging.disabled = !isEnabled;
 
@@ -36,7 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // If main toggle is off, uncheck dependent options and save
     if (!isEnabled) {
-      if (showRealtimeBadge.checked) {
+      // Real-time badge is hidden, but keep logic intact for backend
+      if (showRealtimeBadge && showRealtimeBadge.checked) {
         showRealtimeBadge.checked = false;
         chrome.storage.sync.set({ showRealtimeBadge: false });
       }
@@ -423,7 +427,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Set checkbox states
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
-    document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false; // Default to true
+    // Real-time badge is hidden, but keep logic intact for backend
+    const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
+    if (showRealtimeBadgeElement) {
+      showRealtimeBadgeElement.checked = result.showRealtimeBadge !== false; // Default to true
+    }
     document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
     document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
     document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false; // Default to true
@@ -444,7 +452,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fallback: try sync storage only
     chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
-      document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false;
+      // Real-time badge is hidden, but keep logic intact for backend
+      const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
+      if (showRealtimeBadgeElement) {
+        showRealtimeBadgeElement.checked = result.showRealtimeBadge !== false;
+      }
       document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false;
       document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true;
       document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false;
@@ -471,15 +483,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 
-  document.getElementById('showRealtimeBadge').addEventListener('change', (e) => {
-    chrome.storage.sync.set({ showRealtimeBadge: e.target.checked }, () => {
-      if (chrome.runtime.lastError) {
-        showStatus('Error saving setting', 'error');
-      } else {
-        showStatus('Settings saved', 'success');
-      }
+  // Real-time badge is hidden, but keep event listener intact for backend
+  const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
+  if (showRealtimeBadgeElement) {
+    showRealtimeBadgeElement.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ showRealtimeBadge: e.target.checked }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
     });
-  });
+  }
 
   // Handle IqGuessr checkbox
   const enableIQGuessrCheckbox = document.getElementById('enableIQGuessr');
@@ -702,7 +718,11 @@ document.addEventListener('DOMContentLoaded', () => {
           } else {
             // Update UI
           document.getElementById('showIQBadge').checked = defaults.showIQBadge;
-          document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
+          // Real-time badge is hidden, but keep logic intact for backend
+          const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
+          if (showRealtimeBadgeElement) {
+            showRealtimeBadgeElement.checked = defaults.showRealtimeBadge;
+          }
           document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
           document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
           document.getElementById('showProfileScoreBadge').checked = defaults.showProfileScoreBadge;
