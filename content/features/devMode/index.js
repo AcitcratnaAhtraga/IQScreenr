@@ -1,12 +1,12 @@
 /**
  * Dev Mode Feature - Main Controller
- * When CTRL is pressed, reveals all details about extension-created elements on hover
+ * When CTRL+I+Q is pressed together, reveals all details about extension-created elements on hover
  *
  * Features:
  * - Hover over badges to see detailed information in tooltip
  * - Click badges to recalculate IQ scores
  * - Right-click badges to track all changes
- * - Press CTRL to toggle dev mode on/off
+ * - Press CTRL+I+Q to toggle dev mode on/off
  */
 
 (function() {
@@ -20,7 +20,7 @@
 
   let devModeActive = false;
   let currentBadge = null;
-  let ctrlKeyProcessed = false;
+  let pressedKeys = new Set();
 
   /**
    * Handle click on badges (for recalculation in dev mode)
@@ -112,7 +112,7 @@
     // Show indicator
     const indicator = document.createElement('div');
     indicator.id = 'iq-dev-mode-indicator';
-    indicator.textContent = '🔍 DEV MODE ACTIVE - Hover: details | Click: recalculate | Right-click: track changes | CTRL: toggle off';
+    indicator.textContent = '🔍 DEV MODE ACTIVE - Hover: details | Click: recalculate | Right-click: track changes | CTRL+I+Q: toggle off';
     indicator.style.cssText = `
       position: fixed;
       top: 10px;
@@ -155,34 +155,66 @@
   }
 
   /**
-   * Handle CTRL key press - toggle dev mode
+   * Handle key press - check for CTRL+I+Q combination to toggle dev mode
    */
   function handleKeyDown(e) {
-    // Check if CTRL is pressed (without other modifiers that might interfere)
-    // Only process if CTRL key itself is pressed (not just held)
-    if (e.key === 'Control' || e.keyCode === 17 || e.which === 17) {
-      if (!ctrlKeyProcessed) {
-        ctrlKeyProcessed = true;
+    // Track pressed keys
+    const key = e.key?.toLowerCase() || '';
 
-        // Toggle dev mode
-        if (devModeActive) {
-          deactivateDevMode();
-        } else {
-          activateDevMode();
-        }
+    // Check for CTRL key (can be 'control', 'ctrl', or detected via e.ctrlKey/e.metaKey)
+    if (key === 'control' || key === 'ctrl' || e.ctrlKey || e.metaKey) {
+      pressedKeys.add('control');
+    }
 
-        // Prevent default to avoid browser shortcuts
-        e.preventDefault();
+    // Check for I or Q keys
+    if (key === 'i') {
+      pressedKeys.add('i');
+    }
+    if (key === 'q') {
+      pressedKeys.add('q');
+    }
+
+    // Check if all three keys are pressed at the same time
+    // Use e.ctrlKey/e.metaKey as fallback for CTRL detection
+    const hasCtrl = pressedKeys.has('control') || e.ctrlKey || e.metaKey;
+    const hasI = pressedKeys.has('i');
+    const hasQ = pressedKeys.has('q');
+
+    if (hasCtrl && hasI && hasQ) {
+      // Toggle dev mode
+      if (devModeActive) {
+        deactivateDevMode();
+      } else {
+        activateDevMode();
       }
+
+      // Prevent default to avoid browser shortcuts
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Clear pressed keys after toggling to prevent immediate re-trigger
+      pressedKeys.clear();
     }
   }
 
   /**
-   * Handle CTRL key release - reset processed flag
+   * Handle key release - remove from pressed keys set
    */
   function handleKeyUp(e) {
-    if (e.key === 'Control' || e.keyCode === 17 || e.which === 17) {
-      ctrlKeyProcessed = false;
+    const key = e.key?.toLowerCase() || '';
+
+    // Remove released key from pressed keys
+    if (key === 'control' || key === 'ctrl') {
+      pressedKeys.delete('control');
+    } else if (key === 'i') {
+      pressedKeys.delete('i');
+    } else if (key === 'q') {
+      pressedKeys.delete('q');
+    }
+
+    // If CTRL is released, clear it from set
+    if (!e.ctrlKey && !e.metaKey) {
+      pressedKeys.delete('control');
     }
   }
 
@@ -190,15 +222,21 @@
    * Initialize dev mode
    */
   function init() {
-    // Listen for CTRL key
+    // Listen for key events
     document.addEventListener('keydown', handleKeyDown, true);
     document.addEventListener('keyup', handleKeyUp, true);
 
-    // Also handle window blur to deactivate dev mode
+    // Handle window blur to deactivate dev mode and clear pressed keys
     window.addEventListener('blur', () => {
+      pressedKeys.clear();
       if (devModeActive) {
         deactivateDevMode();
       }
+    });
+
+    // Clear pressed keys when window loses focus
+    window.addEventListener('focus', () => {
+      pressedKeys.clear();
     });
   }
 
