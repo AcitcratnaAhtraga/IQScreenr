@@ -500,6 +500,7 @@
   color: var(--iq-badge-original-bg, #ffffff) !important;
 }
 
+/* Average IQ badge inherits all styles from .iq-badge - no overrides needed */
 /* Invalid badges - use CSS variable for colors */
 .iq-badge.iq-badge-invalid {
   background-color: var(--iq-badge-bg-color, #000000);

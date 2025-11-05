@@ -56,23 +56,12 @@
       }
     }
 
-    badge.style.cssText = `
-      display: inline-flex !important;
-      align-items: center;
-      gap: 4px;
-      background-color: ${color};
-      color: #000000 !important;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: help;
-      /* Transition handled by CSS - no inline override needed */
-      visibility: visible !important;
-      opacity: 1 !important;
-      margin-left: 8px;
-      line-height: 1.2;
-    `;
+    // Use CSS variables and minimal inline styles - let CSS handle all styling for consistency
+    badge.style.setProperty('--iq-badge-bg-color', color);
+    badge.style.setProperty('cursor', 'help', 'important');
+    badge.style.setProperty('visibility', 'visible', 'important');
+    badge.style.setProperty('opacity', '1', 'important');
+    badge.style.setProperty('margin-left', '8px');
 
     badge.innerHTML = `
       <div class="iq-badge-inner">
@@ -87,15 +76,7 @@
       </div>
     `;
 
-    // Add line-height to inner elements for proper text positioning
-    const labelElements = badge.querySelectorAll('.iq-label');
-    const scoreElements = badge.querySelectorAll('.iq-score');
-    labelElements.forEach(el => {
-      el.style.lineHeight = '1';
-    });
-    scoreElements.forEach(el => {
-      el.style.lineHeight = '1.2';
-    });
+    // Don't set inline line-height - CSS handles text positioning consistently
 
     // Store original background color in CSS variable for hover inversion
     badge.style.setProperty('--iq-badge-original-bg', color, 'important');
