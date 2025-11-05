@@ -16,7 +16,7 @@
    */
   function initBroadcastChannel() {
     if (typeof BroadcastChannel === 'undefined') {
-      console.warn('[IQGuessr] BroadcastChannel not supported, falling back to localStorage events');
+      console.warn('[IqGuessr] BroadcastChannel not supported, falling back to localStorage events');
       setupLocalStorageFallback();
       return;
     }
@@ -31,7 +31,7 @@
       // Load initial state from storage
       loadInitialState();
     } catch (error) {
-      console.warn('[IQGuessr] Failed to create BroadcastChannel:', error);
+      console.warn('[IqGuessr] Failed to create BroadcastChannel:', error);
       setupLocalStorageFallback();
     }
   }
@@ -47,7 +47,7 @@
           const data = JSON.parse(event.newValue || '{}');
           handleCrossTabMessage(data);
         } catch (error) {
-          console.warn('[IQGuessr] Failed to parse cross-tab message:', error);
+          console.warn('[IqGuessr] Failed to parse cross-tab message:', error);
         }
       }
     });
@@ -60,7 +60,7 @@
    */
   async function loadInitialState() {
     try {
-      // Check if IQGuessr mode is enabled
+      // Check if IqGuessr mode is enabled
       const result = await new Promise((resolve) => {
         chrome.storage.sync.get(['enableIQGuessr'], resolve);
       });
@@ -77,7 +77,7 @@
       // Broadcast our current state to other tabs
       broadcastStateUpdate();
     } catch (error) {
-      console.warn('[IQGuessr] Failed to load initial state:', error);
+      console.warn('[IqGuessr] Failed to load initial state:', error);
     }
   }
 
@@ -91,7 +91,7 @@
 
     switch (data.type) {
       case 'iqguessr_mode_changed':
-        // Another tab enabled/disabled IQGuessr mode
+        // Another tab enabled/disabled IqGuessr mode
         isIQGuessrEnabled = data.enabled === true;
         notifyIQGuessrModeChange(isIQGuessrEnabled);
         break;
@@ -140,13 +140,13 @@
           localStorage.removeItem('iqguessr_cross_tab_state');
         }, 0);
       } catch (error) {
-        console.warn('[IQGuessr] Failed to broadcast via localStorage:', error);
+        console.warn('[IqGuessr] Failed to broadcast via localStorage:', error);
       }
     }
   }
 
   /**
-   * Broadcast IQGuessr mode change
+   * Broadcast IqGuessr mode change
    */
   function broadcastIQGuessrModeChange(enabled) {
     isIQGuessrEnabled = enabled === true;
@@ -166,7 +166,7 @@
           localStorage.removeItem('iqguessr_cross_tab_state');
         }, 0);
       } catch (error) {
-        console.warn('[IQGuessr] Failed to broadcast mode change:', error);
+        console.warn('[IqGuessr] Failed to broadcast mode change:', error);
       }
     }
 
@@ -201,7 +201,7 @@
           localStorage.removeItem('iqguessr_cross_tab_state');
         }, 0);
       } catch (error) {
-        console.warn('[IQGuessr] Failed to broadcast IQ reveal:', error);
+        console.warn('[IqGuessr] Failed to broadcast IQ reveal:', error);
       }
     }
 
@@ -217,12 +217,12 @@
         iqguessr_revealed_tweets: Array.from(revealedTweets)
       });
     } catch (error) {
-      console.warn('[IQGuessr] Failed to save revealed tweets:', error);
+      console.warn('[IqGuessr] Failed to save revealed tweets:', error);
     }
   }
 
   /**
-   * Notify other modules about IQGuessr mode change
+   * Notify other modules about IqGuessr mode change
    */
   function notifyIQGuessrModeChange(enabled) {
     // Dispatch custom event for other modules
@@ -241,7 +241,7 @@
   }
 
   /**
-   * Check if IQGuessr mode is enabled in any tab
+   * Check if IqGuessr mode is enabled in any tab
    * This is used to prevent cheating by ensuring all tabs respect game mode
    */
   function isIQGuessrEnabledAnywhere() {
@@ -250,7 +250,7 @@
   }
 
   /**
-   * Update the IQGuessr enabled state (called by storage listener)
+   * Update the IqGuessr enabled state (called by storage listener)
    */
   function updateIQGuessrState(enabled) {
     const wasEnabled = isIQGuessrEnabled;
@@ -291,7 +291,7 @@
     initBroadcastChannel();
     setupStorageListener();
 
-    // Listen for IQGuessr mode changes from settings
+    // Listen for IqGuessr mode changes from settings
     chrome.storage.sync.get(['enableIQGuessr'], (result) => {
       if (result.enableIQGuessr !== undefined) {
         isIQGuessrEnabled = result.enableIQGuessr === true;

@@ -1,5 +1,5 @@
 /**
- * IQGuessr Browser Extension - Main Content Script
+ * IqGuessr Browser Extension - Main Content Script
  *
  * This is the orchestrator that coordinates all modules:
  * - Core: dependencyParser, iqEstimator
@@ -153,7 +153,7 @@
         crossTabSync.broadcastIQGuessrModeChange(gameModeEnabled);
       }
 
-      // If IQGuessr is enabled in any tab, hide revealed IQs to prevent cheating
+      // If IqGuessr is enabled in any tab, hide revealed IQs to prevent cheating
       const crossTabSyncForCheck = window.CrossTabSync;
       const isIQGuessrEnabledAnywhere = crossTabSyncForCheck && crossTabSyncForCheck.isIQGuessrEnabledAnywhere
         ? crossTabSyncForCheck.isIQGuessrEnabledAnywhere()
@@ -358,7 +358,7 @@
   }
 
   /**
-   * Apply IQGuessr mode on page load if enabled
+   * Apply IqGuessr mode on page load if enabled
    */
   async function applyIQGuessrModeOnLoad() {
     const settings = getSettings();
@@ -538,7 +538,7 @@
 
     // Process existing tweets immediately to show loading badges as fast as possible
     function startProcessing() {
-      // Check if IQGuessr is enabled in any tab and hide revealed IQs if so
+      // Check if IqGuessr is enabled in any tab and hide revealed IQs if so
       const crossTabSync = window.CrossTabSync;
       if (crossTabSync && crossTabSync.isIQGuessrEnabledAnywhere) {
         const isIQGuessrEnabledAnywhere = crossTabSync.isIQGuessrEnabledAnywhere();
@@ -562,7 +562,7 @@
       setupObserver();
       setupRealtimeComposeObserver();
 
-      // Apply IQGuessr mode if enabled on page load
+      // Apply IqGuessr mode if enabled on page load
       applyIQGuessrModeOnLoad();
     }
 

@@ -1,6 +1,6 @@
 /**
  * Profile Badge Feature
- * Adds IQGuessr total score badge on user profile pages
+ * Adds IqGuessr total score badge on user profile pages
  */
 
 (function() {
@@ -54,7 +54,7 @@
     }
 
     badge.innerHTML = `
-      <span class="score-label">IQGuessr</span>
+      <span class="score-label">IqGuessr</span>
       <span class="score-value">${score}</span>
     `;
 
@@ -346,7 +346,7 @@
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === 'sync') {
-        // Handle IQGuessr score updates
+        // Handle IqGuessr score updates
         if (changes.iqGuessrScore) {
           const newScore = changes.iqGuessrScore.newValue;
           const badge = document.querySelector('.iq-guessr-score-badge');
@@ -363,12 +363,12 @@
           const gameModeEnabled = changes.enableIQGuessr.newValue;
 
           if (gameModeEnabled) {
-            // IQGuessr mode enabled - add badge immediately
+            // IqGuessr mode enabled - add badge immediately
             // Use force=true to bypass settings check since settings may not be updated yet
             badgeAdded = false; // Reset flag to allow adding
             addScoreBadge(true); // Force bypass settings check
           } else {
-            // IQGuessr mode disabled - verify storage before removing to avoid race conditions
+            // IqGuessr mode disabled - verify storage before removing to avoid race conditions
             chrome.storage.sync.get(['enableIQGuessr'], (result) => {
               const isActuallyDisabled = result.enableIQGuessr !== true;
 

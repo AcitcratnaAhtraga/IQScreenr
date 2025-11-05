@@ -142,10 +142,10 @@ async function processTweet(tweetElement) {
   const isNotLoading = existingBadge && !existingBadge.hasAttribute('data-iq-loading') &&
                        !existingBadge.classList.contains('iq-badge-loading');
 
-  // If badge exists and is a calculated badge (has score), check if we need to restore it in IQGuessr mode
+  // If badge exists and is a calculated badge (has score), check if we need to restore it in IqGuessr mode
   if (existingBadge && hasScore) {
-    // In IQGuessr mode, if this is a calculated badge but no cached guess exists, it should stay calculated
-    // (it was calculated when IQGuessr was disabled)
+    // In IqGuessr mode, if this is a calculated badge but no cached guess exists, it should stay calculated
+    // (it was calculated when IqGuessr was disabled)
     const gameManagerForCheck = getGameManager();
     const isGameModeForCheck = gameManagerForCheck && gameManagerForCheck.isGameModeEnabled && gameManagerForCheck.isGameModeEnabled();
     if (isGameModeForCheck) {
@@ -157,7 +157,7 @@ async function processTweet(tweetElement) {
         return;
       }
     }
-    // Not in IQGuessr mode or no tweet ID - normal flow, keep calculated badge
+    // Not in IqGuessr mode or no tweet ID - normal flow, keep calculated badge
     actualTweetElement.setAttribute('data-iq-analyzed', 'true');
     return;
   }
@@ -417,7 +417,7 @@ async function processTweet(tweetElement) {
   const gameManager = getGameManager();
   const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
 
-  // Check if IQGuessr mode is enabled in any tab (prevents cheating)
+  // Check if IqGuessr mode is enabled in any tab (prevents cheating)
   const crossTabSync = window.CrossTabSync;
   const isIQGuessrEnabledAnywhere = crossTabSync && crossTabSync.isIQGuessrEnabledAnywhere
     ? crossTabSync.isIQGuessrEnabledAnywhere()
@@ -428,7 +428,7 @@ async function processTweet(tweetElement) {
     const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
 
     // If IQ was previously revealed (either with or without a guess), show as calculated
-    // BUT: Only if IQGuessr is not enabled in any other tab (anti-cheat)
+    // BUT: Only if IqGuessr is not enabled in any other tab (anti-cheat)
     if (cachedRevealed && !isIQGuessrEnabledAnywhere) {
 
       // We have revealed IQ - check if we have cached IQ to restore calculated badge
@@ -719,7 +719,7 @@ async function processTweet(tweetElement) {
           if (isGameModeEnabled && tweetId) {
             const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
 
-            // Only show revealed IQ if IQGuessr is not enabled in any other tab (anti-cheat)
+            // Only show revealed IQ if IqGuessr is not enabled in any other tab (anti-cheat)
             if (cachedRevealed && !isIQGuessrEnabledAnywhere) {
               // IQ was revealed - check if badge is showing guess instead of calculated
               const isGuessBadge = anyExistingBadge.classList.contains('iq-badge-guess') ||
@@ -1354,7 +1354,7 @@ async function processTweet(tweetElement) {
       // Ignore errors in metadata extraction
     }
 
-    // Check if IQGuessr mode is enabled - if so, don't calculate until user guesses
+    // Check if IqGuessr mode is enabled - if so, don't calculate until user guesses
     const gameManager = getGameManager();
     const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
     // tweetId is already declared at function scope, just get it if needed
@@ -1362,11 +1362,11 @@ async function processTweet(tweetElement) {
       tweetId = actualTweetElement.getAttribute('data-tweet-id');
     }
 
-    // In IQGuessr mode: only calculate if user already made a guess (cached guess exists)
+    // In IqGuessr mode: only calculate if user already made a guess (cached guess exists)
     if (isGameModeEnabled && tweetId) {
       const cachedGuess = await gameManager.getCachedGuess(tweetId);
       if (!cachedGuess || cachedGuess.guess === undefined) {
-        // IQGuessr enabled but no guess yet - skip calculation, store IQ result as null
+        // IqGuessr enabled but no guess yet - skip calculation, store IQ result as null
         // The badge is already a guess badge (converted earlier), so we're done
         processedTweets.add(actualTweetElement);
         actualTweetElement.setAttribute('data-iq-analyzed', 'true');
@@ -1545,14 +1545,14 @@ async function processTweet(tweetElement) {
               gameManager.cacheRevealedIQ(tweetIdForLog);
             }
 
-            // Check if IQGuessr is enabled in any tab - if so, hide this IQ to prevent cheating
+            // Check if IqGuessr is enabled in any tab - if so, hide this IQ to prevent cheating
             const crossTabSync = window.CrossTabSync;
             const isIQGuessrEnabledAnywhere = crossTabSync && crossTabSync.isIQGuessrEnabledAnywhere
               ? crossTabSync.isIQGuessrEnabledAnywhere()
               : false;
 
             if (isIQGuessrEnabledAnywhere) {
-              // IQGuessr is enabled in another tab - hide this badge to prevent cheating
+              // IqGuessr is enabled in another tab - hide this badge to prevent cheating
               loadingBadge.style.setProperty('display', 'none', 'important');
               loadingBadge.style.setProperty('visibility', 'hidden', 'important');
               processedTweets.add(actualTweetElement);

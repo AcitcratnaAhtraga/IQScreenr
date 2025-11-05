@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Helper function to update IQ Guessr score display
+  // Helper function to update IqGuessr score display
   function updateIQGuessrScore(score) {
     const scoreElement = document.getElementById('iqGuessrScore');
     const scoreValue = document.getElementById('iqGuessrScoreValue');
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tooltip.setAttribute('data-iq-guessr-tooltip', 'true');
 
         // Build tooltip content
-        let content = '<div class="stats-header">📊 IQGuessr Stats</div>';
+        let content = '<div class="stats-header">📊 IqGuessr Stats</div>';
         content += '<div class="stats-content">';
 
         if (stats.totalGuesses === 0) {
@@ -245,7 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
           document.addEventListener('click', handleClickOutside);
         }, 100);
       } catch (error) {
-        console.warn('[IQGuessr] Error showing stats tooltip:', error);
+        console.warn('[IqGuessr] Error showing stats tooltip:', error);
       }
     }
 
@@ -377,7 +377,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
     document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
 
-    // Update IQ Guessr score display
+    // Update IqGuessr score display
     updateIQGuessrScore(result.iqGuessrScore || 0);
 
     // Update dependent checkboxes state
@@ -408,12 +408,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Handle IQ Guessr checkbox
+  // Handle IqGuessr checkbox
   const enableIQGuessrCheckbox = document.getElementById('enableIQGuessr');
   if (enableIQGuessrCheckbox) {
     enableIQGuessrCheckbox.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
-      console.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
+      console.log(`[IqGuessr Debug] IqGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
 
       chrome.storage.sync.set({ enableIQGuessr: isEnabled }, () => {
         if (chrome.runtime.lastError) {
@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Listen for IQ Guessr score updates from content script
+  // Listen for IqGuessr score updates from content script
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'updateIQGuessrScore') {
       updateIQGuessrScore(message.score);

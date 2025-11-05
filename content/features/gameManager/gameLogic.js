@@ -10,7 +10,7 @@
   const guessManager = new Map(); // tweetElement -> { guess: number, confidence: number }
 
   /**
-   * Check if IQ Guessr mode is enabled
+   * Check if IqGuessr mode is enabled
    */
   function isGameModeEnabled() {
     const settings = window.Settings || {};
