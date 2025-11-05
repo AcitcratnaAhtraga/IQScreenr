@@ -113,7 +113,17 @@
     `;
 
     badge.onmouseenter = () => {
-      badge.style.transform = 'scale(1.1)';
+      // Check if badge is positioned with top: 50% (profile page positioning)
+      const computedStyle = window.getComputedStyle(badge);
+      const topValue = badge.style.top || computedStyle.top;
+      const hasTop50 = topValue === '50%' || topValue.includes('50%');
+
+      // Combine scale with translateY(-50%) if badge is vertically centered
+      if (hasTop50) {
+        badge.style.transform = 'translateY(-50%) scale(1.1)';
+      } else {
+        badge.style.transform = 'scale(1.1)';
+      }
 
       // Slow down rotation to base speed (score 0) on hover
       const icon = badge.querySelector('.iq-guessr-rotating-icon');
@@ -125,7 +135,17 @@
     };
 
     badge.onmouseleave = () => {
-      badge.style.transform = 'scale(1)';
+      // Check if badge is positioned with top: 50% (profile page positioning)
+      const computedStyle = window.getComputedStyle(badge);
+      const topValue = badge.style.top || computedStyle.top;
+      const hasTop50 = topValue === '50%' || topValue.includes('50%');
+
+      // Restore transform, preserving translateY(-50%) if badge is vertically centered
+      if (hasTop50) {
+        badge.style.transform = 'translateY(-50%) scale(1)';
+      } else {
+        badge.style.transform = 'scale(1)';
+      }
 
       // Return to normal rotation speed based on current score
       const icon = badge.querySelector('.iq-guessr-rotating-icon');
@@ -204,7 +224,18 @@
           if (!existingBadge.hasAttribute('data-hover-handlers-attached')) {
             existingBadge.setAttribute('data-hover-handlers-attached', 'true');
             existingBadge.onmouseenter = () => {
-              existingBadge.style.transform = 'scale(1.1)';
+              // Check if badge is positioned with top: 50% (profile page positioning)
+              const computedStyle = window.getComputedStyle(existingBadge);
+              const topValue = existingBadge.style.top || computedStyle.top;
+              const hasTop50 = topValue === '50%' || topValue.includes('50%');
+
+              // Combine scale with translateY(-50%) if badge is vertically centered
+              if (hasTop50) {
+                existingBadge.style.transform = 'translateY(-50%) scale(1.1)';
+              } else {
+                existingBadge.style.transform = 'scale(1.1)';
+              }
+
               const hoverIcon = existingBadge.querySelector('.iq-guessr-rotating-icon');
               if (hoverIcon) {
                 const baseDuration = 3; // Base duration for score 0
@@ -213,7 +244,18 @@
               }
             };
             existingBadge.onmouseleave = () => {
-              existingBadge.style.transform = 'scale(1)';
+              // Check if badge is positioned with top: 50% (profile page positioning)
+              const computedStyle = window.getComputedStyle(existingBadge);
+              const topValue = existingBadge.style.top || computedStyle.top;
+              const hasTop50 = topValue === '50%' || topValue.includes('50%');
+
+              // Restore transform, preserving translateY(-50%) if badge is vertically centered
+              if (hasTop50) {
+                existingBadge.style.transform = 'translateY(-50%) scale(1)';
+              } else {
+                existingBadge.style.transform = 'scale(1)';
+              }
+
               const hoverIcon = existingBadge.querySelector('.iq-guessr-rotating-icon');
               if (hoverIcon) {
                 const currentScore = parseInt(score) || 0;
