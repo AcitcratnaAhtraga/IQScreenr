@@ -58,13 +58,13 @@
   /**
    * Calculate icon size based on score
    * Higher score = larger icon
-   * Formula: size = 40 + 12 * log10(max(score, 10) / 10)
-   * This gives: 0-10 score = 40px, 100 = 52px, 1000 = 64px, 10000 = 76px, etc.
-   * Grows smoothly by 12px for every 10x increase in score
+   * Formula: size = 40 + 13 * log10(max(score, 10) / 10)
+   * This gives: 0-10 score = 40px, 100 = 53px, 1000 = 66px, 10000 = 79px, etc.
+   * Grows smoothly by 13px for every 10x increase in score
    */
   function calculateIconSize(score) {
     const baseSize = 40; // Base size at score 0-10
-    const sizeIncrement = 12; // Pixels added per 10x score increase
+    const sizeIncrement = 13; // Pixels added per 10x score increase
 
     // Ensure score is at least 10 for logarithm calculation
     const adjustedScore = Math.max(score, 10);
@@ -460,6 +460,7 @@
         const allElements = insertionPoint.querySelectorAll('div[data-testid*="UserAvatar"]');
         for (const element of allElements) {
           if (element.getAttribute('data-testid')?.includes('UserAvatar-Container')) {
+            avatarContainer = element;
             // Found avatar container, insert badge after it
             if (element.nextSibling) {
               insertionPoint.insertBefore(badge, element.nextSibling);
@@ -477,10 +478,39 @@
       }
 
       // Update badge positioning to be next to profile picture
+      // Position it to overlap the header background like the profile picture does
       badge.style.marginLeft = '12px';
       badge.style.marginTop = '0';
       badge.style.verticalAlign = 'middle';
       badge.style.alignSelf = 'center'; // Center vertically with avatar
+      badge.style.position = 'relative'; // Allow relative positioning
+      badge.style.zIndex = '10'; // Ensure it appears above background
+
+      // Use the avatarContainer we found earlier to match its positioning
+      if (avatarContainer) {
+        // Get the computed style and position of the avatar container
+        const avatarRect = avatarContainer.getBoundingClientRect();
+        const insertionRect = insertionPoint.getBoundingClientRect();
+
+        // Check if avatar is positioned to overlap the header background
+        // Typically this means the avatar's top is above the insertion point's top
+        if (avatarRect.top < insertionRect.top) {
+          // Calculate the offset and apply it to the badge
+          const offset = avatarRect.top - insertionRect.top;
+          badge.style.marginTop = `${offset}px`;
+        }
+
+        // Also check if the avatar container itself has negative margin or transform
+        // that positions it to overlap the background
+        const avatarStyles = window.getComputedStyle(avatarContainer);
+        const avatarMarginTop = parseFloat(avatarStyles.marginTop) || 0;
+        const avatarTransform = avatarStyles.transform;
+
+        // If avatar has negative margin-top, apply similar positioning to badge
+        if (avatarMarginTop < 0) {
+          badge.style.marginTop = `${avatarMarginTop}px`;
+        }
+      }
 
       // Ensure badge is visible and properly positioned
       badge.style.display = 'inline-flex';
