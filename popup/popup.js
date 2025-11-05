@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize defaults if not set
   Promise.all([
-    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'iqGuessrScore'], resolve)),
+    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
     new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
@@ -399,7 +399,8 @@ document.addEventListener('DOMContentLoaded', () => {
         useConfidenceForColor: true, // Always enabled
         enableDebugLogging: true,
         enableIQGuessr: false,
-        showProfileScoreBadge: true // Default to showing profile badge
+        showProfileScoreBadge: true, // Default to showing profile badge
+        showAverageIQ: false // Default to not showing average IQ
       };
       // Only set score if it doesn't exist
       if (score === 0 && !allSync.iqGuessrScore && !allLocal.iqGuessrScore) {
@@ -426,22 +427,32 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
     document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
     document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false; // Default to true
+    document.getElementById('showAverageIQ').checked = result.showAverageIQ === true; // Default to false
 
     // Update IqGuessr score display
     updateIQGuessrScore(score);
+
+    // Update average IQ badge display
+    if (typeof updateAverageIQBadge === 'function') {
+      updateAverageIQBadge();
+    }
 
     // Update dependent checkboxes state
     updateDependentCheckboxes();
   }).catch((error) => {
     console.warn('[IqGuessr] Error loading settings:', error);
     // Fallback: try sync storage only
-    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'iqGuessrScore'], (result) => {
+    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
       document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false;
       document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false;
       document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true;
       document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false;
+      document.getElementById('showAverageIQ').checked = result.showAverageIQ === true;
       updateIQGuessrScore(result.iqGuessrScore ?? 0);
+      if (typeof updateAverageIQBadge === 'function') {
+        updateAverageIQBadge();
+      }
       updateDependentCheckboxes();
     });
   });
@@ -527,6 +538,158 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Helper function to update average IQ badge display
+  async function updateAverageIQBadge() {
+    const showAverageIQCheckbox = document.getElementById('showAverageIQ');
+    const badgeContainer = document.getElementById('averageIQBadge');
+
+    if (!showAverageIQCheckbox || !badgeContainer) {
+      return;
+    }
+
+    const isEnabled = showAverageIQCheckbox.checked;
+
+    if (!isEnabled) {
+      badgeContainer.style.display = 'none';
+      badgeContainer.innerHTML = '';
+      return;
+    }
+
+    // Get average IQ from storage
+    try {
+      const result = await new Promise((resolve) => {
+        chrome.storage.local.get(['userAverageIQ'], resolve);
+      });
+
+      const averageData = result.userAverageIQ;
+
+      if (!averageData || averageData.averageIQ === null || averageData.averageIQ === undefined) {
+        badgeContainer.style.display = 'block';
+        badgeContainer.innerHTML = '<span style="color: #6b7280; font-size: 12px;">No average IQ calculated yet. Tweet some tweets to see your average!</span>';
+        return;
+      }
+
+      const averageIQ = averageData.averageIQ;
+      const overallConfidence = averageData.overallConfidence !== null && averageData.overallConfidence !== undefined
+        ? averageData.overallConfidence
+        : averageData.averageConfidence || 0;
+
+      // Calculate color based on confidence (using same logic as badges)
+      const confidenceNorm = overallConfidence / 100;
+      let color;
+      if (confidenceNorm < 0.1) {
+        color = '#d32f2f';
+      } else if (confidenceNorm < 0.2) {
+        color = '#f57c00';
+      } else if (confidenceNorm < 0.3) {
+        color = '#fb8c00';
+      } else if (confidenceNorm < 0.4) {
+        color = '#fbc02d';
+      } else if (confidenceNorm < 0.5) {
+        color = '#fdd835';
+      } else if (confidenceNorm < 0.6) {
+        color = '#c5e1a5';
+      } else if (confidenceNorm < 0.7) {
+        color = '#81c784';
+      } else if (confidenceNorm < 0.8) {
+        color = '#66bb6a';
+      } else if (confidenceNorm < 0.9) {
+        color = '#4caf50';
+      } else {
+        color = '#2e7d32';
+      }
+
+      // Create badge HTML (similar to IQ badge structure)
+      badgeContainer.style.display = 'block';
+      badgeContainer.innerHTML = `
+        <span class="iq-badge iq-badge-flip" style="display: inline-block; background-color: ${color}; color: #000000; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: help;">
+          <div class="iq-badge-inner">
+            <div class="iq-badge-front">
+              <span class="iq-label">IQ</span>
+              <span class="iq-score">${averageIQ}</span>
+            </div>
+            <div class="iq-badge-back">
+              <span class="iq-label">%</span>
+              <span class="iq-score">${Math.round(overallConfidence)}</span>
+            </div>
+          </div>
+        </span>
+        <span style="margin-left: 8px; color: #6b7280; font-size: 11px;">(${averageData.count} tweets)</span>
+      `;
+
+      // Add flip animation CSS if not already present
+      if (!document.getElementById('averageIQBadgeStyles')) {
+        const style = document.createElement('style');
+        style.id = 'averageIQBadgeStyles';
+        style.textContent = `
+          .average-iq-badge-container .iq-badge-inner {
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease;
+          }
+          .average-iq-badge-container .iq-badge-front,
+          .average-iq-badge-container .iq-badge-back {
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }
+          .average-iq-badge-container .iq-badge-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotateY(180deg);
+          }
+          .average-iq-badge-container .iq-badge:hover .iq-badge-inner {
+            transform: rotateY(180deg);
+          }
+          .average-iq-badge-container .iq-label {
+            font-size: 10px;
+            opacity: 0.8;
+          }
+          .average-iq-badge-container .iq-score {
+            font-size: 14px;
+            font-weight: 700;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    } catch (error) {
+      console.warn('[IqGuessr] Error updating average IQ badge:', error);
+      badgeContainer.style.display = 'block';
+      badgeContainer.innerHTML = '<span style="color: #6b7280; font-size: 12px;">Error loading average IQ</span>';
+    }
+  }
+
+  // Handle showAverageIQ checkbox
+  const showAverageIQCheckbox = document.getElementById('showAverageIQ');
+  if (showAverageIQCheckbox) {
+    showAverageIQCheckbox.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ showAverageIQ: e.target.checked }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+          updateAverageIQBadge();
+        }
+      });
+    });
+
+    // Listen for storage changes to update badge
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'local' && changes.userAverageIQ) {
+        updateAverageIQBadge();
+      }
+    });
+
+    // Initial update (after DOM is ready)
+    setTimeout(() => {
+      updateAverageIQBadge();
+    }, 100);
+  }
+
   // Handle reset button
   document.getElementById('resetSettings').addEventListener('click', () => {
     // Get current score before resetting
@@ -544,6 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
         enableDebugLogging: true,
         enableIQGuessr: false,
         showProfileScoreBadge: true,
+        showAverageIQ: false,
         iqGuessrScore: 0
       };
 
@@ -557,9 +721,13 @@ document.addEventListener('DOMContentLoaded', () => {
           document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
           document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
           document.getElementById('showProfileScoreBadge').checked = defaults.showProfileScoreBadge;
+          document.getElementById('showAverageIQ').checked = defaults.showAverageIQ;
           // Update dependent checkboxes state
           updateDependentCheckboxes();
           updateIQGuessrScore(defaults.iqGuessrScore);
+          if (typeof updateAverageIQBadge === 'function') {
+            updateAverageIQBadge();
+          }
           showStatus('Settings reset to defaults', 'success');
           }
         });

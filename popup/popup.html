@@ -29,6 +29,14 @@
         </label>
         <p class="setting-desc">Display live IQ score while typing in compose boxes</p>
       </div>
+      <div class="setting-item">
+        <label class="switch-label">
+          <input type="checkbox" id="showAverageIQ">
+          <span class="switch-text" title="Display your average IQ calculated from all your tweets. Shows as a badge with IQ score on hover flips to confidence percentage.">Show your average IQ</span>
+        </label>
+        <p class="setting-desc">Display your average IQ badge (in settings and on profile page)</p>
+        <div id="averageIQBadge" class="average-iq-badge-container" style="display: none; margin-top: 8px; margin-left: 30px;"></div>
+      </div>
       <div class="setting-item setting-item-large">
         <label class="switch-label switch-label-large">
           <input type="checkbox" id="enableIQGuessr" class="switch-large">

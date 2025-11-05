@@ -162,6 +162,17 @@
     const gameManager = getGameManager();
     const { getIQColor, getConfidenceColor, animateCountUp, logDebugInfo } = badgeManager || {};
 
+    // Track user's average IQ if this is their own tweet
+    const getUserAverageIQ = () => window.UserAverageIQ || {};
+    const { addIQScore } = getUserAverageIQ();
+    if (addIQScore && iq !== null && iq !== undefined && confidence !== null && confidence !== undefined) {
+      // Get handle from tweet element
+      const handle = actualTweetElement.getAttribute('data-handle');
+      if (handle) {
+        addIQScore(handle, iq, confidence, tweetId);
+      }
+    }
+
     if (!badgeManager || !getIQColor || !animateCountUp) {
       return;
     }

@@ -22,7 +22,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -47,6 +47,9 @@ function loadSettings() {
     }
     if (result.showProfileScoreBadge !== undefined) {
       settings.showProfileScoreBadge = result.showProfileScoreBadge;
+    }
+    if (result.showAverageIQ !== undefined) {
+      settings.showAverageIQ = result.showAverageIQ;
     }
   });
 }
