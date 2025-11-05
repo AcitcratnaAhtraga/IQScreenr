@@ -344,7 +344,7 @@
 
         const { updateBadgeWithIQ } = getBadgeUpdate();
         if (updateBadgeWithIQ) {
-          updateBadgeWithIQ(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage, iq, result, confidence, finalTweetText, tweetId);
+          await updateBadgeWithIQ(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage, iq, result, confidence, finalTweetText, tweetId);
         }
 
         // Mark as analyzed

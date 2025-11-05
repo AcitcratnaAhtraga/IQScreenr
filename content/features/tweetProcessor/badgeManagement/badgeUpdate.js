@@ -156,7 +156,7 @@
    * @param {string} tweetText - The tweet text
    * @param {string} tweetId - The tweet ID
    */
-  function updateBadgeWithIQ(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage, iq, result, confidence, tweetText, tweetId) {
+  async function updateBadgeWithIQ(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage, iq, result, confidence, tweetText, tweetId) {
     const settings = getSettings();
     const badgeManager = getBadgeManager();
     const gameManager = getGameManager();
@@ -290,6 +290,16 @@
     // If we set it after, the flip structure won't be built and hover won't work
     if (confidence !== null) {
       loadingBadge.setAttribute('data-confidence', confidence);
+    }
+
+    // CRITICAL: Check for cached guess even when IQGuessr is disabled
+    // This ensures badges that were previously guessed show the white border permanently
+    if (tweetId && gameManager && gameManager.getCachedGuess) {
+      const cachedGuess = await gameManager.getCachedGuess(tweetId);
+      if (cachedGuess && cachedGuess.guess !== undefined) {
+        // There's a cached guess, mark badge as compared (will show white border)
+        loadingBadge.setAttribute('data-iq-compared', 'true');
+      }
     }
 
     animateCountUp(loadingBadge, iq, iqColor);

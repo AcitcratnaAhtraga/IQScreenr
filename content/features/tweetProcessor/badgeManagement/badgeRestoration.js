@@ -275,15 +275,19 @@
     }
 
     const gameManager = getGameManager();
-    if (!gameManager || !gameManager.isGameModeEnabled || !gameManager.isGameModeEnabled()) {
+    if (!gameManager) {
       return false;
     }
+
+    // Check if IQGuessr is enabled - if not, still check for cached revealed IQ to restore badges
+    const isGameModeEnabled = gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
 
     if (!tweetId) {
       return false;
     }
 
     // FIRST: Check if IQ was previously revealed (either with or without a guess), show as calculated
+    // This works even when IQGuessr is disabled - badges with cached IQ should still be restored
     const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
 
     if (cachedRevealed) {
@@ -300,14 +304,17 @@
     }
 
     // SECOND: Try to restore from cached guess + handle-based IQ cache
-    const restored = await restoreFromCachedGuess(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets);
-    if (restored) {
-      // Mark as analyzed and return early (skip calculation and all other processing)
-      const { markAsAnalyzed } = getNestedTweetHandler();
-      markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
-      actualTweetElement.removeAttribute('data-iq-processing');
-      actualTweetElement.removeAttribute('data-iq-processing-start');
-      return true;
+    // Only do this when IQGuessr is enabled (otherwise no guess badges should be shown)
+    if (isGameModeEnabled) {
+      const restored = await restoreFromCachedGuess(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets);
+      if (restored) {
+        // Mark as analyzed and return early (skip calculation and all other processing)
+        const { markAsAnalyzed } = getNestedTweetHandler();
+        markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
+        actualTweetElement.removeAttribute('data-iq-processing');
+        actualTweetElement.removeAttribute('data-iq-processing-start');
+        return true;
+      }
     }
 
     return false;

@@ -360,6 +360,30 @@ function animateCountUp(badge, finalIQ, iqColor) {
             badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
           }
 
+          // CRITICAL: Check for cached guess even when IQGuessr is disabled
+          // This ensures badges that were previously guessed show the white border permanently
+          // Check if attribute was set before animation (preserve it)
+          const hasCompared = badge.hasAttribute('data-iq-compared');
+          if (!hasCompared) {
+            const tweetElement = badge.closest('article[data-testid="tweet"]') ||
+                                badge.closest('article[role="article"]') ||
+                                badge.closest('article');
+            const tweetId = tweetElement?.getAttribute('data-tweet-id');
+            if (tweetId) {
+              const gameManager = window.GameManager || {};
+              if (gameManager && gameManager.getCachedGuess) {
+                gameManager.getCachedGuess(tweetId).then(cachedGuess => {
+                  if (cachedGuess && cachedGuess.guess !== undefined) {
+                    // There's a cached guess, mark badge as compared (will show white border)
+                    badge.setAttribute('data-iq-compared', 'true');
+                  }
+                }).catch(() => {
+                  // Ignore errors
+                });
+              }
+            }
+          }
+
           const getBadgeCreation = () => window.BadgeCreation || {};
           const { addFlipBadgeHoverHandlers, addMobileBadgeHandlers } = getBadgeCreation();
           if (addFlipBadgeHoverHandlers) {
