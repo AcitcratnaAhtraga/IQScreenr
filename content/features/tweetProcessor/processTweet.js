@@ -1619,9 +1619,15 @@ async function processTweet(tweetElement) {
             // It will be called automatically by animateCountUp when the animation completes
             // Calling it here would interfere with the animation by changing the badge structure
 
-            // Always add hover event listener for console debug info
+            // Always add hover event listener for console debug info with cooldown to prevent duplicate calls
             loadingBadge.addEventListener('mouseenter', () => {
-              if (loadingBadge._debugData) {
+              // Prevent duplicate debug log calls within cooldown period
+              const now = Date.now();
+              const lastDebugLogTime = loadingBadge._lastDebugLogTime || 0;
+              const DEBUG_LOG_COOLDOWN = 500; // 500ms cooldown between calls
+
+              if (loadingBadge._debugData && (now - lastDebugLogTime >= DEBUG_LOG_COOLDOWN)) {
+                loadingBadge._lastDebugLogTime = now;
                 logDebugInfo(loadingBadge._debugData);
               }
             });
@@ -1793,9 +1799,15 @@ async function processTweet(tweetElement) {
           }
         }
 
-        // Add hover event listener
+        // Add hover event listener with cooldown to prevent duplicate calls
         loadingBadge.addEventListener('mouseenter', () => {
-          if (loadingBadge._debugData) {
+          // Prevent duplicate debug log calls within cooldown period
+          const now = Date.now();
+          const lastDebugLogTime = loadingBadge._lastDebugLogTime || 0;
+          const DEBUG_LOG_COOLDOWN = 500; // 500ms cooldown between calls
+
+          if (loadingBadge._debugData && (now - lastDebugLogTime >= DEBUG_LOG_COOLDOWN)) {
+            loadingBadge._lastDebugLogTime = now;
             logDebugInfo(loadingBadge._debugData);
           }
         });

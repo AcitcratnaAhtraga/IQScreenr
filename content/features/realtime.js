@@ -225,8 +225,19 @@ async function updateRealtimeBadge(inputElement, badge, container) {
 
       // Add hover event listener if not already added and logDebugInfo is available
       if (logDebugInfo && !badge._realtimeDebugHandlerAdded) {
+        // Track last call time to prevent duplicate calls
+        let lastDebugLogTime = 0;
+        const DEBUG_LOG_COOLDOWN = 500; // 500ms cooldown between calls
+
         // Use a single handler that works for both badge and child elements
         const hoverHandler = (e) => {
+          // Prevent duplicate calls within cooldown period
+          const now = Date.now();
+          if (now - lastDebugLogTime < DEBUG_LOG_COOLDOWN) {
+            return;
+          }
+          lastDebugLogTime = now;
+
           // Find the badge element (could be the target or a parent)
           const badgeElement = e.target.closest('.iq-badge-realtime') || badge;
 
@@ -244,20 +255,9 @@ async function updateRealtimeBadge(inputElement, badge, container) {
           }
         };
 
-        // Add listener in capture phase (before other handlers) to ensure it fires
+        // Use only one mouseenter handler (capture phase to ensure it fires first)
         // This ensures it runs even if dev mode or other handlers intercept the event
-        // Use capture: true so it runs before dev mode's mousemove handler
         badge.addEventListener('mouseenter', hoverHandler, { capture: true, passive: true });
-        // Also add in bubble phase as fallback
-        badge.addEventListener('mouseenter', hoverHandler, { capture: false, passive: true });
-
-        // Also use mouseover which bubbles to catch hovers on child elements
-        badge.addEventListener('mouseover', (e) => {
-          // Only trigger if we're entering the badge or a child (not leaving)
-          if (badge.contains(e.target) && !badge.contains(e.relatedTarget)) {
-            hoverHandler(e);
-          }
-        }, { capture: true, passive: true });
 
         badge._realtimeDebugHandlerAdded = true;
       }

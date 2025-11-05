@@ -127,7 +127,13 @@
     }
 
     const mouseenterHandler = () => {
-      if (badge._debugData && logDebugInfo) {
+      // Prevent duplicate debug log calls within cooldown period
+      const now = Date.now();
+      const lastDebugLogTime = badge._lastDebugLogTime || 0;
+      const DEBUG_LOG_COOLDOWN = 500; // 500ms cooldown between calls
+
+      if (badge._debugData && logDebugInfo && (now - lastDebugLogTime >= DEBUG_LOG_COOLDOWN)) {
+        badge._lastDebugLogTime = now;
         logDebugInfo(badge._debugData);
       }
 

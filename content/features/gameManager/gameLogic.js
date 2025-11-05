@@ -487,9 +487,15 @@
             timestamp: new Date().toISOString()
           };
 
-          // Add hover event listener
+          // Add hover event listener with cooldown to prevent duplicate calls
           badge.addEventListener('mouseenter', () => {
-            if (badge._debugData && badgeManager.logDebugInfo) {
+            // Prevent duplicate debug log calls within cooldown period
+            const now = Date.now();
+            const lastDebugLogTime = badge._lastDebugLogTime || 0;
+            const DEBUG_LOG_COOLDOWN = 500; // 500ms cooldown between calls
+
+            if (badge._debugData && badgeManager.logDebugInfo && (now - lastDebugLogTime >= DEBUG_LOG_COOLDOWN)) {
+              badge._lastDebugLogTime = now;
               badgeManager.logDebugInfo(badge._debugData);
             }
           });
