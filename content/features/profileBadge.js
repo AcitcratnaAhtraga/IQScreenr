@@ -48,11 +48,43 @@
    */
   function calculateRotationDuration(score) {
     const baseDuration = 3; // Base duration in seconds for score 0
-    const divisor = 10000; // Controls how quickly duration decreases
+    const divisor = 100; // Controls how quickly duration decreases
     const minDuration = 0.05; // Minimum duration (maximum speed)
 
     const duration = Math.max(minDuration, baseDuration / (1 + score / divisor));
     return duration;
+  }
+
+  /**
+   * Calculate icon size based on score
+   * Higher score = larger icon
+   * Formula: size = 40 + (120 - 40) * min(1, score / 10000000)
+   * This gives: 0 score = 40px, 10,000,000 = 120px, and scales linearly
+   */
+  function calculateIconSize(score) {
+    const baseSize = 40; // Starting size at score 0
+    const maxSize = 120; // Maximum size at max score
+    const maxScore = 10000000; // Score at which max size is reached
+
+    // Linear scaling from baseSize to maxSize
+    const size = baseSize + (maxSize - baseSize) * Math.min(1, score / maxScore);
+    return Math.round(size);
+  }
+
+  /**
+   * Calculate font size for score text based on icon size
+   * Scales proportionally with icon size
+   */
+  function calculateFontSize(iconSize) {
+    // Font size scales proportionally: 40px icon = 16px font, 120px icon = 48px font
+    const baseIconSize = 40;
+    const baseFontSize = 16;
+    const maxIconSize = 120;
+    const maxFontSize = 48;
+
+    // Linear interpolation
+    const fontSize = baseFontSize + (maxFontSize - baseFontSize) * ((iconSize - baseIconSize) / (maxIconSize - baseIconSize));
+    return Math.round(fontSize);
   }
 
   /**
@@ -68,13 +100,15 @@
       window.BadgeCreation.attachCreationContext(badge, 'score');
     }
 
-    // Calculate rotation speed based on score
+    // Calculate rotation speed and icon size based on score
     const rotationDuration = calculateRotationDuration(score);
+    const iconSize = calculateIconSize(score);
+    const fontSize = 16; // Fixed font size, doesn't grow with icon
 
     badge.innerHTML = `
       <div style="position: relative; display: inline-block;">
-        <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: 40px; height: 40px; display: block; animation-duration: ${rotationDuration}s;">
-        <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
+        <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: ${iconSize}px; height: ${iconSize}px; display: block; animation-duration: ${rotationDuration}s; transition: animation-duration 0.3s ease;">
+        <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: ${fontSize}px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
       </div>
     `;
 
@@ -101,10 +135,27 @@
 
     badge.onmouseenter = () => {
       badge.style.transform = 'scale(1.1)';
+
+      // Slow down rotation to base speed (score 0) on hover
+      const icon = badge.querySelector('.iq-guessr-rotating-icon');
+      if (icon) {
+        const baseDuration = 3; // Base duration for score 0
+        icon.style.transition = 'animation-duration 0.3s ease';
+        icon.style.animationDuration = `${baseDuration}s`;
+      }
     };
 
     badge.onmouseleave = () => {
       badge.style.transform = 'scale(1)';
+
+      // Return to normal rotation speed based on current score
+      const icon = badge.querySelector('.iq-guessr-rotating-icon');
+      if (icon) {
+        const currentScore = parseInt(score) || 0;
+        const normalDuration = calculateRotationDuration(currentScore);
+        icon.style.transition = 'animation-duration 0.3s ease';
+        icon.style.animationDuration = `${normalDuration}s`;
+      }
     };
 
     // Attach stats tooltip handlers
@@ -120,71 +171,75 @@
 
   /**
    * Find the insertion point for the badge on the profile page
-   * Twitter/X profile pages have various layouts - we'll try multiple locations
+   * Insert the badge to the right of the UserAvatar-Container
    */
   function findInsertionPoint() {
-    // Primary target: Insert right after the display name/username, not in button area
-    // Look for the UserName container which contains both display name and handle
-    const userNameContainer = document.querySelector('div[data-testid="UserName"]');
-    if (userNameContainer) {
-      // Find the container that holds both display name and handle
-      // This is usually the direct parent or grandparent of UserName
-      let container = userNameContainer;
-
-      // Try to find the flex container that holds name and handle together
-      let parent = userNameContainer.parentElement;
-      let bestContainer = userNameContainer;
-
-      // Look for a container that has the name and handle as direct children
-      // and doesn't contain edit button elements
-      for (let i = 0; i < 3 && parent; i++) {
-        const hasEditButton = parent.querySelector('button[data-testid*="edit"], button[role="button"]');
-        const styles = window.getComputedStyle(parent);
-
-        // Prefer containers without edit buttons and without overflow:hidden
-        if (!hasEditButton && styles.overflow !== 'hidden') {
-          bestContainer = parent;
-        }
-
-        parent = parent.parentElement;
-      }
-
-      // Check if bestContainer has overflow:hidden - if so, use its parent
-      const bestStyles = window.getComputedStyle(bestContainer);
-      if (bestStyles.overflow === 'hidden' && bestContainer.parentElement) {
-        const parentStyles = window.getComputedStyle(bestContainer.parentElement);
-        if (parentStyles.overflow !== 'hidden') {
-          return bestContainer.parentElement;
-        }
-      }
-
-      return bestContainer;
-    }
-
-    // Fallback: try finding by text content
-    const selectors = [
-      'div[data-testid="UserName"]',  // Main username container
-      'a[href*="/"][role="link"] span', // User handle/name
+    // Primary target: Find the UserAvatar-Container element
+    // This is the container that holds the profile picture on the profile page
+    const avatarContainerSelectors = [
+      'div[data-testid^="UserAvatar-Container-"]', // UserAvatar-Container-{username}
+      'div[data-testid*="UserAvatar-Container"]', // Any UserAvatar-Container
     ];
 
-    for (const selector of selectors) {
-      const elements = document.querySelectorAll(selector);
-      for (const element of elements) {
-        // Check if this looks like a username/handle element
-        const text = element.textContent || '';
-        if (text === currentHandle || text.startsWith('@')) {
-          // Find parent that doesn't have edit buttons
-          let container = element.parentElement;
-          for (let i = 0; i < 3 && container; i++) {
-            const hasEditButton = container.querySelector('button[data-testid*="edit"], button[role="button"]');
-            const styles = window.getComputedStyle(container);
-            if (!hasEditButton && styles.overflow !== 'hidden') {
-              return container;
+    for (const selector of avatarContainerSelectors) {
+      const avatarContainer = document.querySelector(selector);
+      if (avatarContainer) {
+        // Find the parent container that can hold both the avatar and the badge
+        // Usually this is a flex container that has the avatar and other elements
+        let parent = avatarContainer.parentElement;
+
+        // Look for a suitable parent container (flex container, etc.)
+        for (let i = 0; i < 5 && parent; i++) {
+          const styles = window.getComputedStyle(parent);
+          const display = styles.display;
+
+          // Prefer flex containers that allow horizontal layout
+          if (display === 'flex' || display === 'inline-flex') {
+            // Check if it doesn't have overflow:hidden
+            if (styles.overflow !== 'hidden') {
+              return parent;
             }
-            container = container.parentElement;
           }
-          // Fallback to parent
-          return element.parentElement;
+
+          // Also check if it's a container that holds profile elements
+          if (parent.getAttribute('data-testid')?.includes('Profile') ||
+              parent.getAttribute('data-testid')?.includes('User') ||
+              parent.classList.toString().includes('r-18u37iz') || // Common Twitter flex class
+              parent.classList.toString().includes('r-1w6e6rj')) { // Common Twitter flex class
+            const parentStyles = window.getComputedStyle(parent);
+            if (parentStyles.overflow !== 'hidden') {
+              return parent;
+            }
+          }
+
+          parent = parent.parentElement;
+        }
+
+        // If we found the avatar container but no suitable parent, return the parent
+        // We'll insert after the avatar container
+        if (avatarContainer.parentElement) {
+          return avatarContainer.parentElement;
+        }
+      }
+    }
+
+    // Fallback: Try to find profile picture image and use its container
+    const profilePics = document.querySelectorAll('img[src*="profile_images"], img[alt*="profile picture"], img[alt*="Profile picture"]');
+    for (const img of profilePics) {
+      const rect = img.getBoundingClientRect();
+      // Profile pictures are typically square and reasonably sized (40px+)
+      if (rect.width >= 40 && rect.height >= 40) {
+        // Find the UserAvatar-Container by going up the DOM tree
+        let element = img;
+        for (let i = 0; i < 10 && element; i++) {
+          if (element.getAttribute('data-testid')?.includes('UserAvatar-Container')) {
+            // Found the avatar container, return its parent
+            if (element.parentElement) {
+              return element.parentElement;
+            }
+            return element;
+          }
+          element = element.parentElement;
         }
       }
     }
@@ -253,18 +308,52 @@
       // Check if badge already exists anywhere in the DOM
       const existingBadge = document.querySelector('.iq-guessr-score-badge');
       if (existingBadge) {
-        // Calculate new rotation duration based on updated score
+        // Calculate new rotation duration and icon size based on updated score
         const rotationDuration = calculateRotationDuration(score);
+        const iconSize = calculateIconSize(score);
+        const fontSize = calculateFontSize(iconSize);
 
         // Update score in existing badge
         const scoreValue = existingBadge.querySelector('.score-value');
         const icon = existingBadge.querySelector('.iq-guessr-rotating-icon');
 
-        if (scoreValue) {
+        if (scoreValue && icon) {
           scoreValue.textContent = score;
-          // Update rotation speed
-          if (icon) {
+          // Update rotation speed and icon size
+          // Only update animation duration if not currently hovering (to avoid interrupting hover slowdown)
+          const isHovering = existingBadge.matches(':hover');
+          if (!isHovering) {
             icon.style.animationDuration = `${rotationDuration}s`;
+          }
+          icon.style.width = `${iconSize}px`;
+          icon.style.height = `${iconSize}px`;
+          // Ensure transition is set for smooth animation changes
+          icon.style.transition = 'animation-duration 0.3s ease';
+          // Update font size proportionally
+          scoreValue.style.fontSize = `${fontSize}px`;
+
+          // Ensure hover handlers are attached (in case badge was created before hover handlers were added)
+          if (!existingBadge.hasAttribute('data-hover-handlers-attached')) {
+            existingBadge.setAttribute('data-hover-handlers-attached', 'true');
+            existingBadge.onmouseenter = () => {
+              existingBadge.style.transform = 'scale(1.1)';
+              const hoverIcon = existingBadge.querySelector('.iq-guessr-rotating-icon');
+              if (hoverIcon) {
+                const baseDuration = 3; // Base duration for score 0
+                hoverIcon.style.transition = 'animation-duration 0.3s ease';
+                hoverIcon.style.animationDuration = `${baseDuration}s`;
+              }
+            };
+            existingBadge.onmouseleave = () => {
+              existingBadge.style.transform = 'scale(1)';
+              const hoverIcon = existingBadge.querySelector('.iq-guessr-rotating-icon');
+              if (hoverIcon) {
+                const currentScore = parseInt(score) || 0;
+                const normalDuration = calculateRotationDuration(currentScore);
+                hoverIcon.style.transition = 'animation-duration 0.3s ease';
+                hoverIcon.style.animationDuration = `${normalDuration}s`;
+              }
+            };
           }
         } else {
           // If badge structure changed, update the innerHTML
@@ -272,8 +361,8 @@
           if (img) {
             existingBadge.innerHTML = `
               <div style="position: relative; display: inline-block;">
-                <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrInvert.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: 40px; height: 40px; display: block; animation-duration: ${rotationDuration}s;">
-                <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 16px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
+                <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: ${iconSize}px; height: ${iconSize}px; display: block; animation-duration: ${rotationDuration}s;">
+                <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: ${fontSize}px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
               </div>
             `;
           }
@@ -305,82 +394,44 @@
       // Mark that tooltip handlers will be attached
       badge.setAttribute('data-stats-tooltip-attached', 'true');
 
-      // Check if insertion point has overflow:hidden - if so, try to insert at parent level
-      const insertionStyles = window.getComputedStyle(insertionPoint);
-      const hasOverflowHidden = insertionStyles.overflow === 'hidden';
+      // Find the UserAvatar-Container within the insertion point
+      const avatarContainer = insertionPoint.querySelector('div[data-testid^="UserAvatar-Container-"]') ||
+                             insertionPoint.querySelector('div[data-testid*="UserAvatar-Container"]');
 
-      if (hasOverflowHidden) {
-        // Try to find a parent without overflow:hidden
-        let parent = insertionPoint.parentElement;
-        let foundParent = null;
-        for (let i = 0; i < 5 && parent; i++) {
-          const parentStyles = window.getComputedStyle(parent);
-          if (parentStyles.overflow !== 'hidden') {
-            foundParent = parent;
-            break;
-          }
-          parent = parent.parentElement;
-        }
-
-        if (foundParent) {
-          // Insert badge after the UserName container within the parent
-          const userNameContainer = foundParent.querySelector('div[data-testid="UserName"]');
-          if (userNameContainer && userNameContainer.nextSibling) {
-            foundParent.insertBefore(badge, userNameContainer.nextSibling);
-          } else if (userNameContainer) {
-            // Insert right after UserName container
-            userNameContainer.parentElement.insertBefore(badge, userNameContainer.nextSibling);
-          } else {
-            foundParent.appendChild(badge);
-          }
+      if (avatarContainer) {
+        // Insert badge right after the UserAvatar-Container
+        if (avatarContainer.nextSibling) {
+          insertionPoint.insertBefore(badge, avatarContainer.nextSibling);
         } else {
-          // Fallback: still insert in original location, but adjust positioning
+          // No next sibling, append after the avatar container
           insertionPoint.appendChild(badge);
         }
       } else {
-        // No overflow:hidden, can safely insert here
-        // Find the UserName container and insert badge right after the handle/username text
-        const userNameContainer = document.querySelector('div[data-testid="UserName"]');
-
-        if (userNameContainer && userNameContainer.parentElement) {
-          // Find the span with the handle (@username) - it's usually the last text element in UserName
-          const handleSpan = Array.from(userNameContainer.querySelectorAll('span')).find(span =>
-            span.textContent && (span.textContent.includes('@') || span.textContent === currentHandle)
-          ) || userNameContainer.querySelector('span');
-
-          if (handleSpan) {
-            // Insert badge right after the handle span, within the UserName container
-            if (handleSpan.nextSibling) {
-              userNameContainer.insertBefore(badge, handleSpan.nextSibling);
+        // Fallback: Try to find the avatar container by going through children
+        const allElements = insertionPoint.querySelectorAll('div[data-testid*="UserAvatar"]');
+        for (const element of allElements) {
+          if (element.getAttribute('data-testid')?.includes('UserAvatar-Container')) {
+            // Found avatar container, insert badge after it
+            if (element.nextSibling) {
+              insertionPoint.insertBefore(badge, element.nextSibling);
             } else {
-              userNameContainer.appendChild(badge);
+              insertionPoint.appendChild(badge);
             }
-          } else {
-            // Fallback: append to UserName container
-            userNameContainer.appendChild(badge);
-          }
-        } else {
-          // Fallback: find username span and insert after it
-          const usernameSpan = insertionPoint.querySelector('span[class*="css-1jxf684"]') ||
-                              Array.from(insertionPoint.querySelectorAll('span')).find(span =>
-                                span.textContent && (span.textContent.includes('@') || span.textContent === currentHandle)
-                              ) ||
-                              null;
-
-          if (usernameSpan) {
-            // Insert as next sibling of the username span
-            if (usernameSpan.nextSibling) {
-              usernameSpan.parentElement.insertBefore(badge, usernameSpan.nextSibling);
-            } else {
-              // No next sibling, append after
-              usernameSpan.parentElement.appendChild(badge);
-            }
-          } else {
-            // Fallback: append to insertion point
-            insertionPoint.appendChild(badge);
+            break;
           }
         }
+
+        // If still not found, append to insertion point
+        if (!badge.parentElement) {
+          insertionPoint.appendChild(badge);
+        }
       }
+
+      // Update badge positioning to be next to profile picture
+      badge.style.marginLeft = '12px';
+      badge.style.marginTop = '0';
+      badge.style.verticalAlign = 'middle';
+      badge.style.alignSelf = 'center'; // Center vertically with avatar
 
       badgeAdded = true;
     }).catch((error) => {
@@ -454,14 +505,27 @@
             const scoreValue = badge.querySelector('.score-value');
             const icon = badge.querySelector('.iq-guessr-rotating-icon');
 
+            // Calculate new size and rotation based on updated score
+            const rotationDuration = calculateRotationDuration(newScore);
+            const iconSize = calculateIconSize(newScore);
+            const fontSize = calculateFontSize(iconSize);
+
             if (scoreValue) {
               scoreValue.textContent = newScore;
+              scoreValue.style.fontSize = `${fontSize}px`;
             }
 
-            // Update rotation speed based on new score
+            // Update rotation speed and icon size
             if (icon) {
-              const rotationDuration = calculateRotationDuration(newScore);
-              icon.style.animationDuration = `${rotationDuration}s`;
+              // Only update animation duration if not currently hovering (to avoid interrupting hover slowdown)
+              const isHovering = badge.matches(':hover');
+              if (!isHovering) {
+                icon.style.animationDuration = `${rotationDuration}s`;
+              }
+              icon.style.width = `${iconSize}px`;
+              icon.style.height = `${iconSize}px`;
+              // Ensure transition is set for smooth animation changes
+              icon.style.transition = 'animation-duration 0.3s ease';
             }
           }
         }
