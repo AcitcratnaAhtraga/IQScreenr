@@ -113,78 +113,82 @@
     //     <a href="/HagazagaH/verified_followers">...Followers...</a>
     //   </div>
     // </div>
+    // We want to insert the badge as a new child after the followers div
 
-    // Try to find links with following/followers
-    const followingLinks = document.querySelectorAll('a[href*="/following"]');
+    // Strategy 1: Find followers link and walk up to find the container
     const followersLinks = document.querySelectorAll('a[href*="/followers"], a[href*="/verified_followers"]');
-
-    let followingLink = null;
-    let followersLink = null;
-
-    // Find the following link (not verified_followers)
-    for (const link of followingLinks) {
-      const href = link.getAttribute('href') || '';
-      if (href.includes('/following') && !href.includes('verified_followers')) {
-        followingLink = link;
-        break;
-      }
-    }
-
-    // Find the followers link
-    for (const link of followersLinks) {
-      const href = link.getAttribute('href') || '';
+    for (const followersLink of followersLinks) {
+      const href = followersLink.getAttribute('href') || '';
       if (href.includes('followers') || href.includes('verified_followers')) {
-        followersLink = link;
-        break;
+        // Walk up to find the parent container
+        let current = followersLink.parentElement;
+        while (current && current !== document.body) {
+          // Check if this container has both following and followers links
+          const hasFollowing = current.querySelector('a[href*="/following"]:not([href*="verified_followers"])');
+          const hasFollowers = current.querySelector('a[href*="/followers"], a[href*="/verified_followers"]');
+
+          if (hasFollowing && hasFollowers) {
+            // Found the container - insert after the followers parent div
+            const followersParent = followersLink.parentElement;
+            if (followersParent && current.contains(followersParent)) {
+              return {
+                parent: current,
+                afterElement: followersParent
+              };
+            }
+          }
+          current = current.parentElement;
+        }
       }
     }
 
-    // Find the common parent container
-    if (followingLink && followersLink) {
-      // Find the parent container that contains both
-      let followingParent = followingLink.parentElement;
-      let followersParent = followersLink.parentElement;
+    // Strategy 2: Find following link and walk up
+    const followingLinks = document.querySelectorAll('a[href*="/following"]');
+    for (const followingLink of followingLinks) {
+      const href = followingLink.getAttribute('href') || '';
+      if (href.includes('/following') && !href.includes('verified_followers')) {
+        // Walk up to find the container
+        let current = followingLink.parentElement;
+        while (current && current !== document.body) {
+          // Check if this container has both following and followers links
+          const hasFollowing = current.querySelector('a[href*="/following"]:not([href*="verified_followers"])');
+          const hasFollowers = current.querySelector('a[href*="/followers"], a[href*="/verified_followers"]');
 
-      // They should be siblings, so find their common parent
-      if (followingParent && followersParent && followingParent.parentElement === followersParent.parentElement) {
-        // They're siblings - find the parent container
-        const parentContainer = followingParent.parentElement;
-        if (parentContainer) {
-          // Insert after the followers parent div
-          return {
-            parent: parentContainer,
-            afterElement: followersParent
-          };
+          if (hasFollowing && hasFollowers) {
+            // Find the followers parent div
+            const followersLink = current.querySelector('a[href*="/followers"], a[href*="/verified_followers"]');
+            if (followersLink) {
+              const followersParent = followersLink.parentElement;
+              if (followersParent && current.contains(followersParent)) {
+                return {
+                  parent: current,
+                  afterElement: followersParent
+                };
+              }
+            }
+          }
+          current = current.parentElement;
         }
-      }
-
-      // Alternative: walk up to find common ancestor
-      let currentFollowing = followingParent;
-      while (currentFollowing && currentFollowing !== document.body) {
-        if (currentFollowing.contains(followersLink)) {
-          // Found common ancestor
-          return {
-            parent: currentFollowing,
-            afterElement: followersParent
-          };
-        }
-        currentFollowing = currentFollowing.parentElement;
       }
     }
 
-    // Fallback: try to find by structure using class patterns
-    const container = document.querySelector('div[class*="r-18u37iz"][class*="r-13awgt0"]');
-    if (container) {
-      // Find the last child that contains a followers/following link
-      const children = Array.from(container.children);
-      for (let i = children.length - 1; i >= 0; i--) {
-        const child = children[i];
-        const link = child.querySelector('a[href*="/following"], a[href*="/followers"]');
-        if (link) {
-          return {
-            parent: container,
-            afterElement: child
-          };
+    // Strategy 3: Try to find by class patterns and structure
+    const containers = document.querySelectorAll('div[class*="r-18u37iz"]');
+    for (const container of containers) {
+      const hasFollowing = container.querySelector('a[href*="/following"]:not([href*="verified_followers"])');
+      const hasFollowers = container.querySelector('a[href*="/followers"], a[href*="/verified_followers"]');
+
+      if (hasFollowing && hasFollowers) {
+        // Find the followers parent div
+        const followersLink = container.querySelector('a[href*="/followers"], a[href*="/verified_followers"]');
+        if (followersLink) {
+          const followersParent = followersLink.parentElement;
+          if (followersParent && container.contains(followersParent)) {
+            return {
+              parent: container,
+              afterElement: followersParent
+            };
+          }
         }
       }
     }
@@ -222,10 +226,26 @@
    * Insert or update the average IQ badge on profile page
    */
   async function insertAverageIQBadge() {
-    const settings = getSettings();
+    // Get settings (may need to load from storage)
+    let settings = getSettings();
+    if (!settings || settings.showAverageIQ === undefined) {
+      // Try to get from storage directly
+      const storageResult = await new Promise((resolve) => {
+        chrome.storage.sync.get(['showAverageIQ'], resolve);
+      });
+      if (storageResult.showAverageIQ === false) {
+        // Setting is explicitly false, remove badge
+        const existingBadge = document.querySelector('.iq-badge-average[data-iq-average="true"]');
+        if (existingBadge) {
+          existingBadge.remove();
+        }
+        return;
+      }
+      // If not set, default to false but continue (might be first run)
+    }
 
     // Check if average IQ badge is enabled
-    if (!settings.showAverageIQ) {
+    if (settings && settings.showAverageIQ === false) {
       // Remove badge if it exists
       const existingBadge = document.querySelector('.iq-badge-average[data-iq-average="true"]');
       if (existingBadge) {
@@ -245,6 +265,8 @@
       return;
     }
 
+    console.log('[AverageIQBadge] Attempting to insert badge on own profile page');
+
     // Get average IQ
     const { getAverageIQ } = getUserAverageIQ();
     if (!getAverageIQ) {
@@ -258,15 +280,19 @@
       if (existingBadge) {
         existingBadge.remove();
       }
+      console.log('[AverageIQBadge] No average IQ data available yet');
       return;
     }
+
+    console.log('[AverageIQBadge] Average IQ data:', averageData);
 
     const averageIQ = averageData.averageIQ;
     const overallConfidence = averageData.overallConfidence !== null && averageData.overallConfidence !== undefined
       ? averageData.overallConfidence
       : averageData.averageConfidence || 0;
 
-    // Check if badge already exists
+    // Check if badge already exists (look for badge inside wrapper)
+    const existingWrapper = document.querySelector('.iq-badge-average[data-iq-average="true"]')?.parentElement;
     let badge = document.querySelector('.iq-badge-average[data-iq-average="true"]');
     if (badge) {
       // Update existing badge
@@ -289,21 +315,35 @@
     // Create new badge
     badge = createAverageIQBadge(averageIQ, overallConfidence);
 
+    // Wrap badge in a div to match the structure of following/followers divs
+    const badgeWrapper = document.createElement('div');
+    badgeWrapper.className = 'css-175oi2r';
+    badgeWrapper.style.cssText = 'display: inline-block;';
+    badgeWrapper.appendChild(badge);
+
     // Find insertion point
     const insertionPoint = findBadgeInsertionPoint();
     if (!insertionPoint) {
+      console.warn('[AverageIQBadge] Could not find insertion point for badge');
       return;
     }
 
     const { parent, afterElement } = insertionPoint;
 
-    // Insert badge after the followers element
+    // Verify elements exist
+    if (!parent || !afterElement || !parent.contains(afterElement)) {
+      console.warn('[AverageIQBadge] Invalid insertion point elements');
+      return;
+    }
+
+    // Insert badge wrapper after the followers element
     try {
       if (afterElement.nextSibling) {
-        parent.insertBefore(badge, afterElement.nextSibling);
+        parent.insertBefore(badgeWrapper, afterElement.nextSibling);
       } else {
-        parent.appendChild(badge);
+        parent.appendChild(badgeWrapper);
       }
+      console.log('[AverageIQBadge] Badge inserted successfully');
     } catch (e) {
       console.warn('[AverageIQBadge] Error inserting badge:', e);
     }
@@ -361,6 +401,10 @@
     setTimeout(() => {
       insertAverageIQBadge();
     }, 3000);
+
+    setTimeout(() => {
+      insertAverageIQBadge();
+    }, 5000);
   }
 
   /**
