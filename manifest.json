@@ -29,6 +29,7 @@
         "content/utils/textExtraction.js",
         "content/utils/tweetDetection.js",
         "content/features/settings.js",
+        "content/features/crossTabSync.js",
         "content/features/badge/colorUtils.js",
         "content/features/badge/badgeAnimations.js",
         "content/features/badge/badgeCreation/context.js",

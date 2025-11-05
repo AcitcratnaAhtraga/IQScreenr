@@ -417,12 +417,19 @@ async function processTweet(tweetElement) {
   const gameManager = getGameManager();
   const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
 
+  // Check if IQGuessr mode is enabled in any tab (prevents cheating)
+  const crossTabSync = window.CrossTabSync;
+  const isIQGuessrEnabledAnywhere = crossTabSync && crossTabSync.isIQGuessrEnabledAnywhere
+    ? crossTabSync.isIQGuessrEnabledAnywhere()
+    : isGameModeEnabled;
+
   if (isGameModeEnabled && tweetId && settings.showIQBadge) {
     const cachedGuess = await gameManager.getCachedGuess(tweetId);
     const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
 
     // If IQ was previously revealed (either with or without a guess), show as calculated
-    if (cachedRevealed) {
+    // BUT: Only if IQGuessr is not enabled in any other tab (anti-cheat)
+    if (cachedRevealed && !isIQGuessrEnabledAnywhere) {
 
       // We have revealed IQ - check if we have cached IQ to restore calculated badge
       const { getCachedIQ } = getIQCache();
@@ -712,7 +719,8 @@ async function processTweet(tweetElement) {
           if (isGameModeEnabled && tweetId) {
             const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
 
-            if (cachedRevealed) {
+            // Only show revealed IQ if IQGuessr is not enabled in any other tab (anti-cheat)
+            if (cachedRevealed && !isIQGuessrEnabledAnywhere) {
               // IQ was revealed - check if badge is showing guess instead of calculated
               const isGuessBadge = anyExistingBadge.classList.contains('iq-badge-guess') ||
                                    anyExistingBadge.hasAttribute('data-iq-guess');
@@ -1535,6 +1543,27 @@ async function processTweet(tweetElement) {
             const tweetIdForLog = actualTweetElement.getAttribute('data-tweet-id');
             if (tweetIdForLog && gameManager && gameManager.cacheRevealedIQ) {
               gameManager.cacheRevealedIQ(tweetIdForLog);
+            }
+
+            // Check if IQGuessr is enabled in any tab - if so, hide this IQ to prevent cheating
+            const crossTabSync = window.CrossTabSync;
+            const isIQGuessrEnabledAnywhere = crossTabSync && crossTabSync.isIQGuessrEnabledAnywhere
+              ? crossTabSync.isIQGuessrEnabledAnywhere()
+              : false;
+
+            if (isIQGuessrEnabledAnywhere) {
+              // IQGuessr is enabled in another tab - hide this badge to prevent cheating
+              loadingBadge.style.setProperty('display', 'none', 'important');
+              loadingBadge.style.setProperty('visibility', 'hidden', 'important');
+              processedTweets.add(actualTweetElement);
+              actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+              actualTweetElement.removeAttribute('data-iq-processing');
+              actualTweetElement.removeAttribute('data-iq-processing-start');
+              if (hasNestedStructure) {
+                tweetElement.setAttribute('data-iq-analyzed', 'true');
+                processedTweets.add(tweetElement);
+              }
+              return; // Don't show the IQ
             }
 
             // No guess, proceed with normal animation
