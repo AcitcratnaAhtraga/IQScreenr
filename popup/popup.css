@@ -87,6 +87,14 @@ body {
   font-weight: 500;
   font-size: 14px;
   color: #111827;
+  cursor: help;
+  position: relative;
+}
+
+.switch-text:hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
 }
 
 .setting-desc {
@@ -414,6 +422,11 @@ input[type="range"]::-moz-range-thumb {
 
   .switch-text {
     color: #f9fafb;
+  }
+
+  .switch-text:hover {
+    text-decoration: underline;
+    text-decoration-style: dotted;
   }
 
   .setting-desc {

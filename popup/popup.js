@@ -20,42 +20,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // Helper function to update dependent checkboxes enabled/disabled state
   function updateDependentCheckboxes() {
     const showIQBadge = document.getElementById('showIQBadge');
-    const useConfidenceForColor = document.getElementById('useConfidenceForColor');
     const showRealtimeBadge = document.getElementById('showRealtimeBadge');
+    const enableIQGuessr = document.getElementById('enableIQGuessr');
+    const enableDebugLogging = document.getElementById('enableDebugLogging');
 
     const isEnabled = showIQBadge.checked;
-    useConfidenceForColor.disabled = !isEnabled;
     showRealtimeBadge.disabled = !isEnabled;
+    enableIQGuessr.disabled = !isEnabled;
+    enableDebugLogging.disabled = !isEnabled;
 
     // If main toggle is off, uncheck dependent options and save
     if (!isEnabled) {
-      if (useConfidenceForColor.checked) {
-        useConfidenceForColor.checked = false;
-        chrome.storage.sync.set({ useConfidenceForColor: false });
-      }
       if (showRealtimeBadge.checked) {
         showRealtimeBadge.checked = false;
         chrome.storage.sync.set({ showRealtimeBadge: false });
       }
+      if (enableIQGuessr.checked) {
+        enableIQGuessr.checked = false;
+        chrome.storage.sync.set({ enableIQGuessr: false });
+      }
+      if (enableDebugLogging.checked) {
+        enableDebugLogging.checked = false;
+        chrome.storage.sync.set({ enableDebugLogging: false });
+      }
     }
 
-    // Update legend display based on confidence color setting
+    // Always show confidence legend (confidence is always used for color)
     updateLegendDisplay();
   }
 
   // Helper function to update legend display
   function updateLegendDisplay() {
-    const useConfidenceForColor = document.getElementById('useConfidenceForColor');
     const showIQBadge = document.getElementById('showIQBadge');
     const iqLegend = document.getElementById('iqLegend');
     const confidenceLegend = document.getElementById('confidenceLegend');
 
-    // Show the appropriate legend based on settings
-    if (showIQBadge.checked && useConfidenceForColor.checked) {
+    // Always show confidence legend (confidence is always used for color)
+    if (showIQBadge.checked) {
       iqLegend.style.display = 'none';
       confidenceLegend.style.display = 'block';
     } else {
-      iqLegend.style.display = 'block';
+      iqLegend.style.display = 'none';
       confidenceLegend.style.display = 'none';
     }
   }
@@ -196,7 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
         content += '</div>';
         tooltip.innerHTML = content;
 
-        // Style the tooltip for popup context
+        // Get the score element width to match tooltip width
+        const scoreElementWidth = scoreElement.offsetWidth;
+        const scoreElementRect = scoreElement.getBoundingClientRect();
+
+        // Style the tooltip for popup context - match width of score element
         tooltip.style.cssText = `
           position: absolute;
           background: #000000;
@@ -207,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
           z-index: 10000;
-          max-width: 350px;
+          width: ${scoreElementWidth}px;
           max-height: 400px;
           overflow-y: auto;
           pointer-events: auto;
@@ -216,6 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
           left: 50%;
           transform: translateX(-50%);
           margin-bottom: 8px;
+          box-sizing: border-box;
         `;
 
         // Position relative to score element
@@ -346,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
       chrome.storage.sync.set({
         showIQBadge: true,
         showRealtimeBadge: true,
-        useConfidenceForColor: false,
+        useConfidenceForColor: true, // Always enabled
         enableDebugLogging: true,
         enableIQGuessr: false,
         iqGuessrScore: 0
@@ -355,12 +365,15 @@ document.addEventListener('DOMContentLoaded', () => {
           showStatus('Error loading settings', 'error');
         }
       });
-      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: false, enableDebugLogging: true, enableIQGuessr: false, iqGuessrScore: 0 };
+      result = { showIQBadge: true, showRealtimeBadge: true, useConfidenceForColor: true, enableDebugLogging: true, enableIQGuessr: false, iqGuessrScore: 0 };
     }
+
+    // Always set useConfidenceForColor to true (it's always enabled now)
+    chrome.storage.sync.set({ useConfidenceForColor: true });
+
     // Set checkbox states
     document.getElementById('showIQBadge').checked = result.showIQBadge !== false; // Default to true
     document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false; // Default to true
-    document.getElementById('useConfidenceForColor').checked = result.useConfidenceForColor === true; // Default to false
     document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
     document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
 
@@ -384,17 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateDependentCheckboxes();
   });
 
-  document.getElementById('useConfidenceForColor').addEventListener('change', (e) => {
-    chrome.storage.sync.set({ useConfidenceForColor: e.target.checked }, () => {
-      if (chrome.runtime.lastError) {
-        showStatus('Error saving setting', 'error');
-      } else {
-        showStatus('Settings saved', 'success');
-      }
-    });
-    // Update legend display when confidence color toggle changes
-    updateLegendDisplay();
-  });
 
   document.getElementById('showRealtimeBadge').addEventListener('change', (e) => {
     chrome.storage.sync.set({ showRealtimeBadge: e.target.checked }, () => {
@@ -407,37 +409,43 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Handle IQ Guessr checkbox
-  document.getElementById('enableIQGuessr').addEventListener('change', (e) => {
-    const isEnabled = e.target.checked;
-    console.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
+  const enableIQGuessrCheckbox = document.getElementById('enableIQGuessr');
+  if (enableIQGuessrCheckbox) {
+    enableIQGuessrCheckbox.addEventListener('change', (e) => {
+      const isEnabled = e.target.checked;
+      console.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
 
-    chrome.storage.sync.set({ enableIQGuessr: isEnabled }, () => {
-      if (chrome.runtime.lastError) {
-        showStatus('Error saving setting', 'error');
-      } else {
-        showStatus('Settings saved', 'success');
-        // Fetch and update score display with actual score from storage
-        if (isEnabled) {
-          chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-            const score = result.iqGuessrScore || 0;
-            updateIQGuessrScore(score);
-          });
+      chrome.storage.sync.set({ enableIQGuessr: isEnabled }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
         } else {
-          updateIQGuessrScore(0);
+          showStatus('Settings saved', 'success');
+          // Fetch and update score display with actual score from storage
+          if (isEnabled) {
+            chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+              const score = result.iqGuessrScore || 0;
+              updateIQGuessrScore(score);
+            });
+          } else {
+            updateIQGuessrScore(0);
+          }
         }
-      }
+      });
     });
-  });
+  }
 
-  document.getElementById('enableDebugLogging').addEventListener('change', (e) => {
-    chrome.storage.sync.set({ enableDebugLogging: e.target.checked }, () => {
-      if (chrome.runtime.lastError) {
-        showStatus('Error saving setting', 'error');
-      } else {
-        showStatus('Settings saved', 'success');
-      }
+  const enableDebugLoggingCheckbox = document.getElementById('enableDebugLogging');
+  if (enableDebugLoggingCheckbox) {
+    enableDebugLoggingCheckbox.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ enableDebugLogging: e.target.checked }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
     });
-  });
+  }
 
   // Handle reset button
   document.getElementById('resetSettings').addEventListener('click', () => {
@@ -445,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const defaults = {
         showIQBadge: true,
         showRealtimeBadge: true,
-        useConfidenceForColor: false,
+        useConfidenceForColor: true, // Always enabled
         enableDebugLogging: true,
         enableIQGuessr: false,
         iqGuessrScore: 0
@@ -458,7 +466,6 @@ document.addEventListener('DOMContentLoaded', () => {
           // Update UI
           document.getElementById('showIQBadge').checked = defaults.showIQBadge;
           document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
-          document.getElementById('useConfidenceForColor').checked = defaults.useConfidenceForColor;
           document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
           document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
           // Update dependent checkboxes state

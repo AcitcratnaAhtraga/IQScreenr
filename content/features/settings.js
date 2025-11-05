@@ -11,7 +11,7 @@ const defaultSettings = {
   showRealtimeBadge: true,
   minIQ: 60,
   maxIQ: 145,
-  useConfidenceForColor: false,
+  useConfidenceForColor: true, // Always enabled - badge colors always reflect confidence
   enableDebugLogging: true,
   enableIQGuessr: false
 };
@@ -35,9 +35,10 @@ function loadSettings() {
     if (result.maxIQ !== undefined) {
       settings.maxIQ = result.maxIQ;
     }
-    if (result.useConfidenceForColor !== undefined) {
-      settings.useConfidenceForColor = result.useConfidenceForColor;
-    }
+    // useConfidenceForColor is always true - always use confidence for color
+    settings.useConfidenceForColor = true;
+    // Ensure it's set in storage
+    chrome.storage.sync.set({ useConfidenceForColor: true });
     if (result.enableDebugLogging !== undefined) {
       settings.enableDebugLogging = result.enableDebugLogging;
     }

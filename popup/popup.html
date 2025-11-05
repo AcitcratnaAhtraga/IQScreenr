@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tweet Verbal IQ Analyzer Settings</title>
+  <title>IqGuessr Settings</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🧠 Tweet Verbal IQ Analyzer</h1>
+      <h1>🧠 IqGuessr</h1>
       <p class="subtitle">Analyze verbal IQ of tweets in real-time</p>
     </div>
 
@@ -18,28 +18,21 @@
       <div class="setting-item">
         <label class="switch-label">
           <input type="checkbox" id="showIQBadge" checked>
-          <span class="switch-text">Show IQ Badge</span>
+          <span class="switch-text" title="Color-coded badges appear next to tweets showing estimated verbal IQ scores (55-145 range). Badge colors reflect confidence levels, with higher confidence showing greener colors.">Show IQ Badge</span>
         </label>
         <p class="setting-desc">Display IQ scores next to tweets as you browse</p>
       </div>
       <div class="setting-item">
         <label class="switch-label">
-          <input type="checkbox" id="useConfidenceForColor">
-          <span class="switch-text">Use Confidence for Badge Color</span>
-        </label>
-        <p class="setting-desc">Badge color reflects confidence % instead of IQ score</p>
-      </div>
-      <div class="setting-item">
-        <label class="switch-label">
           <input type="checkbox" id="showRealtimeBadge" checked>
-          <span class="switch-text">Show Real-time IQ Badge</span>
+          <span class="switch-text" title="See live IQ estimates while typing in compose boxes, updating as you type.">Show Real-time IQ Badge</span>
         </label>
         <p class="setting-desc">Display live IQ score while typing in compose boxes</p>
       </div>
       <div class="setting-item setting-item-large">
         <label class="switch-label switch-label-large">
           <input type="checkbox" id="enableIQGuessr" class="switch-large">
-          <span class="switch-text switch-text-large">🎮 IQ Guessr</span>
+          <span class="switch-text switch-text-large" title="Guess IQ scores before they're calculated! Score points based on accuracy, with higher confidence guesses earning more points. Track your total score and view detailed stats by hovering over (desktop) or clicking (mobile) the score badge on profile pages or in settings.">🎮 IQ Guessr</span>
         </label>
         <p class="setting-desc">Guess IQ scores before they're calculated! Score points based on accuracy</p>
         <div id="iqGuessrScore" class="iq-guessr-score" style="display: none;">
@@ -52,7 +45,6 @@
           <input type="checkbox" id="enableDebugLogging" checked>
           <span class="switch-text">Enable Debug Logging</span>
         </label>
-        <p class="setting-desc">Show detailed analysis breakdown in console (F12) when hovering over badges</p>
       </div>
     </div>
 
@@ -60,13 +52,14 @@
     <div class="info-section">
       <h2>How It Works</h2>
       <div class="info-content">
-        <p>This extension uses a research-based estimator trained on graded samples. It analyzes tweets across 4 key dimensions:</p>
+        <p><strong>IqGuessr</strong> analyzes tweet text in real-time using a research-based estimator trained on graded samples. It evaluates tweets across 4 key dimensions:</p>
         <ul>
           <li><strong>Vocabulary Sophistication:</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies</li>
           <li><strong>Lexical Diversity:</strong> Measures word variety using Type-Token Ratio (TTR)</li>
           <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure</li>
           <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage</li>
         </ul>
+
         <div class="privacy-notice">
           <span class="privacy-icon">🔒</span>
           <div class="privacy-text">
@@ -76,7 +69,7 @@
         <div class="privacy-notice data-notice">
           <span class="privacy-icon">📋</span>
           <div class="privacy-text">
-            <strong>Data Collection Notice:</strong> This extension processes publicly available Twitter handles and numerical scores. No tweet text or private information is collected or stored. We only store: IQ scores (numeric), Twitter handles (public usernames), and limited metadata (timestamps, language, hashtags).
+            <strong>Data Collection Notice:</strong> This extension processes publicly available Twitter handles and numerical scores. No tweet text or private information is collected or stored. We only store: IQ scores (numeric), Twitter handles (public usernames), guess history (for IQGuessr game mode), and limited metadata (timestamps, language, hashtags).
           </div>
         </div>
       </div>
@@ -84,7 +77,7 @@
 
     <div class="color-legend">
       <h2>Color Coding</h2>
-      <div class="legend-items" id="iqLegend">
+      <div class="legend-items" id="iqLegend" style="display: none;">
         <div class="legend-item">
           <span class="legend-color" style="background-color: #d32f2f;"></span>
           <span>60-70: Very Simple</span>
@@ -122,7 +115,7 @@
           <span>145+: Exceptional</span>
         </div>
       </div>
-      <div class="legend-items" id="confidenceLegend" style="display: none;">
+      <div class="legend-items" id="confidenceLegend">
         <div class="legend-item">
           <span class="legend-color" style="background-color: #d32f2f;"></span>
           <span>0-10%: Very Low Confidence</span>
