@@ -89,6 +89,14 @@
       badge.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.3), 0 4px 8px rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.15)';
     };
 
+    // Attach stats tooltip handlers
+    if (window.StatsTooltip && window.StatsTooltip.attach) {
+      // Wait a bit for StatsTooltip to be fully initialized
+      setTimeout(() => {
+        window.StatsTooltip.attach(badge);
+      }, 100);
+    }
+
     return badge;
   }
 
@@ -211,6 +219,16 @@
         }
         // Make sure badge is visible
         existingBadge.style.display = 'inline-flex';
+
+        // Ensure tooltip handlers are attached (in case they weren't before)
+        if (window.StatsTooltip && window.StatsTooltip.attach) {
+          const hasTooltipAttr = existingBadge.hasAttribute('data-stats-tooltip-attached');
+          if (!hasTooltipAttr) {
+            existingBadge.setAttribute('data-stats-tooltip-attached', 'true');
+            window.StatsTooltip.attach(existingBadge);
+          }
+        }
+
         badgeAdded = true;
         return;
       }
@@ -221,8 +239,10 @@
       }
 
       // Create and insert the badge
-
       const badge = createScoreBadge(score);
+
+      // Mark that tooltip handlers will be attached
+      badge.setAttribute('data-stats-tooltip-attached', 'true');
 
       // Check if insertion point has overflow:hidden - if so, try to insert at parent level
       const insertionStyles = window.getComputedStyle(insertionPoint);

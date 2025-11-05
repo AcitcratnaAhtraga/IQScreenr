@@ -45,6 +45,8 @@
         "content/features/gameManager/cache.js",
         "content/features/gameManager/badges.js",
         "content/features/gameManager/score.js",
+        "content/features/gameManager/stats.js",
+        "content/features/gameManager/statsTooltip.js",
         "content/features/gameManager/gameLogic.js",
         "content/features/gameManager/index.js",
         "content/features/tweetProcessor/badgePlacement/notificationPlacement.js",

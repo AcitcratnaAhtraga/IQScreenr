@@ -71,9 +71,272 @@ document.addEventListener('DOMContentLoaded', () => {
       if (scoreValue) {
         scoreValue.textContent = score;
       }
+
+      // Attach tooltip handlers to score display
+      attachStatsTooltipToScore();
     } else {
       scoreElement.style.display = 'none';
     }
+  }
+
+  // Helper function to attach stats tooltip to score display in popup
+  function attachStatsTooltipToScore() {
+    const scoreElement = document.getElementById('iqGuessrScore');
+    if (!scoreElement) return;
+
+    // Check if already attached
+    if (scoreElement.hasAttribute('data-stats-tooltip-attached')) {
+      return;
+    }
+
+    scoreElement.setAttribute('data-stats-tooltip-attached', 'true');
+    scoreElement.style.cursor = 'pointer';
+    scoreElement.title = 'Click to view detailed stats';
+
+    // Create stats tooltip functionality for popup
+    let currentTooltip = null;
+
+    async function showStatsTooltip() {
+      // Hide existing tooltip if any
+      if (currentTooltip) {
+        hideStatsTooltip();
+        return;
+      }
+
+      try {
+        // Get guess history from storage (try both local and sync)
+        const resultLocal = await new Promise((resolve) => {
+          chrome.storage.local.get(['iqGuessrHistory'], resolve);
+        });
+        const resultSync = await new Promise((resolve) => {
+          chrome.storage.sync.get(['iqGuessrHistory'], resolve);
+        });
+
+        const history = resultLocal.iqGuessrHistory || resultSync.iqGuessrHistory || [];
+
+        const stats = calculateStatsFromHistory(history);
+
+        // Create tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'iq-guessr-stats-tooltip popup-stats-tooltip';
+        tooltip.setAttribute('data-iq-guessr-tooltip', 'true');
+
+        // Build tooltip content
+        let content = '<div class="stats-header">📊 IQGuessr Stats</div>';
+        content += '<div class="stats-content">';
+
+        if (stats.totalGuesses === 0) {
+          content += '<div class="stats-empty">No guesses yet! Start guessing to see your stats.</div>';
+        } else {
+          // Overall stats
+          content += '<div class="stats-section">';
+          content += '<div class="stats-row">';
+          content += `<span class="stats-label">Total Guesses:</span>`;
+          content += `<span class="stats-value">${stats.totalGuesses}</span>`;
+          content += '</div>';
+          content += '<div class="stats-row">';
+          content += `<span class="stats-label">Total Score:</span>`;
+          content += `<span class="stats-value">${stats.totalScore}</span>`;
+          content += '</div>';
+          content += '<div class="stats-row">';
+          content += `<span class="stats-label">Average Score:</span>`;
+          content += `<span class="stats-value">${stats.averageScore.toFixed(1)}</span>`;
+          content += '</div>';
+          content += '<div class="stats-row">';
+          content += `<span class="stats-label">Average Accuracy:</span>`;
+          content += `<span class="stats-value">${stats.averageAccuracy.toFixed(1)}%</span>`;
+          content += '</div>';
+          content += '<div class="stats-row">';
+          content += `<span class="stats-label">Average Difference:</span>`;
+          content += `<span class="stats-value">${stats.averageDifference.toFixed(1)} pts</span>`;
+          content += '</div>';
+          content += '<div class="stats-row">';
+          content += `<span class="stats-label">Average Confidence:</span>`;
+          content += `<span class="stats-value">${stats.averageConfidence.toFixed(1)}%</span>`;
+          content += '</div>';
+          content += '</div>';
+
+          // Best/Worst guesses
+          if (stats.bestGuess || stats.worstGuess) {
+            content += '<div class="stats-section">';
+            content += '<div class="stats-section-title">Best & Worst</div>';
+
+            if (stats.bestGuess) {
+              content += '<div class="stats-row stats-highlight stats-good">';
+              content += '<span class="stats-label">🎯 Best Guess:</span>';
+              content += `<span class="stats-value">${stats.bestGuess.guess} → ${stats.bestGuess.actualIQ} (${stats.bestGuess.difference.toFixed(1)} pts off)</span>`;
+              content += '</div>';
+            }
+
+            if (stats.worstGuess) {
+              content += '<div class="stats-row stats-highlight stats-bad">';
+              content += '<span class="stats-label">⚠️ Worst Guess:</span>';
+              content += `<span class="stats-value">${stats.worstGuess.guess} → ${stats.worstGuess.actualIQ} (${stats.worstGuess.difference.toFixed(1)} pts off)</span>`;
+              content += '</div>';
+            }
+
+            content += '</div>';
+          }
+
+          // Recent guesses
+          if (stats.recentGuesses && stats.recentGuesses.length > 0) {
+            content += '<div class="stats-section">';
+            content += '<div class="stats-section-title">Recent Guesses</div>';
+            stats.recentGuesses.forEach((guess, index) => {
+              const timeStr = formatTimestamp(guess.timestamp);
+              content += '<div class="stats-row stats-small">';
+              content += `<span class="stats-label">${index + 1}.</span>`;
+              content += `<span class="stats-value">${guess.guess} → ${guess.actual} (${guess.difference.toFixed(1)} off, ${guess.score} pts) <span class="stats-time">${timeStr}</span></span>`;
+              content += '</div>';
+            });
+            content += '</div>';
+          }
+        }
+
+        content += '</div>';
+        tooltip.innerHTML = content;
+
+        // Style the tooltip for popup context
+        tooltip.style.cssText = `
+          position: absolute;
+          background: #000000;
+          color: white;
+          padding: 16px;
+          border-radius: 8px;
+          font-size: 12px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
+          z-index: 10000;
+          max-width: 350px;
+          max-height: 400px;
+          overflow-y: auto;
+          pointer-events: auto;
+          line-height: 1.5;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 8px;
+        `;
+
+        // Position relative to score element
+        scoreElement.style.position = 'relative';
+        scoreElement.appendChild(tooltip);
+        currentTooltip = tooltip;
+
+        // Close on click outside
+        const handleClickOutside = (e) => {
+          if (tooltip && !tooltip.contains(e.target) && !scoreElement.contains(e.target)) {
+            hideStatsTooltip();
+            document.removeEventListener('click', handleClickOutside);
+          }
+        };
+
+        setTimeout(() => {
+          document.addEventListener('click', handleClickOutside);
+        }, 100);
+      } catch (error) {
+        console.warn('[IQGuessr] Error showing stats tooltip:', error);
+      }
+    }
+
+    function hideStatsTooltip() {
+      if (currentTooltip && currentTooltip.parentElement) {
+        currentTooltip.parentElement.removeChild(currentTooltip);
+      }
+      currentTooltip = null;
+    }
+
+    // Calculate stats from history (same logic as content script)
+    function calculateStatsFromHistory(history) {
+      if (history.length === 0) {
+        return {
+          totalGuesses: 0,
+          totalScore: 0,
+          averageScore: 0,
+          averageAccuracy: 0,
+          averageConfidence: 0,
+          bestGuess: null,
+          worstGuess: null,
+          averageDifference: 0,
+          recentGuesses: []
+        };
+      }
+
+      const totalGuesses = history.length;
+      const totalScore = history.reduce((sum, entry) => sum + (entry.score || 0), 0);
+      const totalAccuracy = history.reduce((sum, entry) => sum + (entry.accuracy || 0), 0);
+      const totalConfidence = history.reduce((sum, entry) => sum + (entry.confidence || 0), 0);
+      const totalDifference = history.reduce((sum, entry) => sum + (entry.difference || 0), 0);
+
+      const averageScore = Math.round((totalScore / totalGuesses) * 10) / 10;
+      const averageAccuracy = Math.round((totalAccuracy / totalGuesses) * 10) / 10;
+      const averageConfidence = Math.round((totalConfidence / totalGuesses) * 10) / 10;
+      const averageDifference = Math.round((totalDifference / totalGuesses) * 10) / 10;
+
+      let bestGuess = null;
+      let worstGuess = null;
+
+      history.forEach(entry => {
+        if (!bestGuess || entry.difference < bestGuess.difference) {
+          bestGuess = entry;
+        }
+        if (!worstGuess || entry.difference > worstGuess.difference) {
+          worstGuess = entry;
+        }
+      });
+
+      const recentGuesses = history.slice(0, 5).map(entry => ({
+        guess: entry.guess,
+        actual: entry.actualIQ,
+        difference: entry.difference,
+        score: entry.score,
+        accuracy: entry.accuracy,
+        confidence: entry.confidence,
+        handle: entry.handle,
+        timestamp: entry.timestamp
+      }));
+
+      return {
+        totalGuesses,
+        totalScore,
+        averageScore,
+        averageAccuracy,
+        averageConfidence,
+        bestGuess,
+        worstGuess,
+        averageDifference,
+        recentGuesses
+      };
+    }
+
+    function formatTimestamp(timestamp) {
+      if (!timestamp) return 'Unknown';
+
+      try {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+
+        return date.toLocaleDateString();
+      } catch (error) {
+        return 'Unknown';
+      }
+    }
+
+    // Attach click handler
+    scoreElement.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      showStatsTooltip();
+    });
   }
 
   // Initialize defaults if not set
