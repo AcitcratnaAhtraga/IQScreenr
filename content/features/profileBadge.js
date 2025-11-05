@@ -456,51 +456,64 @@
       return;
     }
 
-    // Find the profile picture - it's usually in a div with data-testid or near the profile header
-    const profilePicture = document.querySelector('div[data-testid="UserAvatar-Container-"]') ||
-                          document.querySelector('div[data-testid*="UserAvatar"]') ||
-                          document.querySelector('div[role="img"][aria-label*="profile picture"]') ||
-                          document.querySelector('a[href*="/"][aria-label*="profile picture"]') ||
-                          null;
+    // Find the profile picture container
+    const profilePicture = document.querySelector('div[data-testid*="UserAvatar-Container"]') ||
+                          document.querySelector('div[data-testid*="UserAvatar"]');
 
-    // Find a positioned parent container (relative, absolute, or fixed)
-    // This will be our reference point for absolute positioning
-    let positionedParent = editProfileButton.parentElement;
-    while (positionedParent && positionedParent !== document.body) {
-      const style = window.getComputedStyle(positionedParent);
-      if (style.position === 'relative' || style.position === 'absolute' || style.position === 'fixed') {
-        break;
-      }
-      positionedParent = positionedParent.parentElement;
-    }
+    // Find the container that holds both the profile picture and Edit Profile button
+    // This is the parent container that has both elements as direct or indirect children
+    let container = editProfileButton.parentElement;
 
-    // If no positioned parent found, use the Edit Profile button's parent and make it relative
-    if (!positionedParent || positionedParent === document.body) {
-      positionedParent = editProfileButton.parentElement;
-      if (positionedParent) {
-        const currentPosition = window.getComputedStyle(positionedParent).position;
-        if (currentPosition === 'static') {
-          positionedParent.style.position = 'relative';
+    // Look for the container that contains both the profile picture and the button
+    // We need to find a common parent that has both
+    while (container && container !== document.body) {
+      const hasProfilePic = profilePicture && container.contains(profilePicture);
+      const hasButton = container.contains(editProfileButton);
+
+      // Check if this container has both elements
+      if (hasProfilePic && hasButton) {
+        // Make sure this container is the direct parent of both, or find the right level
+        // If the profile picture and button share the same parent, use that
+        if (profilePicture && editProfileButton.parentElement === container) {
+          // They're siblings in this container, perfect
+          break;
+        } else if (profilePicture && profilePicture.parentElement === container &&
+                   editProfileButton.parentElement === container) {
+          // Both are direct children
+          break;
         }
       }
+      container = container.parentElement;
     }
 
-    // Check if badge already exists and is already placed
+    // If we couldn't find a good container, use the button's parent
+    if (!container || container === document.body) {
+      container = editProfileButton.parentElement;
+    }
+
+    // Check if badge already exists and is already placed correctly
     const existingBadge = document.querySelector('.iq-guessr-score-badge');
     if (existingBadge) {
-      // Check if it's already positioned (has absolute positioning)
-      const existingStyle = window.getComputedStyle(existingBadge);
-      if (existingStyle.position === 'absolute') {
-        // Badge is already placed, just update it and reposition if needed
+      // Check if it's already in a wrapper and in the right container
+      const existingWrapper = existingBadge.closest('.iq-guessr-profile-badge-wrapper');
+      if (existingWrapper && container && container.contains(existingWrapper)) {
+        // Badge is already placed correctly, just update it
         await getScoreAndUpdateBadge();
-        // Update position in case layout changed
-        if (existingBadge._positionUpdateHandler) {
-          existingBadge._positionUpdateHandler();
-        }
         return;
       }
-      // Badge exists but not in the right place - remove it and re-place it
-      existingBadge.remove();
+      // Badge exists but not in the right place - clean up and remove it
+      // Clean up any position update handlers
+      if (existingBadge._positionUpdateHandler) {
+        window.removeEventListener('resize', existingBadge._positionUpdateHandler);
+        window.removeEventListener('scroll', existingBadge._positionUpdateHandler, true);
+        delete existingBadge._positionUpdateHandler;
+      }
+      // Remove wrapper if it exists
+      if (existingWrapper) {
+        existingWrapper.remove();
+      } else {
+        existingBadge.remove();
+      }
     }
 
     // Get or create the badge
@@ -509,82 +522,86 @@
       return;
     }
 
-    // Insert the badge before the Edit Profile button in the DOM
-    // But position it absolutely so it doesn't affect layout
-    if (editProfileButton.parentElement) {
-      // Insert before the button
-      editProfileButton.parentElement.insertBefore(badge, editProfileButton);
+    // Create a wrapper that takes horizontal space but no vertical space
+    const badgeWrapper = document.createElement('span');
+    badgeWrapper.className = 'iq-guessr-profile-badge-wrapper';
+    badgeWrapper.style.cssText = `
+      display: inline-block !important;
+      height: 0 !important;
+      width: auto !important;
+      overflow: visible !important;
+      vertical-align: middle !important;
+      position: relative !important;
+      margin-left: 8px !important;
+      margin-right: 8px !important;
+    `;
+
+    // Style the badge to be absolutely positioned within the wrapper
+    // This way it doesn't affect vertical layout but still takes horizontal space
+    badge.style.setProperty('position', 'absolute', 'important');
+    badge.style.setProperty('top', '50%', 'important');
+    badge.style.setProperty('left', '0', 'important');
+    badge.style.setProperty('transform', 'translateY(-50%)', 'important');
+    badge.style.setProperty('margin', '0', 'important');
+    badge.style.setProperty('margin-left', '0', 'important');
+    badge.style.setProperty('margin-right', '0', 'important');
+    badge.style.setProperty('display', 'inline-flex', 'important');
+
+    // Put badge inside wrapper
+    badgeWrapper.appendChild(badge);
+
+    // Insert the badge between the profile picture and Edit Profile button
+    // Find where to insert it in the container
+    if (container) {
+      // Get all children of the container
+      const children = Array.from(container.children);
+
+      // Find the index of the Edit Profile button
+      let buttonIndex = -1;
+      for (let i = 0; i < children.length; i++) {
+        if (children[i].contains(editProfileButton) || children[i] === editProfileButton) {
+          buttonIndex = i;
+          break;
+        }
+      }
+
+      // Find the profile picture index
+      let profilePicIndex = -1;
+      if (profilePicture) {
+        for (let i = 0; i < children.length; i++) {
+          if (children[i].contains(profilePicture) || children[i] === profilePicture) {
+            profilePicIndex = i;
+            break;
+          }
+        }
+      }
+
+      // Insert the badge wrapper between profile picture and button
+      if (buttonIndex >= 0) {
+        // Insert before the button's container
+        const targetElement = children[buttonIndex];
+        if (targetElement === editProfileButton) {
+          // Button is direct child, insert before it
+          container.insertBefore(badgeWrapper, editProfileButton);
+        } else {
+          // Button is in a child element, insert before that child
+          container.insertBefore(badgeWrapper, targetElement);
+        }
+      } else {
+        // Fallback: insert before the button
+        if (editProfileButton.parentElement === container) {
+          container.insertBefore(badgeWrapper, editProfileButton);
+        } else {
+          // Insert at the end
+          container.appendChild(badgeWrapper);
+        }
+      }
     } else {
-      // Fallback: append to positioned parent
-      if (positionedParent) {
-        positionedParent.appendChild(badge);
+      // Last resort: insert before the button
+      if (editProfileButton.parentElement) {
+        editProfileButton.parentElement.insertBefore(badgeWrapper, editProfileButton);
       }
     }
-
-    // Position the badge absolutely between profile picture and Edit Profile button
-    // Calculate position based on profile picture and button positions
-    const updateBadgePosition = () => {
-      if (!badge.parentElement || !editProfileButton.parentElement) {
-        return; // Badge or button removed from DOM
-      }
-
-      const buttonRect = editProfileButton.getBoundingClientRect();
-      const parentRect = positionedParent ? positionedParent.getBoundingClientRect() : { top: 0, left: 0 };
-
-      let profilePicRect = null;
-      if (profilePicture) {
-        profilePicRect = profilePicture.getBoundingClientRect();
-      }
-
-      // Calculate vertical position - align with the button's vertical center
-      const buttonCenterY = buttonRect.top + (buttonRect.height / 2);
-      const top = buttonCenterY - parentRect.top;
-
-      // Calculate horizontal position - center between profile picture and button
-      let left;
-      if (profilePicRect) {
-        // Center between profile picture right edge and button left edge
-        const profilePicRight = profilePicRect.right - parentRect.left;
-        const buttonLeft = buttonRect.left - parentRect.left;
-        const centerX = profilePicRight + (buttonLeft - profilePicRight) / 2;
-        left = centerX;
-      } else {
-        // Fallback: center between left edge and button
-        const buttonLeft = buttonRect.left - parentRect.left;
-        left = buttonLeft / 2;
-      }
-
-      // Get badge dimensions to center it properly
-      const badgeRect = badge.getBoundingClientRect();
-      const badgeWidth = badgeRect.width || 0;
-      const badgeHeight = badgeRect.height || 0;
-
-      // Adjust position to center the badge on the calculated point
-      left = left - (badgeWidth / 2);
-      const adjustedTop = top - (badgeHeight / 2);
-
-      // Update positioning properties (preserving other styles from createScoreBadge)
-      badge.style.setProperty('position', 'absolute', 'important');
-      badge.style.setProperty('top', `${adjustedTop}px`, 'important');
-      badge.style.setProperty('left', `${left}px`, 'important');
-      badge.style.setProperty('margin', '0', 'important');
-      badge.style.setProperty('margin-left', '0', 'important');
-      badge.style.setProperty('z-index', '1000', 'important');
-      badge.style.setProperty('pointer-events', 'auto', 'important');
-    };
-
-    // Update position immediately
-    updateBadgePosition();
-
-    // Update position on window resize or scroll (in case layout changes)
-    const positionUpdateHandler = () => {
-      updateBadgePosition();
-    };
-    window.addEventListener('resize', positionUpdateHandler);
-    window.addEventListener('scroll', positionUpdateHandler, true);
-
-    // Store the handler so we can clean it up if needed
-    badge._positionUpdateHandler = positionUpdateHandler;
   }
 
   /**

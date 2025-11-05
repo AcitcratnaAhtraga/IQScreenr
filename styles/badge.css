@@ -128,7 +128,7 @@
  *
  * Real-time Badge Special Properties:
  *   - Updates live as user types (debounced 300ms)
- *   - Shows "X" badge until 5 words typed
+ *   - Shows "X" badge until 1 word typed
  *   - Shows loading/calculating state during IQ estimation
  *   - Uses special CSS: .iq-badge-realtime (lines 48-66)
  *   - Height is dynamically managed to prevent layout shifts

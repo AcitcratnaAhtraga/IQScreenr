@@ -681,12 +681,12 @@ class ComprehensiveIQEstimatorUltimate {
     const textWithoutEmoji = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
     const words = textWithoutEmoji.match(/\b[a-zA-Z]{2,}\b/g) || [];
 
-    if (words.length < 5) {
+    if (words.length < 1) {
       return {
         iq_estimate: null,
         confidence: Math.max(0, words.length * 10),
         is_valid: false,
-        error: `Too few words (${words.length}, minimum 5 required)`,
+        error: `Too few words (${words.length}, minimum 1 required)`,
         word_count: words.length
       };
     }
@@ -768,12 +768,12 @@ class ComprehensiveIQEstimatorUltimate {
     const textWithoutEmoji = text.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
     const words = textWithoutEmoji.match(/\b[a-zA-Z]{2,}\b/g) || [];
 
-    if (words.length < 5) {
+    if (words.length < 1) {
       return {
         iq_estimate: null,
         confidence: Math.max(0, words.length * 10),
         is_valid: false,
-        error: `Too few words (${words.length}, minimum 5 required)`,
+        error: `Too few words (${words.length}, minimum 1 required)`,
         word_count: words.length
       };
     }
@@ -1774,9 +1774,9 @@ class ComprehensiveIQEstimatorUltimate {
     // Only apply absolute minimum/maximum bounds - let calculation flow naturally
     // The sample size constraint and penalties already handle length limitations
 
-    // Absolute minimum: Even perfect agreement needs some data
+    // Absolute minimum: Very short or poor quality texts can have very low confidence
     // Absolute maximum: Even perfect signal has some uncertainty
-    confidence = Math.max(12, Math.min(94, confidence));
+    confidence = Math.max(1, Math.min(94, confidence));
 
     // Round to whole number for display (preserves precision from calculation)
     return Math.round(confidence);

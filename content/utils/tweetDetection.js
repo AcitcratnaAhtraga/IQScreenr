@@ -138,10 +138,10 @@ function validateTweetText(text) {
   // Extract actual words (excluding emojis, symbols)
   const words = textWithoutEmoji.match(/\b[a-zA-Z]{2,}\b/g) || [];
 
-  if (words.length < 5) {
+  if (words.length < 1) {
     return {
       isValid: false,
-      reason: `Too few words (${words.length}, minimum 5 required)`
+      reason: `Too few words (${words.length}, minimum 1 required)`
     };
   }
 
@@ -162,8 +162,8 @@ function validateTweetText(text) {
       textToCheck = text.substring(startsWithMention[0].length).trim();
     }
     const remainingWords = textToCheck.match(/\b[a-zA-Z]{2,}\b/g) || [];
-    // If after removing @mention, there are still at least 5 words, it's valid
-    if (remainingWords.length >= 5) {
+    // If after removing @mention, there are still at least 1 word, it's valid
+    if (remainingWords.length >= 1) {
       // Valid - has @mention but also substantial content
       return { isValid: true, reason: null };
     }

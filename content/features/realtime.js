@@ -122,8 +122,8 @@ async function updateRealtimeBadge(inputElement, badge, container) {
   // Count words in the text
   const wordCount = text.trim() ? text.trim().split(/\s+/).filter(word => word.length > 0).length : 0;
 
-  // Show X badge until 5 words are written
-  if (wordCount < 5) {
+  // Show X badge until 1 word is written
+  if (wordCount < 1) {
     badge.style.setProperty('background-color', '#000000', 'important');
     badge.style.setProperty('color', '#9e9e9e', 'important');
 
