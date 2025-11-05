@@ -273,6 +273,19 @@ input[type="range"]::-moz-range-thumb {
   color: #111827;
 }
 
+.info-content a.citation-link {
+  color: #2563eb;
+  text-decoration: none;
+  border-bottom: 1px dotted #2563eb;
+  transition: all 0.2s ease;
+}
+
+.info-content a.citation-link:hover {
+  color: #1d4ed8;
+  border-bottom: 1px solid #1d4ed8;
+  text-decoration: none;
+}
+
 .privacy-notice {
   margin-top: 12px;
   padding: 10px;
@@ -400,7 +413,7 @@ input[type="range"]::-moz-range-thumb {
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   body {
-    background: #111827;
+    background: #000000;
     color: #f9fafb;
   }
 
@@ -461,7 +474,7 @@ input[type="range"]::-moz-range-thumb {
 
   .info-section,
   .color-legend {
-    background: #1f2937;
+    background: #1a1a1a;
   }
 
   .info-section h2,
@@ -475,6 +488,16 @@ input[type="range"]::-moz-range-thumb {
 
   .info-content strong {
     color: #f9fafb;
+  }
+
+  .info-content a.citation-link {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+  }
+
+  .info-content a.citation-link:hover {
+    color: #93c5fd;
+    border-bottom-color: #93c5fd;
   }
 
   .legend-item {
@@ -502,12 +525,12 @@ input[type="range"]::-moz-range-thumb {
 
   .setting-item-large {
     border-color: #374151;
-    background: #1f2937;
+    background: #1a1a1a;
   }
 
   .setting-item-large:hover {
     border-color: #ffffff;
-    background: #2f2f2f;
+    background: #2a2a2a;
   }
 
   .switch-text-large {
@@ -516,7 +539,7 @@ input[type="range"]::-moz-range-thumb {
 
   /* Stats tooltip in popup */
   .popup-stats-tooltip {
-    background: #1f2937 !important;
+    background: #1a1a1a !important;
     border: 1px solid #374151;
   }
 }

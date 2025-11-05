@@ -93,7 +93,8 @@
     {
       "resources": [
         "content/data/aoa_dictionary.json",
-        "content/data/dependency_depth_calibration.json"
+        "content/data/dependency_depth_calibration.json",
+        "icons/Variants/Fullsize/IqGuessrT.png"
       ],
       "matches": [
         "https://*.twitter.com/*",
