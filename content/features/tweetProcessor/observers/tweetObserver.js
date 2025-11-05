@@ -12,6 +12,28 @@
   const getFollowNotificationFilter = () => window.FollowNotificationFilter || {};
 
   /**
+   * Check if a tweet element is a Community Note notification
+   * Community Notes notifications contain text like "Community Note" or "Readers added a Community Note"
+   */
+  function isCommunityNoteNotification(tweetElement) {
+    if (!tweetElement) return false;
+
+    // Get all text elements in the notification
+    const allSpans = Array.from(tweetElement.querySelectorAll('span'));
+    const allDivs = Array.from(tweetElement.querySelectorAll('div'));
+
+    // Check for Community Note notification text
+    const communityNoteText = [...allSpans, ...allDivs].find(element => {
+      const text = (element.textContent || '').toLowerCase();
+      return text.includes('community note') ||
+             text.includes('readers added a community note') ||
+             (text.includes('community') && text.includes('note'));
+    });
+
+    return !!communityNoteText;
+  }
+
+  /**
    * Setup MutationObserver to watch for new tweets
    *
    * @param {Set} processedTweets - Set of processed tweets
@@ -76,6 +98,11 @@
               if (!hasTweetContent) {
                 return; // Skip follow notifications
               }
+            }
+
+            // Skip Community Notes notifications
+            if (isNotificationsPageCheck && isCommunityNoteNotification(tweet)) {
+              return; // Skip Community Notes notifications
             }
 
             if (addLoadingBadgeToTweet) {

@@ -27,6 +27,28 @@
   const getGameManager = () => window.GameManager || {};
   const getFollowNotificationFilter = () => window.FollowNotificationFilter || {};
 
+  /**
+   * Check if a tweet element is a Community Note notification
+   * Community Notes notifications contain text like "Community Note" or "Readers added a Community Note"
+   */
+  function isCommunityNoteNotification(tweetElement) {
+    if (!tweetElement) return false;
+
+    // Get all text elements in the notification
+    const allSpans = Array.from(tweetElement.querySelectorAll('span'));
+    const allDivs = Array.from(tweetElement.querySelectorAll('div'));
+
+    // Check for Community Note notification text
+    const communityNoteText = [...allSpans, ...allDivs].find(element => {
+      const text = (element.textContent || '').toLowerCase();
+      return text.includes('community note') ||
+             text.includes('readers added a community note') ||
+             (text.includes('community') && text.includes('note'));
+    });
+
+    return !!communityNoteText;
+  }
+
   // Get refactored modules
   const getNestedTweetHandler = () => window.NestedTweetHandler || {};
   const getTweetValidation = () => window.TweetValidation || {};
@@ -75,12 +97,32 @@
       return;
     }
 
-    // Check if this is a follow notification and skip processing
+    // Check if this is a follow notification or Community Note notification and skip processing
     const isNotificationsPage = window.location.href.includes('/notifications');
     if (isNotificationsPage) {
       const { isFollowNotification, skipFollowNotification } = getFollowNotificationFilter();
       if (isFollowNotification && isFollowNotification(actualTweetElement)) {
         skipFollowNotification(actualTweetElement, tweetElement, hasNestedStructure);
+        return;
+      }
+
+      // Skip Community Notes notifications
+      if (isCommunityNoteNotification(actualTweetElement)) {
+        actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+        if (hasNestedStructure) {
+          tweetElement.setAttribute('data-iq-analyzed', 'true');
+        }
+        // Remove any existing badges
+        const existingBadge = actualTweetElement.querySelector('.iq-badge');
+        if (existingBadge && existingBadge.parentElement) {
+          existingBadge.remove();
+        }
+        if (hasNestedStructure) {
+          const outerBadge = tweetElement.querySelector('.iq-badge');
+          if (outerBadge && outerBadge.parentElement) {
+            outerBadge.remove();
+          }
+        }
         return;
       }
     }

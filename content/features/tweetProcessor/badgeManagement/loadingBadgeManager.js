@@ -12,6 +12,28 @@
   const getFollowNotificationFilter = () => window.FollowNotificationFilter || {};
 
   /**
+   * Check if a tweet element is a Community Note notification
+   * Community Notes notifications contain text like "Community Note" or "Readers added a Community Note"
+   */
+  function isCommunityNoteNotification(tweetElement) {
+    if (!tweetElement) return false;
+
+    // Get all text elements in the notification
+    const allSpans = Array.from(tweetElement.querySelectorAll('span'));
+    const allDivs = Array.from(tweetElement.querySelectorAll('div'));
+
+    // Check for Community Note notification text
+    const communityNoteText = [...allSpans, ...allDivs].find(element => {
+      const text = (element.textContent || '').toLowerCase();
+      return text.includes('community note') ||
+             text.includes('readers added a community note') ||
+             (text.includes('community') && text.includes('note'));
+    });
+
+    return !!communityNoteText;
+  }
+
+  /**
    * Lightweight function to add a loading badge to a single tweet
    *
    * @param {HTMLElement} tweet - The tweet element to add badge to
@@ -49,6 +71,13 @@
       // Mark as analyzed to prevent further processing
       actualTweet.setAttribute('data-iq-analyzed', 'true');
       return; // Skip follow notifications
+    }
+
+    // Skip Community Notes notifications
+    if (isNotificationsPage && isCommunityNoteNotification(actualTweet)) {
+      // Mark as analyzed to prevent further processing
+      actualTweet.setAttribute('data-iq-analyzed', 'true');
+      return; // Skip Community Notes notifications
     }
 
     const loadingBadge = createLoadingBadge();
