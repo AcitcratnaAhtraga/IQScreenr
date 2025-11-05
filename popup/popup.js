@@ -599,63 +599,48 @@ document.addEventListener('DOMContentLoaded', () => {
         color = '#2e7d32';
       }
 
-      // Create badge HTML (similar to IQ badge structure)
+      // Create badge HTML using same structure as profile page badge
       badgeContainer.style.display = 'block';
-      badgeContainer.innerHTML = `
-        <span class="iq-badge iq-badge-flip" style="display: inline-block; background-color: ${color}; color: #000000; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: help;">
-          <div class="iq-badge-inner">
-            <div class="iq-badge-front">
-              <span class="iq-label">IQ</span>
-              <span class="iq-score">${averageIQ}</span>
-            </div>
-            <div class="iq-badge-back">
-              <span class="iq-label">%</span>
-              <span class="iq-score">${Math.round(overallConfidence)}</span>
-            </div>
+
+      // Create badge element using the same approach as profile page
+      const badge = document.createElement('span');
+      badge.className = 'iq-badge iq-badge-average iq-badge-flip';
+      badge.setAttribute('data-iq-average', 'true');
+      badge.setAttribute('data-iq-score', averageIQ);
+      badge.setAttribute('data-confidence', Math.round(overallConfidence));
+      badge.setAttribute('data-no-js-handlers', 'true');
+
+      // Use CSS variables and minimal inline styles - same as profile page
+      badge.style.setProperty('--iq-badge-bg-color', color);
+      badge.style.setProperty('cursor', 'help', 'important');
+      badge.style.setProperty('visibility', 'visible', 'important');
+      badge.style.setProperty('opacity', '1', 'important');
+
+      badge.innerHTML = `
+        <div class="iq-badge-inner">
+          <div class="iq-badge-front">
+            <span class="iq-label">IQ</span>
+            <span class="iq-score">${averageIQ}</span>
           </div>
-        </span>
-        <span style="margin-left: 8px; color: #6b7280; font-size: 11px;">(${averageData.count} tweets)</span>
+          <div class="iq-badge-back">
+            <span class="iq-label">%</span>
+            <span class="iq-score">${Math.round(overallConfidence)}</span>
+          </div>
+        </div>
       `;
 
-      // Add flip animation CSS if not already present
-      if (!document.getElementById('averageIQBadgeStyles')) {
-        const style = document.createElement('style');
-        style.id = 'averageIQBadgeStyles';
-        style.textContent = `
-          .average-iq-badge-container .iq-badge-inner {
-            position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.3s ease;
-          }
-          .average-iq-badge-container .iq-badge-front,
-          .average-iq-badge-container .iq-badge-back {
-            backface-visibility: hidden;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-          }
-          .average-iq-badge-container .iq-badge-back {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            transform: rotateY(180deg);
-          }
-          .average-iq-badge-container .iq-badge:hover .iq-badge-inner {
-            transform: rotateY(180deg);
-          }
-          .average-iq-badge-container .iq-label {
-            font-size: 10px;
-            opacity: 0.8;
-          }
-          .average-iq-badge-container .iq-score {
-            font-size: 14px;
-            font-weight: 700;
-          }
-        `;
-        document.head.appendChild(style);
-      }
+      // Store original background color in CSS variable for hover inversion
+      badge.style.setProperty('--iq-badge-original-bg', color, 'important');
+
+      // Clear container and add badge + tweet count
+      badgeContainer.innerHTML = '';
+      badgeContainer.appendChild(badge);
+
+      // Add tweet count text
+      const countText = document.createElement('span');
+      countText.style.cssText = 'margin-left: 8px; color: #6b7280; font-size: 11px;';
+      countText.textContent = `(${averageData.count} tweets)`;
+      badgeContainer.appendChild(countText);
     } catch (error) {
       console.warn('[IqGuessr] Error updating average IQ badge:', error);
       badgeContainer.style.display = 'block';
