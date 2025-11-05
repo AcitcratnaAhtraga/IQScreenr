@@ -129,70 +129,41 @@
         let iqResult = tweetElement._iqResult;
 
         // If no IQ result on tweet element, try to get from IQ cache
+        // CRITICAL: Prioritize tweet-ID-based cache over handle-based cache
+        // Handle-based cache is shared across all tweets by the same user, which causes
+        // all tweets on a profile page to show the same IQ. Tweet-ID-based cache is
+        // specific to each tweet and should be used first.
         if (!iqResult || !iqResult.iq) {
-          const { getCachedIQ } = getIQCache();
-          const { extractTweetHandle, extractTweetText } = getTextExtraction();
-          if (getCachedIQ && extractTweetHandle) {
-            // Try to get handle from attribute first, then extract if needed
-            let handle = tweetElement.getAttribute('data-handle');
-            if (!handle) {
-              handle = extractTweetHandle(tweetElement);
-              // Cache it for future use
-              if (handle) {
-                tweetElement.setAttribute('data-handle', handle);
-              }
-            }
+          const { extractTweetText } = getTextExtraction();
 
-            if (handle) {
-              let cachedIQ = getCachedIQ(handle);
+          // FIRST: Try to get IQ result directly by tweet ID (tweet-specific)
+          const cachedIQResult = await cache.getCachedRevealedIQResult(tweetId);
+          if (cachedIQResult && cachedIQResult.iq) {
+            // Convert to expected format - merge result object if it exists
+            const cachedIQ = {
+              iq_estimate: cachedIQResult.iq,
+              confidence: cachedIQResult.confidence,
+              ...(cachedIQResult.result || {})
+            };
 
-              // If cachedRevealed=true but cachedIQ is null, wait and retry multiple times (cache might still be loading from storage)
-              if (!cachedIQ && cachedRevealed) {
-                // Try loading from storage directly if cache module has loadCache function
-                const { loadCache } = getIQCache();
-                if (loadCache) {
-                  // Force reload from storage
-                  loadCache();
-                  // Wait a bit for async load to complete
-                  await new Promise(resolve => setTimeout(resolve, 150));
-                  cachedIQ = getCachedIQ(handle);
-                }
-
-                // If still not found, wait a bit more and retry once more
-                if (!cachedIQ) {
-                  await new Promise(resolve => setTimeout(resolve, 150));
-                  cachedIQ = getCachedIQ(handle);
-                }
-
-                // If still not found via handle, try fallback: get IQ result directly by tweet ID
-                if (!cachedIQ || !cachedIQ.iq_estimate) {
-                  const cachedIQResult = await cache.getCachedRevealedIQResult(tweetId);
-                  if (cachedIQResult && cachedIQResult.iq) {
-                    // Convert to expected format - merge result object if it exists
-                    cachedIQ = {
-                      iq_estimate: cachedIQResult.iq,
-                      confidence: cachedIQResult.confidence,
-                      ...(cachedIQResult.result || {})
-                    };
-                  }
-                }
-              }
-
-              if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
-                // Extract tweet text for debug data
-                const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
-                // Convert cached IQ format to match expected format
-                iqResult = {
-                  iq: cachedIQ.iq_estimate,
-                  result: cachedIQ,
-                  confidence: cachedIQ.confidence,
-                  text: tweetText
-                };
-                // Store it on the tweet element for future use
-                tweetElement._iqResult = iqResult;
-              }
-            }
+            // Extract tweet text for debug data
+            const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
+            // Convert cached IQ format to match expected format
+            iqResult = {
+              iq: cachedIQ.iq_estimate,
+              result: cachedIQ,
+              confidence: cachedIQ.confidence,
+              text: tweetText
+            };
+            // Store it on the tweet element for future use
+            tweetElement._iqResult = iqResult;
           }
+          // CRITICAL: Do NOT fall back to handle-based cache when cachedRevealed is true
+          // Handle-based cache is shared across all tweets by the same user, which causes
+          // all tweets on a profile page to show the same IQ. If there's no tweet-ID-specific
+          // cache, we should not restore the badge (it will show as a guess badge instead).
+          // This prevents tweets that were calculated when IQGuessr was OFF from incorrectly
+          // showing the handle-based cache result when IQGuessr is re-enabled.
         }
 
         if (iqResult && iqResult.iq !== undefined && iqResult.result) {
@@ -246,32 +217,60 @@
           let iqResult = tweetElement._iqResult;
 
           // If no IQ result on tweet element, try to get from IQ cache (handles page refresh)
+          // CRITICAL: Prioritize tweet-ID-based cache over handle-based cache
+          // Handle-based cache is shared across all tweets by the same user, which causes
+          // all tweets on a profile page to show the same IQ. Tweet-ID-based cache is
+          // specific to each tweet and should be used first.
           if (!iqResult || !iqResult.iq) {
-            const { getCachedIQ } = getIQCache();
-            const { extractTweetHandle, extractTweetText } = getTextExtraction();
-            if (getCachedIQ && extractTweetHandle) {
-              // Try to get handle from attribute first, then extract if needed
-              let handle = tweetElement.getAttribute('data-handle');
-              if (!handle) {
-                handle = extractTweetHandle(tweetElement);
-                // Cache it for future use
-                if (handle) {
-                  tweetElement.setAttribute('data-handle', handle);
-                }
-              }
+            const { extractTweetText } = getTextExtraction();
 
-              if (handle) {
-                const cachedIQ = getCachedIQ(handle);
-                if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
-                  // Extract tweet text for debug data
-                  const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
-                  // Convert cached IQ format to match expected format
-                  iqResult = {
-                    iq: cachedIQ.iq_estimate,
-                    result: cachedIQ,
-                    confidence: cachedIQ.confidence,
-                    text: tweetText
-                  };
+            // FIRST: Try to get IQ result directly by tweet ID (tweet-specific)
+            const cachedIQResult = await cache.getCachedRevealedIQResult(tweetId);
+            if (cachedIQResult && cachedIQResult.iq) {
+              // Convert to expected format - merge result object if it exists
+              const cachedIQ = {
+                iq_estimate: cachedIQResult.iq,
+                confidence: cachedIQResult.confidence,
+                ...(cachedIQResult.result || {})
+              };
+
+              // Extract tweet text for debug data
+              const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
+              // Convert cached IQ format to match expected format
+              iqResult = {
+                iq: cachedIQ.iq_estimate,
+                result: cachedIQ,
+                confidence: cachedIQ.confidence,
+                text: tweetText
+              };
+            } else {
+              // FALLBACK: If tweet-ID-based cache not found, try handle-based cache
+              const { getCachedIQ } = getIQCache();
+              const { extractTweetHandle } = getTextExtraction();
+              if (getCachedIQ && extractTweetHandle) {
+                // Try to get handle from attribute first, then extract if needed
+                let handle = tweetElement.getAttribute('data-handle');
+                if (!handle) {
+                  handle = extractTweetHandle(tweetElement);
+                  // Cache it for future use
+                  if (handle) {
+                    tweetElement.setAttribute('data-handle', handle);
+                  }
+                }
+
+                if (handle) {
+                  const cachedIQ = getCachedIQ(handle);
+                  if (cachedIQ && cachedIQ.iq_estimate !== undefined) {
+                    // Extract tweet text for debug data
+                    const tweetText = extractTweetText ? extractTweetText(tweetElement) : null;
+                    // Convert cached IQ format to match expected format
+                    iqResult = {
+                      iq: cachedIQ.iq_estimate,
+                      result: cachedIQ,
+                      confidence: cachedIQ.confidence,
+                      text: tweetText
+                    };
+                  }
                 }
               }
             }
