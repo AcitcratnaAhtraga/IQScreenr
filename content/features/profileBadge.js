@@ -311,7 +311,7 @@
         // Calculate new rotation duration and icon size based on updated score
         const rotationDuration = calculateRotationDuration(score);
         const iconSize = calculateIconSize(score);
-        const fontSize = calculateFontSize(iconSize);
+        const fontSize = 16; // Fixed font size, doesn't grow with icon
 
         // Update score in existing badge
         const scoreValue = existingBadge.querySelector('.score-value');
@@ -329,7 +329,7 @@
           icon.style.height = `${iconSize}px`;
           // Ensure transition is set for smooth animation changes
           icon.style.transition = 'animation-duration 0.3s ease';
-          // Update font size proportionally
+          // Keep font size fixed
           scoreValue.style.fontSize = `${fontSize}px`;
 
           // Ensure hover handlers are attached (in case badge was created before hover handlers were added)
@@ -508,7 +508,7 @@
             // Calculate new size and rotation based on updated score
             const rotationDuration = calculateRotationDuration(newScore);
             const iconSize = calculateIconSize(newScore);
-            const fontSize = calculateFontSize(iconSize);
+            const fontSize = 16; // Fixed font size, doesn't grow with icon
 
             if (scoreValue) {
               scoreValue.textContent = newScore;
