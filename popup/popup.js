@@ -22,12 +22,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const showIQBadge = document.getElementById('showIQBadge');
     const showRealtimeBadge = document.getElementById('showRealtimeBadge');
     const enableIQGuessr = document.getElementById('enableIQGuessr');
+    const showProfileScoreBadge = document.getElementById('showProfileScoreBadge');
     const enableDebugLogging = document.getElementById('enableDebugLogging');
 
     const isEnabled = showIQBadge.checked;
     showRealtimeBadge.disabled = !isEnabled;
     enableIQGuessr.disabled = !isEnabled;
     enableDebugLogging.disabled = !isEnabled;
+
+    // Show profile score badge is only enabled when IqGuessr is enabled
+    const isGameModeEnabled = enableIQGuessr.checked;
+    showProfileScoreBadge.disabled = !isGameModeEnabled;
 
     // If main toggle is off, uncheck dependent options and save
     if (!isEnabled) {
@@ -42,6 +47,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (enableDebugLogging.checked) {
         enableDebugLogging.checked = false;
         chrome.storage.sync.set({ enableDebugLogging: false });
+      }
+    }
+
+    // If IqGuessr mode is off, uncheck profile score badge
+    if (!isGameModeEnabled) {
+      if (showProfileScoreBadge.checked) {
+        showProfileScoreBadge.checked = false;
+        chrome.storage.sync.set({ showProfileScoreBadge: false });
       }
     }
 
@@ -351,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize defaults if not set
   Promise.all([
-    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'iqGuessrScore'], resolve)),
+    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
     new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
@@ -385,7 +398,8 @@ document.addEventListener('DOMContentLoaded', () => {
         showRealtimeBadge: true,
         useConfidenceForColor: true, // Always enabled
         enableDebugLogging: true,
-        enableIQGuessr: false
+        enableIQGuessr: false,
+        showProfileScoreBadge: true // Default to showing profile badge
       };
       // Only set score if it doesn't exist
       if (score === 0 && !allSync.iqGuessrScore && !allLocal.iqGuessrScore) {
@@ -411,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false; // Default to true
     document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
     document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
+    document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false; // Default to true
 
     // Update IqGuessr score display
     updateIQGuessrScore(score);
@@ -420,11 +435,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }).catch((error) => {
     console.warn('[IqGuessr] Error loading settings:', error);
     // Fallback: try sync storage only
-    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'iqGuessrScore'], (result) => {
+    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'iqGuessrScore'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
       document.getElementById('showRealtimeBadge').checked = result.showRealtimeBadge !== false;
       document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false;
       document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true;
+      document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false;
       updateIQGuessrScore(result.iqGuessrScore ?? 0);
       updateDependentCheckboxes();
     });
@@ -500,6 +516,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Handle showProfileScoreBadge checkbox
+  document.getElementById('showProfileScoreBadge').addEventListener('change', (e) => {
+    chrome.storage.sync.set({ showProfileScoreBadge: e.target.checked }, () => {
+      if (chrome.runtime.lastError) {
+        showStatus('Error saving settings', 'error');
+      } else {
+        showStatus('Settings saved', 'success');
+      }
+    });
+  });
+
   // Handle reset button
   document.getElementById('resetSettings').addEventListener('click', () => {
     // Get current score before resetting
@@ -510,28 +537,30 @@ document.addEventListener('DOMContentLoaded', () => {
       const currentScore = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
 
       if (confirm(`Reset all settings to defaults?\n\n⚠️ WARNING: This will reset your IqGuessr score from ${currentScore} to 0!\n\nAre you sure you want to continue?`)) {
-        const defaults = {
-          showIQBadge: true,
-          showRealtimeBadge: true,
-          useConfidenceForColor: true, // Always enabled
-          enableDebugLogging: true,
-          enableIQGuessr: false,
-          iqGuessrScore: 0
-        };
+      const defaults = {
+        showIQBadge: true,
+        showRealtimeBadge: true,
+        useConfidenceForColor: true, // Always enabled
+        enableDebugLogging: true,
+        enableIQGuessr: false,
+        showProfileScoreBadge: true,
+        iqGuessrScore: 0
+      };
 
         chrome.storage.sync.set(defaults, () => {
           if (chrome.runtime.lastError) {
             showStatus('Error resetting settings', 'error');
           } else {
             // Update UI
-            document.getElementById('showIQBadge').checked = defaults.showIQBadge;
-            document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
-            document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
-            document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
-            // Update dependent checkboxes state
-            updateDependentCheckboxes();
-            updateIQGuessrScore(defaults.iqGuessrScore);
-            showStatus('Settings reset to defaults', 'success');
+          document.getElementById('showIQBadge').checked = defaults.showIQBadge;
+          document.getElementById('showRealtimeBadge').checked = defaults.showRealtimeBadge;
+          document.getElementById('enableDebugLogging').checked = defaults.enableDebugLogging;
+          document.getElementById('enableIQGuessr').checked = defaults.enableIQGuessr;
+          document.getElementById('showProfileScoreBadge').checked = defaults.showProfileScoreBadge;
+          // Update dependent checkboxes state
+          updateDependentCheckboxes();
+          updateIQGuessrScore(defaults.iqGuessrScore);
+          showStatus('Settings reset to defaults', 'success');
           }
         });
       }

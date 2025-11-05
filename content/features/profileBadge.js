@@ -58,16 +58,21 @@
   /**
    * Calculate icon size based on score
    * Higher score = larger icon
-   * Formula: size = 40 + (120 - 40) * min(1, score / 10000000)
-   * This gives: 0 score = 40px, 10,000,000 = 120px, and scales linearly
+   * Formula: size = 40 + 12 * log10(max(score, 10) / 10)
+   * This gives: 0-10 score = 40px, 100 = 52px, 1000 = 64px, 10000 = 76px, etc.
+   * Grows smoothly by 12px for every 10x increase in score
    */
   function calculateIconSize(score) {
-    const baseSize = 40; // Starting size at score 0
-    const maxSize = 120; // Maximum size at max score
-    const maxScore = 10000000; // Score at which max size is reached
+    const baseSize = 40; // Base size at score 0-10
+    const sizeIncrement = 12; // Pixels added per 10x score increase
 
-    // Linear scaling from baseSize to maxSize
-    const size = baseSize + (maxSize - baseSize) * Math.min(1, score / maxScore);
+    // Ensure score is at least 10 for logarithm calculation
+    const adjustedScore = Math.max(score, 10);
+
+    // Calculate size using logarithmic scaling
+    // log10(adjustedScore / 10) gives us the number of 10x increments
+    const size = baseSize + sizeIncrement * Math.log10(adjustedScore / 10);
+
     return Math.round(size);
   }
 
@@ -108,7 +113,7 @@
     badge.innerHTML = `
       <div style="position: relative; display: inline-block;">
         <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: ${iconSize}px; height: ${iconSize}px; display: block; animation-duration: ${rotationDuration}s; transition: animation-duration 0.3s ease;">
-        <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: ${fontSize}px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
+        <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: ${fontSize}px; font-weight: 700; color: black; text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9); pointer-events: none; z-index: 1;">${score}</span>
       </div>
     `;
 
@@ -181,67 +186,70 @@
       'div[data-testid*="UserAvatar-Container"]', // Any UserAvatar-Container
     ];
 
+    let avatarContainer = null;
     for (const selector of avatarContainerSelectors) {
-      const avatarContainer = document.querySelector(selector);
+      avatarContainer = document.querySelector(selector);
       if (avatarContainer) {
-        // Find the parent container that can hold both the avatar and the badge
-        // Usually this is a flex container that has the avatar and other elements
-        let parent = avatarContainer.parentElement;
-
-        // Look for a suitable parent container (flex container, etc.)
-        for (let i = 0; i < 5 && parent; i++) {
-          const styles = window.getComputedStyle(parent);
-          const display = styles.display;
-
-          // Prefer flex containers that allow horizontal layout
-          if (display === 'flex' || display === 'inline-flex') {
-            // Check if it doesn't have overflow:hidden
-            if (styles.overflow !== 'hidden') {
-              return parent;
-            }
-          }
-
-          // Also check if it's a container that holds profile elements
-          if (parent.getAttribute('data-testid')?.includes('Profile') ||
-              parent.getAttribute('data-testid')?.includes('User') ||
-              parent.classList.toString().includes('r-18u37iz') || // Common Twitter flex class
-              parent.classList.toString().includes('r-1w6e6rj')) { // Common Twitter flex class
-            const parentStyles = window.getComputedStyle(parent);
-            if (parentStyles.overflow !== 'hidden') {
-              return parent;
-            }
-          }
-
-          parent = parent.parentElement;
-        }
-
-        // If we found the avatar container but no suitable parent, return the parent
-        // We'll insert after the avatar container
-        if (avatarContainer.parentElement) {
-          return avatarContainer.parentElement;
-        }
+        break;
       }
     }
 
-    // Fallback: Try to find profile picture image and use its container
-    const profilePics = document.querySelectorAll('img[src*="profile_images"], img[alt*="profile picture"], img[alt*="Profile picture"]');
-    for (const img of profilePics) {
-      const rect = img.getBoundingClientRect();
-      // Profile pictures are typically square and reasonably sized (40px+)
-      if (rect.width >= 40 && rect.height >= 40) {
-        // Find the UserAvatar-Container by going up the DOM tree
-        let element = img;
-        for (let i = 0; i < 10 && element; i++) {
-          if (element.getAttribute('data-testid')?.includes('UserAvatar-Container')) {
-            // Found the avatar container, return its parent
-            if (element.parentElement) {
-              return element.parentElement;
-            }
-            return element;
-          }
-          element = element.parentElement;
+    if (!avatarContainer) {
+      return null;
+    }
+
+    // Now find the correct parent container
+    // The target parent should have classes like: r-1habvwh r-18u37iz r-1w6e6rj r-1wtj0ep
+    // and should contain both the avatar container and the "Edit profile" button
+    let parent = avatarContainer.parentElement;
+
+    // Look for the specific container that has the flex classes and contains both avatar and edit button
+    for (let i = 0; i < 8 && parent; i++) {
+      const styles = window.getComputedStyle(parent);
+      const display = styles.display;
+      const classList = parent.classList.toString();
+
+      // Check if this is the target container (has the flex classes)
+      const hasTargetClasses = classList.includes('r-18u37iz') &&
+                                classList.includes('r-1w6e6rj') &&
+                                (classList.includes('r-1habvwh') || classList.includes('r-1wtj0ep'));
+
+      // Check if it contains both avatar and edit button (confirms it's the right container)
+      const hasEditButton = parent.querySelector('a[data-testid="editProfileButton"], a[href*="/settings/profile"]');
+      const hasAvatar = parent.contains(avatarContainer);
+
+      // Prefer containers that are flex and have the target classes
+      if ((display === 'flex' || display === 'inline-flex') &&
+          (hasTargetClasses || (hasEditButton && hasAvatar))) {
+        // Make sure it doesn't have overflow:hidden
+        if (styles.overflow !== 'hidden') {
+          return parent;
         }
       }
+
+      // Also check if it's a container that holds profile elements (backup)
+      if (hasEditButton && hasAvatar && styles.overflow !== 'hidden') {
+        return parent;
+      }
+
+      parent = parent.parentElement;
+    }
+
+    // Fallback: If we found the avatar container but no suitable parent,
+    // try to find a parent that's a flex container
+    parent = avatarContainer.parentElement;
+    for (let i = 0; i < 5 && parent; i++) {
+      const styles = window.getComputedStyle(parent);
+      if ((styles.display === 'flex' || styles.display === 'inline-flex') &&
+          styles.overflow !== 'hidden') {
+        return parent;
+      }
+      parent = parent.parentElement;
+    }
+
+    // Last resort: return the immediate parent
+    if (avatarContainer.parentElement) {
+      return avatarContainer.parentElement;
     }
 
     return null;
@@ -256,9 +264,14 @@
       // Check settings only if not forced (e.g., from init or mutation observer)
       const settings = getSettings();
       const isGameModeEnabled = settings.enableIQGuessr === true;
+      const showProfileBadge = settings.showProfileScoreBadge !== false; // Default to true
 
-      // Only show badge if game mode is enabled
-      if (!isGameModeEnabled) {
+      // Only show badge if game mode is enabled AND profile badge is enabled
+      if (!isGameModeEnabled || !showProfileBadge) {
+        // Remove badge if it exists but settings are disabled
+        if (!isGameModeEnabled || !showProfileBadge) {
+          removeScoreBadge();
+        }
         return;
       }
     }
@@ -329,8 +342,10 @@
           icon.style.height = `${iconSize}px`;
           // Ensure transition is set for smooth animation changes
           icon.style.transition = 'animation-duration 0.3s ease';
-          // Keep font size fixed
+          // Keep font size fixed and ensure color is black with white shadow
           scoreValue.style.fontSize = `${fontSize}px`;
+          scoreValue.style.color = 'black';
+          scoreValue.style.textShadow = '0 1px 3px rgba(255, 255, 255, 0.9)';
 
           // Ensure hover handlers are attached (in case badge was created before hover handlers were added)
           if (!existingBadge.hasAttribute('data-hover-handlers-attached')) {
@@ -362,7 +377,7 @@
             existingBadge.innerHTML = `
               <div style="position: relative; display: inline-block;">
                 <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: ${iconSize}px; height: ${iconSize}px; display: block; animation-duration: ${rotationDuration}s;">
-                <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: ${fontSize}px; font-weight: 700; color: white; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9); pointer-events: none; z-index: 1;">${score}</span>
+                <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: ${fontSize}px; font-weight: 700; color: black; text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9); pointer-events: none; z-index: 1;">${score}</span>
               </div>
             `;
           }
@@ -395,16 +410,50 @@
       badge.setAttribute('data-stats-tooltip-attached', 'true');
 
       // Find the UserAvatar-Container within the insertion point
-      const avatarContainer = insertionPoint.querySelector('div[data-testid^="UserAvatar-Container-"]') ||
-                             insertionPoint.querySelector('div[data-testid*="UserAvatar-Container"]');
+      // First try to find it directly in the insertion point
+      let avatarContainer = insertionPoint.querySelector('div[data-testid^="UserAvatar-Container-"]') ||
+                           insertionPoint.querySelector('div[data-testid*="UserAvatar-Container"]');
+
+      // If not found, search more broadly but ensure it's a direct child or close descendant
+      if (!avatarContainer) {
+        // Try to find it by going up from any avatar containers in the document
+        const allAvatarContainers = document.querySelectorAll('div[data-testid*="UserAvatar-Container"]');
+        for (const container of allAvatarContainers) {
+          if (insertionPoint.contains(container)) {
+            avatarContainer = container;
+            break;
+          }
+        }
+      }
 
       if (avatarContainer) {
-        // Insert badge right after the UserAvatar-Container
-        if (avatarContainer.nextSibling) {
-          insertionPoint.insertBefore(badge, avatarContainer.nextSibling);
+        // Ensure the avatar container is actually in the insertion point
+        if (insertionPoint.contains(avatarContainer)) {
+          // Insert badge right after the UserAvatar-Container
+          if (avatarContainer.nextSibling) {
+            insertionPoint.insertBefore(badge, avatarContainer.nextSibling);
+          } else {
+            // No next sibling, insert after the avatar container
+            avatarContainer.parentElement.insertBefore(badge, avatarContainer.nextSibling);
+            // If that didn't work, append to insertion point
+            if (!badge.parentElement) {
+              insertionPoint.appendChild(badge);
+            }
+          }
         } else {
-          // No next sibling, append after the avatar container
-          insertionPoint.appendChild(badge);
+          // Avatar container is not in insertion point, find it and insert after it
+          const avatarParent = avatarContainer.parentElement;
+          if (avatarParent && insertionPoint.contains(avatarParent)) {
+            // Insert after the avatar container within its parent
+            if (avatarContainer.nextSibling) {
+              avatarParent.insertBefore(badge, avatarContainer.nextSibling);
+            } else {
+              avatarParent.appendChild(badge);
+            }
+          } else {
+            // Last resort: append to insertion point
+            insertionPoint.appendChild(badge);
+          }
         }
       } else {
         // Fallback: Try to find the avatar container by going through children
@@ -432,6 +481,11 @@
       badge.style.marginTop = '0';
       badge.style.verticalAlign = 'middle';
       badge.style.alignSelf = 'center'; // Center vertically with avatar
+
+      // Ensure badge is visible and properly positioned
+      badge.style.display = 'inline-flex';
+      badge.style.visibility = 'visible';
+      badge.style.opacity = '1';
 
       badgeAdded = true;
     }).catch((error) => {
@@ -513,6 +567,8 @@
             if (scoreValue) {
               scoreValue.textContent = newScore;
               scoreValue.style.fontSize = `${fontSize}px`;
+              scoreValue.style.color = 'black';
+              scoreValue.style.textShadow = '0 1px 3px rgba(255, 255, 255, 0.9)';
             }
 
             // Update rotation speed and icon size
@@ -535,19 +591,27 @@
           const gameModeEnabled = changes.enableIQGuessr.newValue;
 
           if (gameModeEnabled) {
-            // IQGuessr mode enabled - add badge immediately
-            // Use force=true to bypass settings check since settings may not be updated yet
+            // IQGuessr mode enabled - add badge immediately (if profile badge is also enabled)
+            // Use force=false to respect profile badge setting
             badgeAdded = false; // Reset flag to allow adding
-            addScoreBadge(true); // Force bypass settings check
+            addScoreBadge(false); // Check all settings
           } else {
-            // IQGuessr mode disabled - verify storage before removing to avoid race conditions
-            chrome.storage.sync.get(['enableIQGuessr'], (result) => {
-              const isActuallyDisabled = result.enableIQGuessr !== true;
+            // IQGuessr mode disabled - remove badge
+            removeScoreBadge();
+          }
+        }
 
-              if (isActuallyDisabled) {
-                removeScoreBadge();
-              }
-            });
+        // Handle showProfileScoreBadge toggle
+        if (changes.showProfileScoreBadge) {
+          const showBadge = changes.showProfileScoreBadge.newValue !== false;
+
+          if (showBadge) {
+            // Profile badge enabled - add it if IqGuessr is also enabled
+            badgeAdded = false;
+            addScoreBadge(false);
+          } else {
+            // Profile badge disabled - remove it
+            removeScoreBadge();
           }
         }
       }
