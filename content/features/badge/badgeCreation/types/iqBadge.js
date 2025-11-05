@@ -45,8 +45,8 @@
       ? getConfidenceColor(confidence)
       : getIQColor(iq);
 
-    badge.style.setProperty('background-color', iqColor, 'important');
-    badge.style.setProperty('color', '#000000', 'important');
+    // Set CSS variables instead of inline styles - CSS handles all styling
+    badge.style.setProperty('--iq-badge-bg-color', iqColor);
     badge.style.setProperty('cursor', 'help', 'important');
 
     if (confidence !== null) {
@@ -71,9 +71,6 @@
         <span class="iq-score">${iq}</span>
       `;
     }
-
-    badge.style.setProperty('background-color', iqColor, 'important');
-    badge.style.setProperty('color', '#000000', 'important');
 
     // Add hover handlers for color inversion on flip badges
     addFlipBadgeHoverHandlers(badge);

@@ -308,7 +308,8 @@ function animateCountUp(badge, finalIQ, iqColor) {
         }
 
         scoreElement.textContent = finalIQ;
-        badge.style.setProperty('background-color', iqColor, 'important');
+        // Use CSS variable for final color - CSS handles styling
+        badge.style.setProperty('--iq-badge-bg-color', iqColor);
         // Store original background color in CSS variable for hover inversion
         if (badge.classList.contains('iq-badge-flip')) {
           badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
@@ -560,8 +561,8 @@ function animateRealtimeBadgeUpdate(badge, oldIQ, newIQ, iqColor, oldConfidence,
         }
       }
 
-      badge.style.setProperty('background-color', iqColor, 'important');
-      badge.style.setProperty('color', '#000000', 'important');
+      // Use CSS variable instead of inline style - CSS handles styling
+      badge.style.setProperty('--iq-badge-bg-color', iqColor);
       // Store original background color in CSS variable for hover inversion
       if (badge.classList.contains('iq-badge-flip')) {
         badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');

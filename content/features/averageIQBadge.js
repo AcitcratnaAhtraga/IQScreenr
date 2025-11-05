@@ -339,12 +339,11 @@
       if (frontScore) frontScore.textContent = averageIQ;
       if (backScore) backScore.textContent = Math.round(overallConfidence);
 
-      // Update color
+      // Update color using CSS variable - CSS handles styling
       const badgeManager = getBadgeManager();
       const { getConfidenceColor } = badgeManager || {};
       const color = getConfidenceColor ? getConfidenceColor(overallConfidence) : '#4caf50';
-      // Don't use !important on background-color so CSS hover rules can override it
-      badge.style.setProperty('background-color', color);
+      badge.style.setProperty('--iq-badge-bg-color', color);
       badge.style.setProperty('--iq-badge-original-bg', color, 'important');
 
       // Transition is handled by CSS - don't set it inline

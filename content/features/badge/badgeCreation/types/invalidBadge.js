@@ -19,8 +19,9 @@
     badge.className = 'iq-badge iq-badge-invalid iq-badge-flip';
     badge.setAttribute('data-iq-invalid', 'true');
 
-    badge.style.setProperty('background-color', '#000000', 'important');
-    badge.style.setProperty('color', '#9e9e9e', 'important');
+    // Use CSS variable for background color - CSS handles styling
+    badge.style.setProperty('--iq-badge-bg-color', '#000000');
+    badge.style.setProperty('--iq-badge-text-color', '#9e9e9e');
     badge.style.setProperty('cursor', 'help', 'important');
     badge.style.setProperty('display', 'inline-flex', 'important');
     badge.style.setProperty('visibility', 'visible', 'important');

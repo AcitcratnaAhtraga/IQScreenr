@@ -323,6 +323,10 @@
   perspective: 1000px;
   /* Increase touch target area on mobile - add padding around badge */
   touch-action: manipulation;
+
+  /* Use CSS variable for background color - set via JavaScript, styled via CSS */
+  background-color: var(--iq-badge-bg-color, #4CAF50);
+  color: #000000;
 }
 
 /* Ensure badges with flip structure maintain proper height */
@@ -425,6 +429,9 @@
 
 /* Invert colors on hover for flip badges - background and text colors transition together */
 .iq-badge.iq-badge-flip {
+  /* Use CSS variable for background color */
+  background-color: var(--iq-badge-bg-color, #4CAF50);
+  color: #000000;
   transition: background-color 0.6s ease, color 0.6s ease !important;
 }
 
@@ -457,6 +464,24 @@
   color: var(--iq-badge-original-bg, #ffffff) !important;
 }
 
+/* Hover state via JavaScript class (for mobile support) */
+.iq-badge.iq-badge-flip.iq-badge-hover-active {
+  background-color: #000000 !important;
+  color: var(--iq-badge-original-bg, #ffffff) !important;
+}
+
+.iq-badge.iq-badge-flip.iq-badge-hover-active .iq-badge-front,
+.iq-badge.iq-badge-flip.iq-badge-hover-active .iq-badge-back {
+  color: var(--iq-badge-original-bg, #ffffff) !important;
+}
+
+.iq-badge.iq-badge-flip.iq-badge-hover-active .iq-badge-front .iq-label,
+.iq-badge.iq-badge-flip.iq-badge-hover-active .iq-badge-front .iq-score,
+.iq-badge.iq-badge-flip.iq-badge-hover-active .iq-badge-back .iq-label,
+.iq-badge.iq-badge-flip.iq-badge-hover-active .iq-badge-back .iq-score {
+  color: var(--iq-badge-original-bg, #ffffff) !important;
+}
+
 /* Ensure average IQ badge hover works - more specific selector */
 .iq-badge.iq-badge-average.iq-badge-flip:hover {
   background-color: #000000 !important;
@@ -473,6 +498,12 @@
 .iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-back .iq-label,
 .iq-badge.iq-badge-average.iq-badge-flip:hover .iq-badge-back .iq-score {
   color: var(--iq-badge-original-bg, #ffffff) !important;
+}
+
+/* Invalid badges - use CSS variable for colors */
+.iq-badge.iq-badge-invalid {
+  background-color: var(--iq-badge-bg-color, #000000);
+  color: var(--iq-badge-text-color, #9e9e9e);
 }
 
 /* If badge doesn't have flip structure, keep original hover effect */

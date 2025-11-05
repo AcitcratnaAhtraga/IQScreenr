@@ -112,7 +112,11 @@
             const newColor = useConfidence && confidence
               ? getConfidenceColor(parseInt(confidence, 10))
               : getIQColor(iq);
-            badge.style.setProperty('background-color', newColor, 'important');
+            // Use CSS variable instead of inline style - CSS handles styling
+            badge.style.setProperty('--iq-badge-bg-color', newColor);
+            if (badge.classList.contains('iq-badge-flip')) {
+              badge.style.setProperty('--iq-badge-original-bg', newColor, 'important');
+            }
           }
         });
       }

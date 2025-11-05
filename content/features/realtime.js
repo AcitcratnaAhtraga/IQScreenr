@@ -386,8 +386,9 @@ async function updateRealtimeBadge(inputElement, badge, container) {
       // Use confidence color for 0% confidence (starts low)
       const initialColor = getConfidenceColor ? getConfidenceColor(0) :
                           (getIQColor ? getIQColor(100) : '#4CAF50');
-      badge.style.setProperty('background-color', initialColor, 'important');
-      badge.style.setProperty('color', '#000000', 'important');
+      // Use CSS variable for background color - CSS handles styling
+      badge.style.setProperty('--iq-badge-bg-color', initialColor);
+      badge.style.setProperty('--iq-badge-original-bg', initialColor, 'important');
 
       // Ensure flip structure exists
       if (!badge.querySelector('.iq-badge-inner')) {

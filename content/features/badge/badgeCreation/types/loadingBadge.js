@@ -26,8 +26,8 @@
     const desat = desaturateColor(rgb, 0.5);
     const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
 
-    badge.style.setProperty('background-color', loadingColor, 'important');
-    badge.style.setProperty('color', '#000000', 'important');
+    // Use CSS variable for background color - CSS handles styling
+    badge.style.setProperty('--iq-badge-bg-color', loadingColor);
     badge.style.setProperty('cursor', 'wait', 'important');
     badge.style.setProperty('display', 'inline-flex', 'important');
     badge.style.setProperty('visibility', 'visible', 'important');

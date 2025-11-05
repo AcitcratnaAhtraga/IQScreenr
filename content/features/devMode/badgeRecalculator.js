@@ -164,9 +164,11 @@
           const rgb = hexToRgb(darkerRed);
           const desat = desaturateColor(rgb, 0.5);
           const loadingColor = `rgb(${desat.r}, ${desat.g}, ${desat.b})`;
-          badge.style.setProperty('background-color', loadingColor, 'important');
+          // Use CSS variable for loading color
+          badge.style.setProperty('--iq-badge-bg-color', loadingColor);
         } else {
-          badge.style.setProperty('background-color', iqColor, 'important');
+          // Use CSS variable for final color - CSS handles styling
+          badge.style.setProperty('--iq-badge-bg-color', iqColor);
         }
 
         // Trigger count-up animation from 0 to newIQ
@@ -178,7 +180,8 @@
           if (scoreElement) {
             scoreElement.textContent = newIQ;
           }
-          badge.style.setProperty('background-color', iqColor, 'important');
+          // Use CSS variable for final color - CSS handles styling
+          badge.style.setProperty('--iq-badge-bg-color', iqColor);
         }
 
         console.log(`%c✅ Recalculation complete: ${oldIQ} → ${newIQ}`, 'color: #4caf50; font-weight: bold;');

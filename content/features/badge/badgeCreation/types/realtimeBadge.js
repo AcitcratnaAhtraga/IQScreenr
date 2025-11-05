@@ -140,8 +140,9 @@
       const initialColor = getConfidenceColor ? getConfidenceColor(0) :
                           (getIQColor ? getIQColor(100) : '#4CAF50');
 
-      badge.style.setProperty('background-color', initialColor, 'important');
-      badge.style.setProperty('color', '#000000', 'important');
+      // Use CSS variable for background color - CSS handles styling
+      badge.style.setProperty('--iq-badge-bg-color', initialColor);
+      badge.style.setProperty('--iq-badge-original-bg', initialColor, 'important');
       // Hide badge initially - only show when user starts typing
       badge.style.setProperty('display', 'none', 'important');
       badge.style.setProperty('vertical-align', 'middle', 'important');

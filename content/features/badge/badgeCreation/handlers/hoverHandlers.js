@@ -11,9 +11,15 @@
 
   /**
    * Invert badge colors on hover (helper function that can be called directly)
+   * For badges with data-no-js-handlers, this does nothing - CSS handles hover
    */
   function invertBadgeColorsOnHover(badge) {
     if (!badge || !badge.classList.contains('iq-badge-flip')) {
+      return;
+    }
+
+    // Skip if badge should use CSS-only hover (no JS handlers)
+    if (badge.hasAttribute('data-no-js-handlers') || badge._skipHandlers) {
       return;
     }
 
@@ -34,64 +40,27 @@
       return; // Can't invert if we don't have a valid color
     }
 
-    // Invert: set background to black, text to original background color
-    // Use direct style manipulation to ensure it overrides everything
-    badge.style.backgroundColor = '#000000';
-    badge.style.setProperty('background-color', '#000000', 'important');
-    badge.style.setProperty('color', originalBgColor, 'important');
-
-    // Update text elements
-    const front = badge.querySelector('.iq-badge-front');
-    const back = badge.querySelector('.iq-badge-back');
-    if (front) {
-      front.style.setProperty('color', originalBgColor, 'important');
-      const frontLabel = front.querySelector('.iq-label');
-      const frontScore = front.querySelector('.iq-score');
-      if (frontLabel) frontLabel.style.setProperty('color', originalBgColor, 'important');
-      if (frontScore) frontScore.style.setProperty('color', originalBgColor, 'important');
-    }
-    if (back) {
-      back.style.setProperty('color', originalBgColor, 'important');
-      const backLabel = back.querySelector('.iq-label');
-      const backScore = back.querySelector('.iq-score');
-      if (backLabel) backLabel.style.setProperty('color', originalBgColor, 'important');
-      if (backScore) backScore.style.setProperty('color', originalBgColor, 'important');
-    }
+    // Use CSS class instead of inline styles - CSS handles the actual styling
+    // This allows CSS to handle hover with proper specificity
+    badge.classList.add('iq-badge-hover-active');
   }
 
   /**
    * Restore badge colors on mouse leave (helper function that can be called directly)
+   * For badges with data-no-js-handlers, this does nothing - CSS handles hover
    */
   function restoreBadgeColorsOnLeave(badge) {
     if (!badge || !badge.classList.contains('iq-badge-flip')) {
       return;
     }
 
-    const originalBgColor = badge.style.getPropertyValue('--iq-badge-original-bg');
-    if (originalBgColor) {
-      // Restore original colors
-      badge.style.backgroundColor = originalBgColor;
-      badge.style.setProperty('background-color', originalBgColor, 'important');
-      badge.style.setProperty('color', '#000000', 'important');
-
-      // Restore text elements
-      const front = badge.querySelector('.iq-badge-front');
-      const back = badge.querySelector('.iq-badge-back');
-      if (front) {
-        front.style.setProperty('color', '#000000', 'important');
-        const frontLabel = front.querySelector('.iq-label');
-        const frontScore = front.querySelector('.iq-score');
-        if (frontLabel) frontLabel.style.setProperty('color', '#000000', 'important');
-        if (frontScore) frontScore.style.setProperty('color', '#000000', 'important');
-      }
-      if (back) {
-        back.style.setProperty('color', '#000000', 'important');
-        const backLabel = back.querySelector('.iq-label');
-        const backScore = back.querySelector('.iq-score');
-        if (backLabel) backLabel.style.setProperty('color', '#000000', 'important');
-        if (backScore) backScore.style.setProperty('color', '#000000', 'important');
-      }
+    // Skip if badge should use CSS-only hover (no JS handlers)
+    if (badge.hasAttribute('data-no-js-handlers') || badge._skipHandlers) {
+      return;
     }
+
+    // Remove CSS class - CSS handles the actual styling
+    badge.classList.remove('iq-badge-hover-active');
   }
 
   /**

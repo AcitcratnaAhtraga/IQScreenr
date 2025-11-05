@@ -13,6 +13,11 @@
    * Add mobile click/touch handlers to a badge (extracted for reuse)
    */
   function addMobileBadgeHandlers(badge) {
+    // Skip if badge should use CSS-only hover (no JS handlers)
+    if (badge && (badge.hasAttribute('data-no-js-handlers') || badge._skipHandlers)) {
+      return;
+    }
+
     if (!badge) {
       console.warn('⚠️ addMobileBadgeHandlers: No badge provided');
       return;
