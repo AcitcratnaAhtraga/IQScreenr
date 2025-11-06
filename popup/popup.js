@@ -117,23 +117,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to update IqGuessr score display
   function updateIQGuessrScore(score) {
-    console.log('[IqGuessr Debug] updateIQGuessrScore called with score:', score);
-
     const scoreElement = document.getElementById('iqGuessrScore');
     const scoreValue = document.getElementById('iqGuessrScoreValue');
     const enableCheckbox = document.getElementById('enableIQGuessr');
 
-    console.log('[IqGuessr Debug] Elements found:', {
-      scoreElement: !!scoreElement,
-      scoreValue: !!scoreValue,
-      enableCheckbox: !!enableCheckbox
-    });
-
     if (!scoreElement || !scoreValue) {
-      console.warn('[IqGuessr Debug] Missing elements:', {
-        scoreElement: !!scoreElement,
-        scoreValue: !!scoreValue
-      });
       return;
     }
 
@@ -141,22 +129,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let isEnabled = false;
     if (enableCheckbox) {
       isEnabled = enableCheckbox.checked;
-      console.log('[IqGuessr Debug] Checkbox state:', {
-        checked: enableCheckbox.checked,
-        isEnabled: isEnabled
-      });
     } else {
-      console.log('[IqGuessr Debug] Checkbox not found, checking storage...');
       // Fallback: check storage if checkbox not found
       chrome.storage.sync.get(['enableIQGuessr'], (result) => {
-        console.log('[IqGuessr Debug] Storage result:', result);
         if (result.enableIQGuessr === true) {
-          console.log('[IqGuessr Debug] Enabling score display from storage');
           scoreElement.style.display = 'flex';
           scoreValue.textContent = score;
           attachStatsTooltipToScore();
         } else {
-          console.log('[IqGuessr Debug] Disabling score display (not enabled in storage)');
           scoreElement.style.display = 'none';
         }
       });
@@ -164,24 +144,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (isEnabled) {
-      console.log('[IqGuessr Debug] Enabling score display, setting score to:', score);
-
       // Ensure the parent collapsible section is expanded
       const gameModeContent = document.getElementById('gameModeContent');
       if (gameModeContent) {
         const isCollapsed = gameModeContent.classList.contains('collapsed') ||
                            gameModeContent.style.maxHeight === '0px' ||
                            gameModeContent.style.maxHeight === '0';
-        console.log('[IqGuessr Debug] gameModeContent state:', {
-          exists: !!gameModeContent,
-          hasCollapsedClass: gameModeContent.classList.contains('collapsed'),
-          maxHeight: gameModeContent.style.maxHeight,
-          computedMaxHeight: window.getComputedStyle(gameModeContent).maxHeight,
-          isCollapsed: isCollapsed
-        });
 
         if (isCollapsed) {
-          console.log('[IqGuessr Debug] Expanding gameModeContent section');
           gameModeContent.classList.remove('collapsed');
           gameModeContent.style.maxHeight = gameModeContent.scrollHeight + 'px';
         }
@@ -192,32 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
       scoreElement.style.opacity = '1';
       scoreValue.textContent = score;
 
-      // Log computed styles to verify visibility
-      const computedStyle = window.getComputedStyle(scoreElement);
-      console.log('[IqGuessr Debug] Score element styles:', {
-        display: computedStyle.display,
-        visibility: computedStyle.visibility,
-        opacity: computedStyle.opacity,
-        height: computedStyle.height,
-        width: computedStyle.width,
-        parentDisplay: window.getComputedStyle(scoreElement.parentElement).display
-      });
-
-      // Log element position in DOM
-      console.log('[IqGuessr Debug] Score element DOM info:', {
-        offsetParent: !!scoreElement.offsetParent,
-        offsetHeight: scoreElement.offsetHeight,
-        offsetWidth: scoreElement.offsetWidth,
-        clientHeight: scoreElement.clientHeight,
-        clientWidth: scoreElement.clientWidth,
-        scrollHeight: scoreElement.scrollHeight,
-        scrollWidth: scoreElement.scrollWidth
-      });
-
       // Attach tooltip handlers to score display
       attachStatsTooltipToScore();
     } else {
-      console.log('[IqGuessr Debug] Disabling score display (IqGuessr not enabled)');
       scoreElement.style.display = 'none';
     }
   }
@@ -671,15 +618,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update IqGuessr score display - call after checkbox state is set
     // Use setTimeout to ensure checkbox state is fully set and DOM is ready
-    console.log('[IqGuessr Debug] Initial load - score:', score, 'enableIQGuessr:', result.enableIQGuessr);
     setTimeout(() => {
       const enableCheckbox = document.getElementById('enableIQGuessr');
-      console.log('[IqGuessr Debug] After setTimeout - checkbox found:', !!enableCheckbox, 'checked:', enableCheckbox?.checked);
       if (enableCheckbox && enableCheckbox.checked) {
-        console.log('[IqGuessr Debug] Calling updateIQGuessrScore with score:', score);
         updateIQGuessrScore(score);
       } else {
-        console.log('[IqGuessr Debug] Calling updateIQGuessrScore with score 0 (not enabled)');
         updateIQGuessrScore(0);
       }
     }, 50);
@@ -791,22 +734,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Update score display immediately with current score
       if (isEnabled) {
-        console.log('[IqGuessr Debug] IqGuessr enabled, fetching score from storage...');
         Promise.all([
           new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
           new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
         ]).then(([syncResult, localResult]) => {
           const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
-          console.log('[IqGuessr Debug] Score fetched:', { syncResult, localResult, finalScore: score });
           updateIQGuessrScore(score);
         }).catch((error) => {
-          console.error('[IqGuessr Debug] Error fetching score:', error);
           chrome.storage.sync.get(['iqGuessrScore'], (result) => {
             updateIQGuessrScore(result.iqGuessrScore ?? 0);
           });
         });
       } else {
-        console.log('[IqGuessr Debug] IqGuessr disabled, hiding score');
         updateIQGuessrScore(0);
       }
 
