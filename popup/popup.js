@@ -24,8 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const enableIQGuessr = document.getElementById('enableIQGuessr');
     const showProfileScoreBadge = document.getElementById('showProfileScoreBadge');
     const enableDebugLogging = document.getElementById('enableDebugLogging');
+    const enableIqFiltr = document.getElementById('enableIqFiltr');
 
-    if (!showIQBadge || !enableIQGuessr || !showProfileScoreBadge || !enableDebugLogging) {
+    if (!showIQBadge || !enableIQGuessr || !enableDebugLogging) {
       return; // Required elements not found
     }
 
@@ -37,9 +38,27 @@ document.addEventListener('DOMContentLoaded', () => {
     enableIQGuessr.disabled = !isEnabled;
     enableDebugLogging.disabled = !isEnabled;
 
-    // Show profile score badge is only enabled when IqGuessr is enabled
-    const isGameModeEnabled = enableIQGuessr.checked;
-    showProfileScoreBadge.disabled = !isGameModeEnabled;
+    // IqFiltr requires Others' IQ to be enabled
+    if (enableIqFiltr) {
+      enableIqFiltr.disabled = !isEnabled;
+    }
+
+    // Get IqGuessr enabled state (needed for profile score badge visibility)
+    const isGameModeEnabled = enableIQGuessr ? enableIQGuessr.checked : false;
+
+    // Show profile score badge is only visible when IqGuessr is enabled
+    if (showProfileScoreBadge) {
+      const profileScoreBadgeContainer = showProfileScoreBadge.closest('.setting-item-sub');
+      if (profileScoreBadgeContainer) {
+        profileScoreBadgeContainer.style.display = isGameModeEnabled ? 'block' : 'none';
+      } else {
+        // Fallback: hide the label parent if container not found
+        const labelParent = showProfileScoreBadge.closest('label')?.parentElement;
+        if (labelParent) {
+          labelParent.style.display = isGameModeEnabled ? 'block' : 'none';
+        }
+      }
+    }
 
     // If main toggle is off, uncheck dependent options and save
     if (!isEnabled) {
@@ -56,10 +75,20 @@ document.addEventListener('DOMContentLoaded', () => {
         enableDebugLogging.checked = false;
         chrome.storage.sync.set({ enableDebugLogging: false });
       }
+      // Uncheck IqFiltr if Others' IQ is disabled
+      if (enableIqFiltr && enableIqFiltr.checked) {
+        enableIqFiltr.checked = false;
+        chrome.storage.sync.set({ enableIqFiltr: false });
+        // Also hide the options
+        const iqFiltrOptions = document.getElementById('iqFiltrOptions');
+        if (iqFiltrOptions) {
+          iqFiltrOptions.style.display = 'none';
+        }
+      }
     }
 
     // If IqGuessr mode is off, uncheck profile score badge
-    if (!isGameModeEnabled) {
+    if (!isGameModeEnabled && showProfileScoreBadge) {
       if (showProfileScoreBadge.checked) {
         showProfileScoreBadge.checked = false;
         chrome.storage.sync.set({ showProfileScoreBadge: false });
@@ -88,19 +117,107 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to update IqGuessr score display
   function updateIQGuessrScore(score) {
+    console.log('[IqGuessr Debug] updateIQGuessrScore called with score:', score);
+
     const scoreElement = document.getElementById('iqGuessrScore');
     const scoreValue = document.getElementById('iqGuessrScoreValue');
     const enableCheckbox = document.getElementById('enableIQGuessr');
 
-    if (enableCheckbox && enableCheckbox.checked) {
-      scoreElement.style.display = 'flex';
-      if (scoreValue) {
-        scoreValue.textContent = score;
+    console.log('[IqGuessr Debug] Elements found:', {
+      scoreElement: !!scoreElement,
+      scoreValue: !!scoreValue,
+      enableCheckbox: !!enableCheckbox
+    });
+
+    if (!scoreElement || !scoreValue) {
+      console.warn('[IqGuessr Debug] Missing elements:', {
+        scoreElement: !!scoreElement,
+        scoreValue: !!scoreValue
+      });
+      return;
+    }
+
+    // Check if IqGuessr is enabled (either from checkbox or from storage)
+    let isEnabled = false;
+    if (enableCheckbox) {
+      isEnabled = enableCheckbox.checked;
+      console.log('[IqGuessr Debug] Checkbox state:', {
+        checked: enableCheckbox.checked,
+        isEnabled: isEnabled
+      });
+    } else {
+      console.log('[IqGuessr Debug] Checkbox not found, checking storage...');
+      // Fallback: check storage if checkbox not found
+      chrome.storage.sync.get(['enableIQGuessr'], (result) => {
+        console.log('[IqGuessr Debug] Storage result:', result);
+        if (result.enableIQGuessr === true) {
+          console.log('[IqGuessr Debug] Enabling score display from storage');
+          scoreElement.style.display = 'flex';
+          scoreValue.textContent = score;
+          attachStatsTooltipToScore();
+        } else {
+          console.log('[IqGuessr Debug] Disabling score display (not enabled in storage)');
+          scoreElement.style.display = 'none';
+        }
+      });
+      return;
+    }
+
+    if (isEnabled) {
+      console.log('[IqGuessr Debug] Enabling score display, setting score to:', score);
+
+      // Ensure the parent collapsible section is expanded
+      const gameModeContent = document.getElementById('gameModeContent');
+      if (gameModeContent) {
+        const isCollapsed = gameModeContent.classList.contains('collapsed') ||
+                           gameModeContent.style.maxHeight === '0px' ||
+                           gameModeContent.style.maxHeight === '0';
+        console.log('[IqGuessr Debug] gameModeContent state:', {
+          exists: !!gameModeContent,
+          hasCollapsedClass: gameModeContent.classList.contains('collapsed'),
+          maxHeight: gameModeContent.style.maxHeight,
+          computedMaxHeight: window.getComputedStyle(gameModeContent).maxHeight,
+          isCollapsed: isCollapsed
+        });
+
+        if (isCollapsed) {
+          console.log('[IqGuessr Debug] Expanding gameModeContent section');
+          gameModeContent.classList.remove('collapsed');
+          gameModeContent.style.maxHeight = gameModeContent.scrollHeight + 'px';
+        }
       }
+
+      scoreElement.style.display = 'flex';
+      scoreElement.style.visibility = 'visible';
+      scoreElement.style.opacity = '1';
+      scoreValue.textContent = score;
+
+      // Log computed styles to verify visibility
+      const computedStyle = window.getComputedStyle(scoreElement);
+      console.log('[IqGuessr Debug] Score element styles:', {
+        display: computedStyle.display,
+        visibility: computedStyle.visibility,
+        opacity: computedStyle.opacity,
+        height: computedStyle.height,
+        width: computedStyle.width,
+        parentDisplay: window.getComputedStyle(scoreElement.parentElement).display
+      });
+
+      // Log element position in DOM
+      console.log('[IqGuessr Debug] Score element DOM info:', {
+        offsetParent: !!scoreElement.offsetParent,
+        offsetHeight: scoreElement.offsetHeight,
+        offsetWidth: scoreElement.offsetWidth,
+        clientHeight: scoreElement.clientHeight,
+        clientWidth: scoreElement.clientWidth,
+        scrollHeight: scoreElement.scrollHeight,
+        scrollWidth: scoreElement.scrollWidth
+      });
 
       // Attach tooltip handlers to score display
       attachStatsTooltipToScore();
     } else {
+      console.log('[IqGuessr Debug] Disabling score display (IqGuessr not enabled)');
       scoreElement.style.display = 'none';
     }
   }
@@ -405,7 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showIQBadge: true,
         showRealtimeBadge: true,
         useConfidenceForColor: true, // Always enabled
-        enableDebugLogging: true,
+        enableDebugLogging: false,
         enableIQGuessr: false,
         showProfileScoreBadge: true, // Default to showing profile badge
         showAverageIQ: false, // Default to not showing average IQ
@@ -418,7 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         filterConfidenceThreshold: 50,
         filterConfidenceDirection: 'above',
         useConfidenceInFilter: false,
-        filterMode: 'remove'
+        filterMode: 'mute'
       };
       // Only set score if it doesn't exist
       if (score === 0 && !allSync.iqGuessrScore && !allLocal.iqGuessrScore) {
@@ -432,7 +549,7 @@ document.addEventListener('DOMContentLoaded', () => {
       result.showIQBadge = true;
       result.showRealtimeBadge = true;
       result.useConfidenceForColor = true;
-      result.enableDebugLogging = true;
+      result.enableDebugLogging = false;
       result.enableIQGuessr = false;
     }
 
@@ -446,9 +563,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (showRealtimeBadgeElement) {
       showRealtimeBadgeElement.checked = result.showRealtimeBadge !== false; // Default to true
     }
-    document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false; // Default to true
+    document.getElementById('enableDebugLogging').checked = result.enableDebugLogging === true; // Default to false
     document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
     document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false; // Default to true
+    // Update dependent checkboxes to set initial visibility state
+    updateDependentCheckboxes();
     document.getElementById('showAverageIQ').checked = result.showAverageIQ === true; // Default to false
 
     // Load filter settings
@@ -502,11 +621,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const filterModeElement = document.getElementById('filterMode');
     if (filterModeElement) {
-      filterModeElement.value = result.filterMode !== undefined ? result.filterMode : 'remove';
+      filterModeElement.value = result.filterMode !== undefined ? result.filterMode : 'mute';
     }
 
-    // Update IqGuessr score display
-    updateIQGuessrScore(score);
+    // Update IqGuessr score display - call after checkbox state is set
+    // Use setTimeout to ensure checkbox state is fully set and DOM is ready
+    console.log('[IqGuessr Debug] Initial load - score:', score, 'enableIQGuessr:', result.enableIQGuessr);
+    setTimeout(() => {
+      const enableCheckbox = document.getElementById('enableIQGuessr');
+      console.log('[IqGuessr Debug] After setTimeout - checkbox found:', !!enableCheckbox, 'checked:', enableCheckbox?.checked);
+      if (enableCheckbox && enableCheckbox.checked) {
+        console.log('[IqGuessr Debug] Calling updateIQGuessrScore with score:', score);
+        updateIQGuessrScore(score);
+      } else {
+        console.log('[IqGuessr Debug] Calling updateIQGuessrScore with score 0 (not enabled)');
+        updateIQGuessrScore(0);
+      }
+    }, 50);
 
     // Update average IQ badge display
     if (typeof updateAverageIQBadge === 'function') {
@@ -529,11 +660,15 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true;
       document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false;
       document.getElementById('showAverageIQ').checked = result.showAverageIQ === true;
-      updateIQGuessrScore(result.iqGuessrScore ?? 0);
+      // Update dependent checkboxes to set initial visibility state
+      updateDependentCheckboxes();
+      // Update score display after checkbox state is set
+      setTimeout(() => {
+        updateIQGuessrScore(result.iqGuessrScore ?? 0);
+      }, 0);
       if (typeof updateAverageIQBadge === 'function') {
         updateAverageIQBadge();
       }
-      updateDependentCheckboxes();
     });
   });
 
@@ -572,29 +707,31 @@ document.addEventListener('DOMContentLoaded', () => {
       const isEnabled = e.target.checked;
       console.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
 
+      // Update visibility immediately (before storage save)
+      updateDependentCheckboxes();
+
+      // Update score display immediately with current score
+      if (isEnabled) {
+        Promise.all([
+          new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
+          new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
+        ]).then(([syncResult, localResult]) => {
+          const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
+          updateIQGuessrScore(score);
+        }).catch(() => {
+          chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+            updateIQGuessrScore(result.iqGuessrScore ?? 0);
+          });
+        });
+      } else {
+        updateIQGuessrScore(0);
+      }
+
       chrome.storage.sync.set({ enableIQGuessr: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
         } else {
           showStatus('Settings saved', 'success');
-          // Update dependent checkboxes state (enables/disables profile score badge checkbox)
-          updateDependentCheckboxes();
-          // Fetch and update score display with actual score from storage
-          if (isEnabled) {
-            Promise.all([
-              new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
-              new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
-            ]).then(([syncResult, localResult]) => {
-              const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
-              updateIQGuessrScore(score);
-            }).catch(() => {
-              chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-                updateIQGuessrScore(result.iqGuessrScore ?? 0);
-              });
-            });
-          } else {
-            updateIQGuessrScore(0);
-          }
         }
       });
     });
@@ -628,6 +765,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const enableIqFiltrElement = document.getElementById('enableIqFiltr');
   if (enableIqFiltrElement) {
     enableIqFiltrElement.addEventListener('change', (e) => {
+      // Prevent enabling if Others' IQ is not checked
+      const showIQBadge = document.getElementById('showIQBadge');
+      if (!showIQBadge || !showIQBadge.checked) {
+        e.target.checked = false;
+        showStatus('Others\' IQ must be enabled to use IqFiltr', 'error');
+        return;
+      }
+
       const isEnabled = e.target.checked;
       const iqFiltrOptions = document.getElementById('iqFiltrOptions');
       if (iqFiltrOptions) {
@@ -649,6 +794,19 @@ document.addEventListener('DOMContentLoaded', () => {
           showStatus('Settings saved', 'success');
         }
       });
+    });
+
+    // Also handle when checkbox is clicked - don't collapse the section
+    enableIqFiltrElement.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  // Handle IqGuessr checkbox - don't collapse when clicked
+  const enableIQGuessrElement = document.getElementById('enableIQGuessr');
+  if (enableIQGuessrElement) {
+    enableIQGuessrElement.addEventListener('click', (e) => {
+      e.stopPropagation();
     });
   }
 
@@ -885,19 +1043,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function setupCollapsibleSections() {
     const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
     collapsibleHeaders.forEach(header => {
-      // Set initial state - expand Game Mode and IqFiltr by default
       const targetId = header.getAttribute('data-target');
       const content = document.getElementById(targetId);
-      if (content) {
-        if (targetId === 'gameModeContent' || targetId === 'iqFiltrContent') {
-          // Expanded by default
-          content.style.maxHeight = content.scrollHeight + 'px';
-        } else {
-          // Collapsed by default
-          content.classList.add('collapsed');
-          header.classList.add('collapsed');
-          content.style.maxHeight = '0';
-        }
+      if (!content) return;
+
+      // Set initial state - expand Game Mode and IqFiltr by default
+      if (targetId === 'gameModeContent' || targetId === 'iqFiltrContent') {
+        // Expanded by default - set maxHeight to actual height
+        content.style.maxHeight = content.scrollHeight + 'px';
+      } else {
+        // Collapsed by default
+        content.classList.add('collapsed');
+        header.classList.add('collapsed');
+        content.style.maxHeight = '0';
       }
 
       header.addEventListener('click', (e) => {
@@ -906,36 +1064,48 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
+        e.preventDefault();
+        e.stopPropagation();
+
         const targetId = header.getAttribute('data-target');
         const content = document.getElementById(targetId);
-        if (content) {
-          const isCollapsed = content.classList.contains('collapsed');
-          if (isCollapsed) {
-            content.classList.remove('collapsed');
-            header.classList.remove('collapsed');
-            // Set max-height to actual height for smooth transition
-            content.style.maxHeight = content.scrollHeight + 'px';
-            // Update after content is rendered
-            setTimeout(() => {
-              content.style.maxHeight = content.scrollHeight + 'px';
-            }, 10);
-          } else {
-            const currentHeight = content.scrollHeight;
-            content.style.maxHeight = currentHeight + 'px';
-            // Force reflow
-            requestAnimationFrame(() => {
-              content.classList.add('collapsed');
-              header.classList.add('collapsed');
-              content.style.maxHeight = '0';
-            });
-          }
+        if (!content) return;
+
+        const isCollapsed = content.classList.contains('collapsed') ||
+                           content.style.maxHeight === '0px' ||
+                           parseInt(content.style.maxHeight) === 0;
+
+        if (isCollapsed) {
+          // Expand
+          content.classList.remove('collapsed');
+          header.classList.remove('collapsed');
+          // Get actual height
+          content.style.maxHeight = 'none';
+          const height = content.scrollHeight;
+          content.style.maxHeight = '0';
+          // Force reflow and animate
+          setTimeout(() => {
+            content.style.maxHeight = height + 'px';
+          }, 10);
+        } else {
+          // Collapse
+          const currentHeight = content.scrollHeight;
+          content.style.maxHeight = currentHeight + 'px';
+          // Force reflow
+          setTimeout(() => {
+            content.classList.add('collapsed');
+            header.classList.add('collapsed');
+            content.style.maxHeight = '0';
+          }, 10);
         }
       });
     });
   }
 
-  // Initialize collapsible sections
-  setupCollapsibleSections();
+  // Initialize collapsible sections after a short delay to ensure DOM is ready
+  setTimeout(() => {
+    setupCollapsibleSections();
+  }, 50);
 
   // Helper function to update average IQ badge display
   async function updateAverageIQBadge() {
@@ -1042,6 +1212,16 @@ document.addEventListener('DOMContentLoaded', () => {
       // Store original background color in CSS variable for hover inversion
       badge.style.setProperty('--iq-badge-original-bg', color, 'important');
 
+      // Add tooltip explaining how average IQ and confidence are calculated
+      const tooltipText = `Average IQ Calculation:\n\n` +
+        `• Average IQ: Weighted average of all your tweets' IQ scores, where each tweet's weight is based on its confidence level.\n\n` +
+        `• Overall Confidence: Calculated from three factors:\n` +
+        `  - Average confidence of all tweets (40%)\n` +
+        `  - Number of samples (30%)\n` +
+        `  - Consistency/variance of IQ scores (30%)\n\n` +
+        `• More tweets with higher individual confidence and consistent scores result in higher overall confidence.`;
+      badge.setAttribute('title', tooltipText);
+
       // Clear container and add badge + tweet count
       badgeContainer.innerHTML = '';
       badgeContainer.appendChild(badge);
@@ -1099,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showIQBadge: true,
         showRealtimeBadge: true,
         useConfidenceForColor: true, // Always enabled
-        enableDebugLogging: true,
+        enableDebugLogging: false,
         enableIQGuessr: false,
         showProfileScoreBadge: true,
         showAverageIQ: false,

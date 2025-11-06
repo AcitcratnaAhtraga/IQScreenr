@@ -81,6 +81,16 @@
     // Store original background color in CSS variable for hover inversion
     badge.style.setProperty('--iq-badge-original-bg', color, 'important');
 
+    // Add tooltip explaining how average IQ and confidence are calculated
+    const tooltipText = `Average IQ Calculation:\n\n` +
+      `• Average IQ: Weighted average of all your tweets' IQ scores, where each tweet's weight is based on its confidence level.\n\n` +
+      `• Overall Confidence: Calculated from three factors:\n` +
+      `  - Average confidence of all tweets (40%)\n` +
+      `  - Number of samples (30%)\n` +
+      `  - Consistency/variance of IQ scores (30%)\n\n` +
+      `• More tweets with higher individual confidence and consistent scores result in higher overall confidence.`;
+    badge.setAttribute('title', tooltipText);
+
     // Don't add any JavaScript handlers - CSS handles both flip animation and color inversion
     // The CSS hover rules in badge.css handle everything automatically
     // Mobile touch support is also handled by CSS (touch events work with :hover on modern browsers)

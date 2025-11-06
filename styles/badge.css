@@ -508,7 +508,14 @@
   color: var(--iq-badge-original-bg, #ffffff) !important;
 }
 
-/* Average IQ badge inherits all styles from .iq-badge - no overrides needed */
+/* Average IQ badge - black text by default, confidence color on hover */
+.iq-badge.iq-badge-average.iq-badge-flip .iq-badge-front .iq-label,
+.iq-badge.iq-badge-average.iq-badge-flip .iq-badge-front .iq-score,
+.iq-badge.iq-badge-average.iq-badge-flip .iq-badge-back .iq-label,
+.iq-badge.iq-badge-average.iq-badge-flip .iq-badge-back .iq-score {
+  color: #000000 !important;
+}
+
 /* Invalid badges - use CSS variable for colors */
 .iq-badge.iq-badge-invalid {
   background-color: var(--iq-badge-bg-color, #000000);

@@ -75,13 +75,15 @@ body {
 }
 
 .section-content {
-  overflow: hidden;
+  overflow: visible;
   transition: max-height 0.3s ease, opacity 0.2s ease;
 }
 
 .collapsible-content {
   max-height: 2000px;
   opacity: 1;
+  overflow: visible;
+  padding-bottom: 8px;
 }
 
 .collapsible-content.collapsed {

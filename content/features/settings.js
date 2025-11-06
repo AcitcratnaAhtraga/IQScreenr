@@ -12,7 +12,7 @@ const defaultSettings = {
   minIQ: 60,
   maxIQ: 145,
   useConfidenceForColor: true, // Always enabled - badge colors always reflect confidence
-  enableDebugLogging: true,
+  enableDebugLogging: false,
   enableIQGuessr: false,
   enableIqFiltr: false,
   filterTweets: true,
@@ -23,7 +23,7 @@ const defaultSettings = {
   filterConfidenceThreshold: 50, // 0-100, default 50
   filterConfidenceDirection: 'above', // 'below' or 'above' - independent of IQ direction
   useConfidenceInFilter: false, // Whether to use confidence in filtering
-  filterMode: 'remove' // 'remove' or 'mute' - how to handle filtered tweets
+  filterMode: 'mute' // 'remove' or 'mute' - how to handle filtered tweets
 };
 
 const settings = { ...defaultSettings };

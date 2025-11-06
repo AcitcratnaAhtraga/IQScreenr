@@ -14,47 +14,47 @@
       <p class="subtitle">Analyze verbal IQ of tweets in real-time</p>
     </div>
 
-    <!-- Display Settings -->
+    <!-- Advanced Settings -->
     <div class="settings-section">
       <div class="section-header">
-        <h2>Display</h2>
+        <h2>Advanced</h2>
       </div>
       <div class="section-content">
         <div class="setting-item">
-          <label class="switch-label">
-            <input type="checkbox" id="showIQBadge" checked>
-            <span class="switch-text" title="Color-coded badges appear next to tweets showing estimated verbal IQ scores (55-145 range). Badge colors reflect confidence levels, with higher confidence showing greener colors.">Show IQ Badge</span>
-          </label>
-        </div>
-        <div class="setting-item">
-          <label class="switch-label">
-            <input type="checkbox" id="showAverageIQ">
-            <span class="switch-text" title="Display your average IQ calculated from all your tweets. Shows as a badge with IQ score on hover flips to confidence percentage.">Show Your Average IQ</span>
-          </label>
-          <div id="averageIQBadge" class="average-iq-badge-container" style="display: none; margin-top: 8px; margin-left: 30px;"></div>
+          <div class="inline-checkboxes" style="gap: 24px; align-items: center; flex-wrap: wrap;">
+            <label class="inline-checkbox">
+              <input type="checkbox" id="showIQBadge" checked>
+              <span title="Color-coded badges appear next to tweets showing estimated verbal IQ scores (55-145 range). Badge colors reflect confidence levels, with higher confidence showing greener colors.">Others' IQ</span>
+            </label>
+            <label class="inline-checkbox" style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="showAverageIQ">
+              <span title="Display your average IQ calculated from all your tweets. Shows as a badge with IQ score on hover flips to confidence percentage.">Your IQ</span>
+              <div id="averageIQBadge" class="average-iq-badge-container" style="display: none;"></div>
+            </label>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Game Mode -->
+    <!-- IqGuessr -->
     <div class="settings-section collapsible">
       <div class="section-header collapsible-header" data-target="gameModeContent">
-        <h2>Game Mode</h2>
+        <label class="switch-label" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="enableIQGuessr" class="switch-large">
+          <h2 style="margin: 0;">IqGuessr</h2>
+        </label>
         <span class="collapse-icon">▼</span>
       </div>
       <div class="section-content collapsible-content" id="gameModeContent">
-        <div class="setting-item setting-item-large">
-          <label class="switch-label switch-label-large">
-            <input type="checkbox" id="enableIQGuessr" class="switch-large">
-            <span class="switch-text switch-text-large" title="Guess IQ scores before they're calculated! Score points based on accuracy, with higher confidence guesses earning more points. Track your total score and view detailed stats by hovering over (desktop) or clicking (mobile) the score badge on profile pages or in settings.">Enable IqGuessr</span>
-          </label>
+        <div class="setting-item" style="margin-top: 12px;">
+          <p class="setting-desc" style="margin-left: 0; margin-bottom: 12px;">Guess IQ scores before they're calculated! Score points based on accuracy</p>
 
-          <div id="iqGuessrScore" class="iq-guessr-score" style="display: none; margin-top: 12px;">
+          <div id="iqGuessrScore" class="iq-guessr-score" style="display: none; margin-top: 12px; margin-bottom: 12px;">
             <span class="score-label">Score:</span>
             <span class="score-value" id="iqGuessrScoreValue">0</span>
           </div>
 
-          <div class="setting-item setting-item-sub" style="margin-left: 24px; margin-top: 12px;">
+          <div class="setting-item setting-item-sub" style="margin-left: 0; margin-top: 12px;">
             <label class="switch-label">
               <input type="checkbox" id="showProfileScoreBadge" checked>
               <span class="switch-text">Show Score on Profile Page</span>
@@ -64,18 +64,18 @@
       </div>
     </div>
 
-    <!-- IqFiltr Settings -->
+    <!-- IqFiltr -->
     <div class="settings-section collapsible">
       <div class="section-header collapsible-header" data-target="iqFiltrContent">
-        <h2>IqFiltr</h2>
+        <label class="switch-label" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="enableIqFiltr" class="switch-large">
+          <h2 style="margin: 0;">IqFiltr</h2>
+        </label>
         <span class="collapse-icon">▼</span>
       </div>
       <div class="section-content collapsible-content" id="iqFiltrContent">
-        <div class="setting-item setting-item-large">
-          <label class="switch-label switch-label-large">
-            <input type="checkbox" id="enableIqFiltr" class="switch-large">
-            <span class="switch-text switch-text-large" title="Automatically remove or mute tweets/replies/quoted posts based on IQ score thresholds. Elements are filtered immediately before any animations.">Enable IqFiltr</span>
-          </label>
+        <div class="setting-item" style="margin-top: 12px;">
+          <p class="setting-desc" style="margin-left: 0; margin-bottom: 12px;" title="Automatically remove or mute tweets/replies/quoted posts based on IQ score thresholds. Elements are filtered immediately before any animations.">Automatically hide posts based on IQ score thresholds</p>
 
           <div id="iqFiltrOptions" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
 
@@ -84,8 +84,8 @@
               <div class="control-group">
                 <label for="filterMode" class="control-label">Mode:</label>
                 <select id="filterMode" class="control-select" style="width: 200px;">
-                  <option value="remove">Remove Completely</option>
                   <option value="mute">Mute (Hide with View)</option>
+                  <option value="remove">Remove Completely</option>
                 </select>
               </div>
             </div>
@@ -125,7 +125,7 @@
             <div class="filter-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
               <label class="switch-label">
                 <input type="checkbox" id="useConfidenceInFilter">
-                <span class="switch-text">Use Confidence Filter</span>
+                <span class="switch-text" title="Filter posts based on the confidence percentage of the IQ estimation. Confidence indicates how reliable the IQ score is - higher confidence means the estimation is more accurate. This filter works independently of the IQ threshold filter.">Use Confidence Filter</span>
               </label>
 
               <div id="confidenceFilterOptions" style="margin-top: 12px; margin-left: 24px; display: none;">
@@ -145,16 +145,13 @@
       </div>
     </div>
 
-    <!-- Advanced Settings -->
-    <div class="settings-section collapsible">
-      <div class="section-header collapsible-header" data-target="advancedContent">
-        <h2>Advanced</h2>
-        <span class="collapse-icon">▼</span>
-      </div>
-      <div class="section-content collapsible-content" id="advancedContent" style="display: none;">
+    <!-- IQ Breakdown Analysis -->
+    <div class="settings-section">
+
+      <div class="section-content">
         <div class="setting-item">
           <label class="switch-label">
-            <input type="checkbox" id="enableDebugLogging" checked>
+            <input type="checkbox" id="enableDebugLogging">
             <span class="switch-text">IQ Breakdown Analysis</span>
           </label>
           <p class="setting-desc">Shows on hover in F12 console the breakdown of the calculation</p>
@@ -163,12 +160,18 @@
     </div>
 
     <!-- Information Sections -->
+    <div class="settings-section" style="margin-top: 32px;">
+      <div class="section-header">
+        <h2>Information</h2>
+      </div>
+    </div>
+
     <div class="info-section collapsible">
       <div class="section-header collapsible-header" data-target="infoContent">
         <h2>How It Works</h2>
         <span class="collapse-icon">▼</span>
       </div>
-      <div class="section-content collapsible-content" id="infoContent" style="display: none;">
+      <div class="section-content collapsible-content" id="infoContent">
         <div class="info-content">
           <p><strong>IqGuessr</strong> analyzes tweet text in real-time using a research-based estimator trained on graded samples.</p>
           <p>It evaluates tweets across four key dimensions:</p>
@@ -178,19 +181,6 @@
             <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure (<a href="https://doi.org/10.1000/xyz" target="_blank">Hendrix & Yampolskiy, 2017</a>; <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
             <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>).</li>
           </ul>
-
-          <div class="privacy-notice">
-            <span class="privacy-icon">🔒</span>
-            <div class="privacy-text">
-              <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
-            </div>
-          </div>
-          <div class="privacy-notice data-notice">
-            <span class="privacy-icon">📋</span>
-            <div class="privacy-text">
-              <strong>Data Collection Notice:</strong> This extension processes publicly available Twitter handles and numerical scores. No tweet text or private information is collected or stored. We only store: IQ scores (numeric), Twitter handles (public usernames), guess history (for IqGuessr game mode), and limited metadata (timestamps, language, hashtags).
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -200,7 +190,7 @@
         <h2>Color Coding</h2>
         <span class="collapse-icon">▼</span>
       </div>
-      <div class="section-content collapsible-content" id="legendContent" style="display: none;">
+      <div class="section-content collapsible-content" id="legendContent">
         <div class="legend-items" id="iqLegend" style="display: none;">
           <div class="legend-item">
             <span class="legend-color" style="background-color: #d32f2f;"></span>
@@ -279,6 +269,30 @@
           <div class="legend-item">
             <span class="legend-color" style="background-color: #2e7d32;"></span>
             <span>90-100%: Maximum Confidence</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Privacy & Data Notice -->
+    <div class="info-section collapsible">
+      <div class="section-header collapsible-header" data-target="privacyContent">
+        <h2>Privacy & Data</h2>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="section-content collapsible-content" id="privacyContent">
+        <div class="info-content">
+          <div class="privacy-notice">
+            <span class="privacy-icon">🔒</span>
+            <div class="privacy-text">
+              <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
+            </div>
+          </div>
+          <div class="privacy-notice data-notice" style="margin-top: 12px;">
+            <span class="privacy-icon">📋</span>
+            <div class="privacy-text">
+              <strong>Data Collection Notice:</strong> This extension processes publicly available Twitter handles and numerical scores. No tweet text or private information is collected or stored. We only store: IQ scores (numeric), Twitter handles (public usernames), guess history (for IqGuessr game mode), and limited metadata (timestamps, language, hashtags).
+            </div>
           </div>
         </div>
       </div>
