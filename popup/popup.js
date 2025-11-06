@@ -1105,7 +1105,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to update section spacing
   function updateSectionSpacing() {
-    const collapsibleSections = document.querySelectorAll('.settings-section.collapsible');
+    // Handle all collapsible sections (settings, info, color-legend)
+    const collapsibleSections = document.querySelectorAll('.settings-section.collapsible, .info-section.collapsible, .color-legend.collapsible');
     collapsibleSections.forEach(section => {
       const content = section.querySelector('.collapsible-content');
       if (content && !content.classList.contains('collapsed')) {
@@ -1124,8 +1125,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const content = document.getElementById(targetId);
       if (!content) return;
 
-      // Set initial state - expand Game Mode and IqFiltr by default
-      if (targetId === 'gameModeContent' || targetId === 'iqFiltrContent') {
+      // Set initial state - expand Game Mode, IqFiltr, and Privacy & Data by default
+      if (targetId === 'gameModeContent' || targetId === 'iqFiltrContent' || targetId === 'privacyContent') {
         // Expanded by default - set maxHeight to actual height
         content.style.maxHeight = content.scrollHeight + 'px';
       } else {

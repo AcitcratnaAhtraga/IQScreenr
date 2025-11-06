@@ -11,7 +11,27 @@
   <div class="container">
     <div class="header">
       <h1><img src="../icons/Variants/Fullsize/IqGuessrT.png" alt="IqScreenr" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;"> IqScreenr</h1>
-      <p class="subtitle">Analyze verbal IQ of tweets in real-time</p>
+      <p class="subtitle">Analyze, Filter and Guess verbal IQ of tweets</p>
+    </div>
+
+
+
+    <div class="info-section collapsible">
+      <div class="section-header collapsible-header" data-target="infoContent">
+        <h2>How It Works</h2>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <p class="setting-desc" style="margin: 8px 0 12px 0; padding-left: 0; display: block !important; visibility: visible !important; opacity: 1 !important;"><strong>IqScreenr</strong> analyzes tweet text in real-time using a research-based estimator trained on graded samples. It evaluates tweets across four key dimensions:</p>
+      <div class="section-content collapsible-content" id="infoContent">
+        <div class="info-content">
+          <ul>
+            <li><strong>Vocabulary Sophistication:</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>; <a href="https://doi.org/10.1000/xyz" target="_blank">Wolfram, 2025</a>).</li>
+            <li><strong>Lexical Diversity:</strong> Measures word variety using Type-Token Ratio (TTR) (<a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
+            <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure (<a href="https://doi.org/10.1000/xyz" target="_blank">Hendrix & Yampolskiy, 2017</a>; <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
+            <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>).</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <!-- Advanced Settings -->
@@ -153,44 +173,25 @@
     </div>
 
     <!-- IQ Breakdown Analysis -->
-    <div class="settings-section card-section">
-      <!-- <div class="section-header">
-        <h2>Advanced</h2>
-      </div> -->
-      <div class="section-content">
-        <div class="setting-item">
-          <label class="switch-label">
-            <input type="checkbox" id="enableDebugLogging">
-            <span class="switch-text">IQ Breakdown Analysis</span>
-          </label>
-          <p class="setting-desc">Shows on hover in F12 console the breakdown of the calculation</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Information Sections -->
-    <div class="settings-section" style="margin-top: 32px;">
-      <div class="section-header">
-        <h2>Information</h2>
-      </div>
-    </div>
-
-    <div class="info-section collapsible">
-      <div class="section-header collapsible-header" data-target="infoContent">
-        <h2>How It Works</h2>
+    <div class="settings-section collapsible card-section">
+      <div class="section-header collapsible-header" data-target="debugLoggingContent">
+        <label class="switch-label" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="enableDebugLogging" class="switch-large">
+          <h2 style="margin: 0;">IQ Breakdown Analysis</h2>
+        </label>
         <span class="collapse-icon">▼</span>
       </div>
-      <div class="section-content collapsible-content" id="infoContent">
-        <div class="info-content">
-          <p><strong>IqScreenr</strong> analyzes tweet text in real-time using a research-based estimator trained on graded samples.</p>
-          <p>It evaluates tweets across four key dimensions:</p>
-          <ul>
-            <li><strong>Vocabulary Sophistication:</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>; <a href="https://doi.org/10.1000/xyz" target="_blank">Wolfram, 2025</a>).</li>
-            <li><strong>Lexical Diversity:</strong> Measures word variety using Type-Token Ratio (TTR) (<a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
-            <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure (<a href="https://doi.org/10.1000/xyz" target="_blank">Hendrix & Yampolskiy, 2017</a>; <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
-            <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>).</li>
-          </ul>
+      <p class="setting-desc" style="margin: 8px 0 0 0; padding-left: 0;">Shows on hover in F12 console the breakdown of the calculation</p>
+      <div class="section-content collapsible-content" id="debugLoggingContent">
+        <div class="setting-item" style="margin-top: 12px;">
         </div>
+      </div>
+    </div>
+
+        <!-- Information Sections -->
+    <div class="settings-section" style="margin-top: 0;">
+      <div class="section-header">
+        <h2>Information</h2>
       </div>
     </div>
 
