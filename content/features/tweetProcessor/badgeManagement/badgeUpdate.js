@@ -162,10 +162,10 @@
     const gameManager = getGameManager();
     const { getIQColor, getConfidenceColor, animateCountUp, logDebugInfo } = badgeManager || {};
 
-    // CRITICAL: Check IQ filter IMMEDIATELY after IQ calculation, before any animations or processing
+    // CRITICAL: Check IqFiltr IMMEDIATELY after IQ calculation, before any animations or processing
     // This removes elements before they can be displayed or animated
-    const getIQFilter = () => window.IQFilter || {};
-    const { checkAndFilter } = getIQFilter();
+    const getIqFiltr = () => window.IqFiltr || {};
+    const { checkAndFilter } = getIqFiltr();
     if (checkAndFilter) {
       // Use the actual tweet element for filtering (or outer element if nested)
       const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;

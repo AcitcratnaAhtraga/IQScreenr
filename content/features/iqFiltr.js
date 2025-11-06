@@ -1,5 +1,5 @@
 /**
- * IQ Filter Module
+ * IqFiltr Module
  * Removes tweets/replies/quoted posts based on IQ score thresholds
  * Elements are removed immediately after IQ calculation, before any animations
  */
@@ -133,7 +133,7 @@
     const settings = getSettings();
 
     // Check if filtering is enabled
-    if (!settings.enableIQFilter) {
+    if (!settings.enableIqFiltr) {
       return false;
     }
 
@@ -587,7 +587,7 @@
             </div>
           </div>
           <div class="css-175oi2r r-1kqz2tg">
-            <button role="button" class="css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-faml9v r-2dysd3 r-15ysp7h r-4wgw6l r-3pj75a r-1loqt21 r-o7ynqc r-6416eg r-1ny4l3l iq-filter-view-button" type="button" style="background-color: rgba(0, 0, 0, 0); border-color: rgba(0, 0, 0, 0);">
+            <button role="button" class="css-175oi2r r-sdzlij r-1phboty r-rs99b7 r-lrvibr r-faml9v r-2dysd3 r-15ysp7h r-4wgw6l r-3pj75a r-1loqt21 r-o7ynqc r-6416eg r-1ny4l3l iq-filtr-view-button" type="button" style="background-color: rgba(0, 0, 0, 0); border-color: rgba(0, 0, 0, 0);">
               <div dir="ltr" class="css-146c3p1 r-bcqeeo r-qvutc0 r-37j5jr r-q4m81j r-a023e6 r-rjixqe r-b88u0q r-1awozwy r-6koalj r-18u37iz r-16y2uox r-1777fci" style="color: rgb(239, 243, 244);">
                 <span class="css-1jxf684 r-dnmrzs r-1udh08x r-1udbk01 r-3s2u2q r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3 r-1b43r93 r-1cwl3u0">
                   <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3">View</span>
@@ -604,7 +604,7 @@
     placeholder._hiddenAvatar = avatarParent;
 
     // Add click handler to reveal
-    const viewButton = placeholder.querySelector('.iq-filter-view-button');
+      const viewButton = placeholder.querySelector('.iq-filtr-view-button');
     if (viewButton) {
       // Add hover effects
       viewButton.addEventListener('mouseenter', () => {
@@ -626,7 +626,7 @@
 
     // Also allow clicking the placeholder itself
     placeholder.addEventListener('click', (e) => {
-      if (!e.target.closest('.iq-filter-view-button') && !tweetElement.hasAttribute('data-iq-manually-revealed')) {
+        if (!e.target.closest('.iq-filtr-view-button') && !tweetElement.hasAttribute('data-iq-manually-revealed')) {
         e.preventDefault();
         e.stopPropagation();
         revealMutedTweet(tweetElement);
@@ -759,7 +759,7 @@
     const settings = getSettings();
 
     // Only apply if filter is enabled
-    if (!settings.enableIQFilter) {
+    if (!settings.enableIqFiltr) {
       return;
     }
 
@@ -824,7 +824,7 @@
 
   // Export for use in other modules
   if (typeof window !== 'undefined') {
-    window.IQFilter = {
+    window.IqFiltr = {
       checkAndFilter,
       shouldFilterTweet,
       isReply,

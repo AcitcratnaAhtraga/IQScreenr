@@ -14,7 +14,7 @@ const defaultSettings = {
   useConfidenceForColor: true, // Always enabled - badge colors always reflect confidence
   enableDebugLogging: true,
   enableIQGuessr: false,
-  enableIQFilter: false,
+  enableIqFiltr: false,
   filterTweets: true,
   filterReplies: true,
   filterQuotedPosts: true,
@@ -32,7 +32,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -61,8 +61,8 @@ function loadSettings() {
     if (result.showAverageIQ !== undefined) {
       settings.showAverageIQ = result.showAverageIQ;
     }
-    if (result.enableIQFilter !== undefined) {
-      settings.enableIQFilter = result.enableIQFilter;
+    if (result.enableIqFiltr !== undefined) {
+      settings.enableIqFiltr = result.enableIqFiltr;
     }
     if (result.filterTweets !== undefined) {
       settings.filterTweets = result.filterTweets;
@@ -134,9 +134,9 @@ function setupSettingsListener(onChange) {
         settings.showProfileScoreBadge = changes.showProfileScoreBadge.newValue;
         relevantChanges.showProfileScoreBadge = changes.showProfileScoreBadge;
       }
-      if (changes.enableIQFilter) {
-        settings.enableIQFilter = changes.enableIQFilter.newValue;
-        relevantChanges.enableIQFilter = changes.enableIQFilter;
+      if (changes.enableIqFiltr) {
+        settings.enableIqFiltr = changes.enableIqFiltr.newValue;
+        relevantChanges.enableIqFiltr = changes.enableIqFiltr;
       }
       if (changes.filterTweets) {
         settings.filterTweets = changes.filterTweets.newValue;
@@ -197,7 +197,7 @@ if (typeof window !== 'undefined') {
     get enableDebugLogging() { return settings.enableDebugLogging; },
     get enableIQGuessr() { return settings.enableIQGuessr; },
     get showProfileScoreBadge() { return settings.showProfileScoreBadge !== false; },
-    get enableIQFilter() { return settings.enableIQFilter; },
+    get enableIqFiltr() { return settings.enableIqFiltr; },
     get filterTweets() { return settings.filterTweets; },
     get filterReplies() { return settings.filterReplies; },
     get filterQuotedPosts() { return settings.filterQuotedPosts; },

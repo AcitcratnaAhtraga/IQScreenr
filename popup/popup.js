@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize defaults if not set
   Promise.all([
-    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], resolve)),
+    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], resolve)),
     new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
     new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
         enableIQGuessr: false,
         showProfileScoreBadge: true, // Default to showing profile badge
         showAverageIQ: false, // Default to not showing average IQ
-        enableIQFilter: false,
+        enableIqFiltr: false,
         filterTweets: true,
         filterReplies: true,
         filterQuotedPosts: true,
@@ -452,12 +452,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('showAverageIQ').checked = result.showAverageIQ === true; // Default to false
 
     // Load filter settings
-    const enableIQFilterElement = document.getElementById('enableIQFilter');
-    const iqFilterOptions = document.getElementById('iqFilterOptions');
-    if (enableIQFilterElement) {
-      enableIQFilterElement.checked = result.enableIQFilter === true; // Default to false
-      if (iqFilterOptions) {
-        iqFilterOptions.style.display = enableIQFilterElement.checked ? 'block' : 'none';
+    const enableIqFiltrElement = document.getElementById('enableIqFiltr');
+    const iqFiltrOptions = document.getElementById('iqFiltrOptions');
+    if (enableIqFiltrElement) {
+      enableIqFiltrElement.checked = result.enableIqFiltr === true; // Default to false
+      if (iqFiltrOptions) {
+        iqFiltrOptions.style.display = enableIqFiltrElement.checked ? 'block' : 'none';
       }
     }
     if (result.filterTweets !== undefined) {
@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }).catch((error) => {
     console.warn('[IqGuessr] Error loading settings:', error);
     // Fallback: try sync storage only
-    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
+    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
       // Real-time badge is hidden, but keep logic intact for backend
       const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
@@ -624,16 +624,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Handle IQ Filter settings
-  const enableIQFilterElement = document.getElementById('enableIQFilter');
-  if (enableIQFilterElement) {
-    enableIQFilterElement.addEventListener('change', (e) => {
+  // Handle IqFiltr settings
+  const enableIqFiltrElement = document.getElementById('enableIqFiltr');
+  if (enableIqFiltrElement) {
+    enableIqFiltrElement.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
-      const iqFilterOptions = document.getElementById('iqFilterOptions');
-      if (iqFilterOptions) {
-        iqFilterOptions.style.display = isEnabled ? 'block' : 'none';
+      const iqFiltrOptions = document.getElementById('iqFiltrOptions');
+      if (iqFiltrOptions) {
+        iqFiltrOptions.style.display = isEnabled ? 'block' : 'none';
       }
-      chrome.storage.sync.set({ enableIQFilter: isEnabled }, () => {
+      chrome.storage.sync.set({ enableIqFiltr: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
         } else {

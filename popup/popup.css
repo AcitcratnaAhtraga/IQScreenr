@@ -117,6 +117,19 @@ body {
   background: #f5f5f5;
 }
 
+.filter-subsection {
+  margin-bottom: 16px;
+}
+
+.filter-subsection h3 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #111827;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .switch-label-large {
   align-items: center;
 }
@@ -538,6 +551,10 @@ input[type="range"]::-moz-range-thumb {
   .setting-item-large:hover {
     border-color: #3a3a3a;
     background: #252525;
+  }
+
+  .filter-subsection h3 {
+    color: #f9fafb;
   }
 
   .switch-text-large {

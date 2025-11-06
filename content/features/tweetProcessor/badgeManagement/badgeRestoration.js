@@ -131,9 +131,9 @@
     const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
     const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
 
-    // CRITICAL: Check IQ filter IMMEDIATELY after getting IQ, before restoring badge
-    const getIQFilter = () => window.IQFilter || {};
-    const { checkAndFilter } = getIQFilter();
+    // CRITICAL: Check IqFiltr IMMEDIATELY after getting IQ, before restoring badge
+    const getIqFiltr = () => window.IqFiltr || {};
+    const { checkAndFilter } = getIqFiltr();
     if (checkAndFilter) {
       const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
       const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);
@@ -241,9 +241,9 @@
     const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
     const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
 
-    // CRITICAL: Check IQ filter IMMEDIATELY after getting IQ, before restoring badge
-    const getIQFilter = () => window.IQFilter || {};
-    const { checkAndFilter } = getIQFilter();
+    // CRITICAL: Check IqFiltr IMMEDIATELY after getting IQ, before restoring badge
+    const getIqFiltr = () => window.IqFiltr || {};
+    const { checkAndFilter } = getIqFiltr();
     if (checkAndFilter) {
       const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
       const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);

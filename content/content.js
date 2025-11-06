@@ -122,9 +122,9 @@
       }
     }
 
-    // Handle IQ filter settings changes - apply filter immediately
+    // Handle IqFiltr settings changes - apply filter immediately
     const filterSettings = [
-      'enableIQFilter',
+      'enableIqFiltr',
       'filterTweets',
       'filterReplies',
       'filterQuotedPosts',
@@ -138,11 +138,11 @@
 
     const hasFilterChange = filterSettings.some(setting => changes[setting] !== undefined);
     if (hasFilterChange) {
-      const getIQFilter = () => window.IQFilter || {};
-      const { applyFilterToVisibleTweets, revealAllMutedTweets } = getIQFilter();
+      const getIqFiltr = () => window.IqFiltr || {};
+      const { applyFilterToVisibleTweets, revealAllMutedTweets } = getIqFiltr();
 
       // If filter is being disabled, reveal all muted tweets
-      if (changes.enableIQFilter && !changes.enableIQFilter.newValue) {
+      if (changes.enableIqFiltr && !changes.enableIqFiltr.newValue) {
         if (revealAllMutedTweets) {
           revealAllMutedTweets();
         }
