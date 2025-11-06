@@ -539,12 +539,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (iqGuessrOptions) {
         iqGuessrOptions.style.display = enableIQGuessrElement.checked ? 'block' : 'none';
         // Ensure section is expanded if options should be visible
-        if (enableIQGuessrElement.checked && gameModeContent && gameModeContent.classList.contains('collapsed')) {
-          gameModeContent.classList.remove('collapsed');
-          const header = document.querySelector('[data-target="gameModeContent"]');
-          if (header) {
-            header.classList.remove('collapsed');
+        if (enableIQGuessrElement.checked && gameModeContent) {
+          if (gameModeContent.classList.contains('collapsed')) {
+            gameModeContent.classList.remove('collapsed');
+            const header = document.querySelector('[data-target="gameModeContent"]');
+            if (header) {
+              header.classList.remove('collapsed');
+            }
           }
+          // Update maxHeight for expanded section after options are shown
+          setTimeout(() => {
+            gameModeContent.style.maxHeight = gameModeContent.scrollHeight + 'px';
+          }, 10);
         }
       }
     }
@@ -562,12 +568,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (iqFiltrOptions) {
         iqFiltrOptions.style.display = enableIqFiltrElement.checked ? 'block' : 'none';
         // Ensure section is expanded if options should be visible
-        if (enableIqFiltrElement.checked && iqFiltrContent && iqFiltrContent.classList.contains('collapsed')) {
-          iqFiltrContent.classList.remove('collapsed');
-          const header = document.querySelector('[data-target="iqFiltrContent"]');
-          if (header) {
-            header.classList.remove('collapsed');
+        if (enableIqFiltrElement.checked && iqFiltrContent) {
+          if (iqFiltrContent.classList.contains('collapsed')) {
+            iqFiltrContent.classList.remove('collapsed');
+            const header = document.querySelector('[data-target="iqFiltrContent"]');
+            if (header) {
+              header.classList.remove('collapsed');
+            }
           }
+          // Update maxHeight for expanded section after options are shown
+          setTimeout(() => {
+            iqFiltrContent.style.maxHeight = iqFiltrContent.scrollHeight + 'px';
+          }, 10);
         }
       }
     }
@@ -634,6 +646,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update dependent checkboxes state
     updateDependentCheckboxes();
+
+    // Update section spacing after all settings are loaded and sections are expanded
+    setTimeout(() => {
+      updateSectionSpacing();
+    }, 100);
   }).catch((error) => {
     console.warn('[IqScreenr] Error loading settings:', error);
     // Fallback: try sync storage only
@@ -657,6 +674,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (typeof updateAverageIQBadge === 'function') {
         updateAverageIQBadge();
       }
+
+      // Update section spacing after all settings are loaded and sections are expanded
+      setTimeout(() => {
+        updateSectionSpacing();
+      }, 100);
     });
   });
 
