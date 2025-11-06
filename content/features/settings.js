@@ -22,7 +22,9 @@ const defaultSettings = {
   filterDirection: 'below', // 'below' or 'above'
   filterConfidenceThreshold: 50, // 0-100, default 50
   filterConfidenceDirection: 'above', // 'below' or 'above' - independent of IQ direction
+  useIQInFilter: true, // Whether to use IQ threshold in filtering (default true)
   useConfidenceInFilter: false, // Whether to use confidence in filtering
+  filterInvalidTweets: false, // Whether to filter tweets with IQ X (invalid/too short)
   filterMode: 'mute' // 'remove' or 'mute' - how to handle filtered tweets
 };
 
@@ -32,7 +34,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterMode'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -82,11 +84,17 @@ function loadSettings() {
     if (result.filterConfidenceThreshold !== undefined) {
       settings.filterConfidenceThreshold = result.filterConfidenceThreshold;
     }
+    if (result.filterConfidenceDirection !== undefined) {
+      settings.filterConfidenceDirection = result.filterConfidenceDirection;
+    }
+    if (result.useIQInFilter !== undefined) {
+      settings.useIQInFilter = result.useIQInFilter;
+    }
     if (result.useConfidenceInFilter !== undefined) {
       settings.useConfidenceInFilter = result.useConfidenceInFilter;
     }
-    if (result.filterConfidenceDirection !== undefined) {
-      settings.filterConfidenceDirection = result.filterConfidenceDirection;
+    if (result.filterInvalidTweets !== undefined) {
+      settings.filterInvalidTweets = result.filterInvalidTweets;
     }
     if (result.filterMode !== undefined) {
       settings.filterMode = result.filterMode;
@@ -162,9 +170,17 @@ function setupSettingsListener(onChange) {
         settings.filterConfidenceThreshold = changes.filterConfidenceThreshold.newValue;
         relevantChanges.filterConfidenceThreshold = changes.filterConfidenceThreshold;
       }
+      if (changes.useIQInFilter) {
+        settings.useIQInFilter = changes.useIQInFilter.newValue;
+        relevantChanges.useIQInFilter = changes.useIQInFilter;
+      }
       if (changes.useConfidenceInFilter) {
         settings.useConfidenceInFilter = changes.useConfidenceInFilter.newValue;
         relevantChanges.useConfidenceInFilter = changes.useConfidenceInFilter;
+      }
+      if (changes.filterInvalidTweets) {
+        settings.filterInvalidTweets = changes.filterInvalidTweets.newValue;
+        relevantChanges.filterInvalidTweets = changes.filterInvalidTweets;
       }
       if (changes.filterConfidenceDirection) {
         settings.filterConfidenceDirection = changes.filterConfidenceDirection.newValue;
@@ -205,7 +221,9 @@ if (typeof window !== 'undefined') {
     get filterDirection() { return settings.filterDirection; },
     get filterConfidenceThreshold() { return settings.filterConfidenceThreshold; },
     get filterConfidenceDirection() { return settings.filterConfidenceDirection; },
+    get useIQInFilter() { return settings.useIQInFilter; },
     get useConfidenceInFilter() { return settings.useConfidenceInFilter; },
+    get filterInvalidTweets() { return settings.filterInvalidTweets; },
     get filterMode() { return settings.filterMode; },
     loadSettings,
     setupSettingsListener,

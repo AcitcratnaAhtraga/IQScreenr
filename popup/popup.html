@@ -77,7 +77,7 @@
                 <label for="filterMode" class="control-label">Mode:</label>
                 <select id="filterMode" class="control-select" style="width: 200px;">
                   <option value="mute">Mute (Hide with View)</option>
-                  <option value="remove">Remove Completely</option>
+                  <option value="remove">Remove Completely (experimental)</option>
                 </select>
               </div>
             </div>
@@ -101,15 +101,22 @@
               </div>
             </div>
 
-            <!-- IQ Threshold - Compact -->
+            <!-- IQ Threshold Filter -->
             <div class="filter-subsection" style="margin-top: 16px;">
-              <div class="inline-controls">
-                <select id="filterDirection" class="control-select" style="width: 90px;">
-                  <option value="below">Below</option>
-                  <option value="above">Above</option>
-                </select>
-                <input type="number" id="filterIQThreshold" min="55" max="145" value="100" class="control-input" style="width: 80px;">
-                <span class="control-label" style="margin: 0;">IQ</span>
+              <label class="switch-label">
+                <input type="checkbox" id="useIQInFilter" checked>
+                <span class="switch-text">Use IQ Filter</span>
+              </label>
+
+              <div id="iqFilterOptions" style="margin-top: 12px; margin-left: 24px;">
+                <div class="inline-controls">
+                  <select id="filterDirection" class="control-select" style="width: 90px;">
+                    <option value="below">Below</option>
+                    <option value="above">Above</option>
+                  </select>
+                  <input type="number" id="filterIQThreshold" min="55" max="145" value="100" class="control-input" style="width: 80px;">
+                  <span class="control-label" style="margin: 0;">IQ</span>
+                </div>
               </div>
             </div>
 
@@ -117,7 +124,7 @@
             <div class="filter-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
               <label class="switch-label">
                 <input type="checkbox" id="useConfidenceInFilter">
-                <span class="switch-text" title="Filter posts based on the confidence percentage of the IQ estimation. Confidence indicates how reliable the IQ score is - higher confidence means the estimation is more accurate. This filter works independently of the IQ threshold filter.">Use Confidence Filter</span>
+                <span class="switch-text" title="Filter posts based on the confidence percentage of the IQ estimation. Confidence indicates how reliable the IQ score is - higher confidence means the estimation is more accurate.">Use Confidence Filter</span>
               </label>
 
               <div id="confidenceFilterOptions" style="margin-top: 12px; margin-left: 24px; display: none;">
@@ -131,6 +138,22 @@
                   <span id="confidenceColorPreview" class="color-preview"></span>
                 </div>
               </div>
+            </div>
+
+            <!-- Invalid/IQ X Filter -->
+            <div class="filter-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
+              <label class="switch-label" style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="filterInvalidTweets">
+                <span class="switch-text">Filter IQ X (Invalid/Too Short)</span>
+                <span class="iq-badge iq-badge-invalid iq-badge-flip" style="display: inline-flex; width: 32px; height: 32px; font-size: 10px; margin-left: 4px;" title="Tweets with less than 1 word or invalid text">
+                  <div class="iq-badge-inner">
+                    <div class="iq-badge-front">
+                      <span class="iq-label">IQ</span>
+                      <span class="iq-score">✕</span>
+                    </div>
+                  </div>
+                </span>
+              </label>
             </div>
           </div>
         </div>

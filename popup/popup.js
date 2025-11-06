@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize defaults if not set
   Promise.all([
-    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], resolve)),
+    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterMode'], resolve)),
     new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
     new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
@@ -501,7 +501,9 @@ document.addEventListener('DOMContentLoaded', () => {
         filterDirection: 'below',
         filterConfidenceThreshold: 50,
         filterConfidenceDirection: 'above',
+        useIQInFilter: true,
         useConfidenceInFilter: false,
+        filterInvalidTweets: false,
         filterMode: 'mute'
       };
       // Only set score if it doesn't exist
@@ -604,6 +606,16 @@ document.addEventListener('DOMContentLoaded', () => {
       filterDirectionElement.value = result.filterDirection !== undefined ? result.filterDirection : 'below';
     }
 
+    // Load IQ filter settings
+    const useIQInFilterElement = document.getElementById('useIQInFilter');
+    const iqFilterOptions = document.getElementById('iqFilterOptions');
+    if (useIQInFilterElement) {
+      useIQInFilterElement.checked = result.useIQInFilter !== false; // Default to true
+      if (iqFilterOptions) {
+        iqFilterOptions.style.display = useIQInFilterElement.checked ? 'block' : 'none';
+      }
+    }
+
     // Load confidence filter settings
     const useConfidenceInFilterElement = document.getElementById('useConfidenceInFilter');
     const confidenceFilterOptions = document.getElementById('confidenceFilterOptions');
@@ -654,7 +666,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }).catch((error) => {
     console.warn('[IqScreenr] Error loading settings:', error);
     // Fallback: try sync storage only
-    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
+      chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterMode'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
       // Real-time badge is hidden, but keep logic intact for backend
       const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
@@ -874,10 +886,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Helper function to check if at least one post type is enabled (excluding a specific checkbox)
+  function hasAtLeastOnePostType(excludeElement = null) {
+    const filterTweetsElement = document.getElementById('filterTweets');
+    const filterRepliesElement = document.getElementById('filterReplies');
+    const filterQuotedPostsElement = document.getElementById('filterQuotedPosts');
+
+    const isTweetsEnabled = (filterTweetsElement && filterTweetsElement !== excludeElement) ? filterTweetsElement.checked : false;
+    const isRepliesEnabled = (filterRepliesElement && filterRepliesElement !== excludeElement) ? filterRepliesElement.checked : false;
+    const isQuotedEnabled = (filterQuotedPostsElement && filterQuotedPostsElement !== excludeElement) ? filterQuotedPostsElement.checked : false;
+
+    return isTweetsEnabled || isRepliesEnabled || isQuotedEnabled;
+  }
+
   const filterTweetsElement = document.getElementById('filterTweets');
   if (filterTweetsElement) {
     filterTweetsElement.addEventListener('change', (e) => {
-      chrome.storage.sync.set({ filterTweets: e.target.checked }, () => {
+      const isEnabled = e.target.checked;
+
+      // Ensure at least one post type is enabled (check other post types, excluding this one)
+      if (!isEnabled && !hasAtLeastOnePostType(e.target)) {
+        e.target.checked = true;
+        showStatus('At least one post type must be enabled', 'error');
+        return;
+      }
+
+      chrome.storage.sync.set({ filterTweets: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
         } else {
@@ -890,7 +924,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterRepliesElement = document.getElementById('filterReplies');
   if (filterRepliesElement) {
     filterRepliesElement.addEventListener('change', (e) => {
-      chrome.storage.sync.set({ filterReplies: e.target.checked }, () => {
+      const isEnabled = e.target.checked;
+
+      // Ensure at least one post type is enabled (check other post types, excluding this one)
+      if (!isEnabled && !hasAtLeastOnePostType(e.target)) {
+        e.target.checked = true;
+        showStatus('At least one post type must be enabled', 'error');
+        return;
+      }
+
+      chrome.storage.sync.set({ filterReplies: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
         } else {
@@ -903,7 +946,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const filterQuotedPostsElement = document.getElementById('filterQuotedPosts');
   if (filterQuotedPostsElement) {
     filterQuotedPostsElement.addEventListener('change', (e) => {
-      chrome.storage.sync.set({ filterQuotedPosts: e.target.checked }, () => {
+      const isEnabled = e.target.checked;
+
+      // Ensure at least one post type is enabled (check other post types, excluding this one)
+      if (!isEnabled && !hasAtLeastOnePostType(e.target)) {
+        e.target.checked = true;
+        showStatus('At least one post type must be enabled', 'error');
+        return;
+      }
+
+      chrome.storage.sync.set({ filterQuotedPosts: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
         } else {
@@ -1033,11 +1085,59 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Helper function to check if at least one filter is enabled (excluding a specific checkbox)
+  function hasAtLeastOneFilter(excludeElement = null) {
+    const useIQInFilterElement = document.getElementById('useIQInFilter');
+    const useConfidenceInFilterElement = document.getElementById('useConfidenceInFilter');
+    const filterInvalidTweetsElement = document.getElementById('filterInvalidTweets');
+
+    const isIQEnabled = (useIQInFilterElement && useIQInFilterElement !== excludeElement) ? useIQInFilterElement.checked : false;
+    const isConfidenceEnabled = (useConfidenceInFilterElement && useConfidenceInFilterElement !== excludeElement) ? useConfidenceInFilterElement.checked : false;
+    const isInvalidEnabled = (filterInvalidTweetsElement && filterInvalidTweetsElement !== excludeElement) ? filterInvalidTweetsElement.checked : false;
+
+    return isIQEnabled || isConfidenceEnabled || isInvalidEnabled;
+  }
+
+  // Handle useIQInFilter checkbox
+  const useIQInFilterElement = document.getElementById('useIQInFilter');
+  if (useIQInFilterElement) {
+    useIQInFilterElement.addEventListener('change', (e) => {
+      const isEnabled = e.target.checked;
+
+      // Ensure at least one filter is enabled (check other filters, excluding this one)
+      if (!isEnabled && !hasAtLeastOneFilter(e.target)) {
+        e.target.checked = true;
+        showStatus('At least one filter must be enabled', 'error');
+        return;
+      }
+
+      const iqFilterOptions = document.getElementById('iqFilterOptions');
+      if (iqFilterOptions) {
+        iqFilterOptions.style.display = isEnabled ? 'block' : 'none';
+      }
+      chrome.storage.sync.set({ useIQInFilter: isEnabled }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+    });
+  }
+
   // Handle useConfidenceInFilter checkbox
   const useConfidenceInFilterElement = document.getElementById('useConfidenceInFilter');
   if (useConfidenceInFilterElement) {
     useConfidenceInFilterElement.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
+
+      // Ensure at least one filter is enabled (check other filters, excluding this one)
+      if (!isEnabled && !hasAtLeastOneFilter(e.target)) {
+        e.target.checked = true;
+        showStatus('At least one filter must be enabled', 'error');
+        return;
+      }
+
       const confidenceFilterOptions = document.getElementById('confidenceFilterOptions');
       if (confidenceFilterOptions) {
         confidenceFilterOptions.style.display = isEnabled ? 'block' : 'none';
@@ -1080,6 +1180,29 @@ document.addEventListener('DOMContentLoaded', () => {
   if (filterConfidenceDirectionElement) {
     filterConfidenceDirectionElement.addEventListener('change', (e) => {
       chrome.storage.sync.set({ filterConfidenceDirection: e.target.value }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+    });
+  }
+
+  // Handle filterInvalidTweets checkbox
+  const filterInvalidTweetsElement = document.getElementById('filterInvalidTweets');
+  if (filterInvalidTweetsElement) {
+    filterInvalidTweetsElement.addEventListener('change', (e) => {
+      const isEnabled = e.target.checked;
+
+      // Ensure at least one filter is enabled (check other filters, excluding this one)
+      if (!isEnabled && !hasAtLeastOneFilter(e.target)) {
+        e.target.checked = true;
+        showStatus('At least one filter must be enabled', 'error');
+        return;
+      }
+
+      chrome.storage.sync.set({ filterInvalidTweets: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
         } else {

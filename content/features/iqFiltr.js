@@ -146,43 +146,83 @@
       }
     }
 
-    // Check IQ threshold
-    const threshold = settings.filterIQThreshold || 100;
-    const direction = settings.filterDirection || 'below';
+    // Check if tweet is invalid (IQ X) - has data-iq-invalid attribute or iq is null/undefined
+    const isInvalid = tweetElement.hasAttribute('data-iq-invalid') ||
+                      iq === null ||
+                      iq === undefined ||
+                      (tweetElement.querySelector && tweetElement.querySelector('.iq-badge-invalid'));
 
-    let matchesIQThreshold = false;
-    if (direction === 'below') {
-      matchesIQThreshold = iq < threshold;
-    } else {
-      matchesIQThreshold = iq > threshold;
+    // Check if filtering invalid tweets is enabled
+    const filterInvalid = settings.filterInvalidTweets === true;
+
+    // If filtering invalid tweets is enabled and this tweet is invalid, filter it
+    if (filterInvalid && isInvalid) {
+      return true;
     }
 
-    if (!matchesIQThreshold) {
+    // If tweet is invalid but we're not filtering invalid tweets, don't filter based on IQ/confidence
+    if (isInvalid) {
       return false;
     }
 
+    // Check which filters are enabled
+    const useIQ = settings.useIQInFilter !== false; // Default to true
+    const useConfidence = settings.useConfidenceInFilter === true;
+
+    // At least one filter must be enabled when IqFiltr is enabled
+    if (!useIQ && !useConfidence && !filterInvalid) {
+      return false;
+    }
+
+    let matchesIQThreshold = false;
+    let matchesConfidenceThreshold = false;
+
+    // Check IQ threshold if enabled
+    if (useIQ) {
+      const threshold = settings.filterIQThreshold || 100;
+      const direction = settings.filterDirection || 'below';
+
+      if (direction === 'below') {
+        matchesIQThreshold = iq < threshold;
+      } else {
+        matchesIQThreshold = iq > threshold;
+      }
+    }
+
     // Check confidence threshold if enabled
-    if (settings.useConfidenceInFilter && confidence !== null && confidence !== undefined) {
+    if (useConfidence && confidence !== null && confidence !== undefined) {
       const confidenceThreshold = Number(settings.filterConfidenceThreshold) || 0;
       const confidenceDirection = settings.filterConfidenceDirection || 'below';
       const confidenceValue = Number(confidence);
 
       // Ensure confidence is a valid number
-      if (isNaN(confidenceValue)) {
-        // If confidence is invalid, don't filter based on confidence
+      if (!isNaN(confidenceValue)) {
+        if (confidenceDirection === 'below') {
+          matchesConfidenceThreshold = confidenceValue < confidenceThreshold;
+        } else {
+          // 'above' direction: filter if confidence is greater than threshold
+          matchesConfidenceThreshold = confidenceValue > confidenceThreshold;
+        }
+      }
+    }
+
+    // Filter if at least one enabled filter matches (OR logic)
+    // If both are enabled, filter if IQ matches OR confidence matches
+    // If only one is enabled, filter if that one matches
+    if (useIQ && useConfidence) {
+      // Both enabled: filter if IQ matches OR confidence matches
+      if (!matchesIQThreshold && !matchesConfidenceThreshold) {
         return false;
       }
-
-      let matchesConfidenceThreshold = false;
-      if (confidenceDirection === 'below') {
-        matchesConfidenceThreshold = confidenceValue < confidenceThreshold;
-      } else {
-        // 'above' direction: filter if confidence is greater than threshold
-        matchesConfidenceThreshold = confidenceValue > confidenceThreshold;
+    } else if (useIQ) {
+      // Only IQ enabled: filter if IQ matches
+      if (!matchesIQThreshold) {
+        return false;
       }
-
+    } else if (useConfidence) {
+      // Only confidence enabled: filter if confidence matches
       if (!matchesConfidenceThreshold) {
-        return false; // Don't filter if confidence doesn't match threshold
+        return false;
       }
     }
 
@@ -720,7 +760,33 @@
    * @returns {Promise<boolean>} True if the tweet was filtered (removed or muted)
    */
   async function checkAndFilter(tweetElement, iq, confidence) {
-    if (!tweetElement || iq === null || iq === undefined) {
+    if (!tweetElement) {
+      return false;
+    }
+
+    // Check if tweet is invalid (IQ X) - handle separately
+    const isInvalid = tweetElement.hasAttribute('data-iq-invalid') ||
+                      iq === null ||
+                      iq === undefined ||
+                      (tweetElement.querySelector && tweetElement.querySelector('.iq-badge-invalid'));
+
+    // If invalid, still check if we should filter it
+    if (isInvalid) {
+      const shouldFilter = await shouldFilterTweet(tweetElement, iq, confidence);
+      if (shouldFilter) {
+        const settings = getSettings();
+        if (settings.filterMode === 'mute') {
+          await muteTweetElement(tweetElement);
+        } else {
+          await removeTweetElement(tweetElement);
+        }
+        return true;
+      }
+      return false;
+    }
+
+    // For valid tweets, require iq to be a number
+    if (iq === null || iq === undefined) {
       return false;
     }
 

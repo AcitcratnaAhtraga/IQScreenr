@@ -197,6 +197,16 @@
         createOrTransitionInvalidBadge(actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
       }
 
+      // Check if invalid tweets should be filtered
+      const getIqFiltr = () => window.IqFiltr || {};
+      const { checkAndFilter } = getIqFiltr();
+      if (checkAndFilter && settings.enableIqFiltr) {
+        // Mark as invalid for filtering
+        actualTweetElement.setAttribute('data-iq-invalid', 'true');
+        // Check and filter invalid tweet (pass null for iq and confidence)
+        await checkAndFilter(actualTweetElement, null, null);
+      }
+
       markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
       actualTweetElement.removeAttribute('data-iq-processing');
       actualTweetElement.removeAttribute('data-iq-processing-start');
