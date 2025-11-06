@@ -20,8 +20,8 @@ const defaultSettings = {
   filterQuotedPosts: true,
   filterIQThreshold: 100,
   filterDirection: 'below', // 'below' or 'above'
-  filterConfidenceThreshold: 0, // 0-100, 0 means no confidence filter
-  filterConfidenceDirection: 'below', // 'below' or 'above' - independent of IQ direction
+  filterConfidenceThreshold: 50, // 0-100, default 50
+  filterConfidenceDirection: 'above', // 'below' or 'above' - independent of IQ direction
   useConfidenceInFilter: false, // Whether to use confidence in filtering
   filterMode: 'remove' // 'remove' or 'mute' - how to handle filtered tweets
 };

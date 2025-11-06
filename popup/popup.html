@@ -16,154 +16,128 @@
 
     <!-- Display Settings -->
     <div class="settings-section">
-      <h2>Display Settings</h2>
-
-      <div class="setting-item">
-        <label class="switch-label">
-          <input type="checkbox" id="showIQBadge" checked>
-          <span class="switch-text" title="Color-coded badges appear next to tweets showing estimated verbal IQ scores (55-145 range). Badge colors reflect confidence levels, with higher confidence showing greener colors.">Show IQ Badge</span>
-        </label>
-        <p class="setting-desc">Display IQ scores next to tweets as you browse</p>
+      <div class="section-header">
+        <h2>Display</h2>
       </div>
-
-      <div class="setting-item" style="display: none;">
-        <label class="switch-label">
-          <input type="checkbox" id="showRealtimeBadge" checked>
-          <span class="switch-text" title="See live IQ estimates while typing in compose boxes, updating as you type.">Show Real-time IQ Badge</span>
-        </label>
-        <p class="setting-desc">Display live IQ score while typing in compose boxes</p>
-      </div>
-
-      <div class="setting-item">
-        <label class="switch-label">
-          <input type="checkbox" id="showAverageIQ">
-          <span class="switch-text" title="Display your average IQ calculated from all your tweets. Shows as a badge with IQ score on hover flips to confidence percentage.">Show Your Average IQ</span>
-        </label>
-        <p class="setting-desc">Display your average IQ badge (in settings and on profile page, for you only)</p>
-        <div id="averageIQBadge" class="average-iq-badge-container" style="display: none; margin-top: 8px; margin-left: 30px;"></div>
+      <div class="section-content">
+        <div class="setting-item">
+          <label class="switch-label">
+            <input type="checkbox" id="showIQBadge" checked>
+            <span class="switch-text" title="Color-coded badges appear next to tweets showing estimated verbal IQ scores (55-145 range). Badge colors reflect confidence levels, with higher confidence showing greener colors.">Show IQ Badge</span>
+          </label>
+        </div>
+        <div class="setting-item">
+          <label class="switch-label">
+            <input type="checkbox" id="showAverageIQ">
+            <span class="switch-text" title="Display your average IQ calculated from all your tweets. Shows as a badge with IQ score on hover flips to confidence percentage.">Show Your Average IQ</span>
+          </label>
+          <div id="averageIQBadge" class="average-iq-badge-container" style="display: none; margin-top: 8px; margin-left: 30px;"></div>
+        </div>
       </div>
     </div>
 
     <!-- Game Mode -->
-    <div class="settings-section">
-      <h2>Game Mode</h2>
-
-      <div class="setting-item setting-item-large">
-        <label class="switch-label switch-label-large">
-          <input type="checkbox" id="enableIQGuessr" class="switch-large">
-          <span class="switch-text switch-text-large" title="Guess IQ scores before they're calculated! Score points based on accuracy, with higher confidence guesses earning more points. Track your total score and view detailed stats by hovering over (desktop) or clicking (mobile) the score badge on profile pages or in settings.">Enable IqGuessr</span>
-        </label>
-        <p class="setting-desc">Guess IQ scores before they're calculated! Score points based on accuracy</p>
-
-        <div id="iqGuessrScore" class="iq-guessr-score" style="display: none; margin-top: 8px;">
-          <span class="score-label">Score:</span>
-          <span class="score-value" id="iqGuessrScoreValue">0</span>
-        </div>
-
-        <div class="setting-item setting-item-sub" style="margin-left: 24px; margin-top: 12px;">
-          <label class="switch-label">
-            <input type="checkbox" id="showProfileScoreBadge" checked>
-            <span class="switch-text">Show Score on Profile Page</span>
+    <div class="settings-section collapsible">
+      <div class="section-header collapsible-header" data-target="gameModeContent">
+        <h2>Game Mode</h2>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="section-content collapsible-content" id="gameModeContent">
+        <div class="setting-item setting-item-large">
+          <label class="switch-label switch-label-large">
+            <input type="checkbox" id="enableIQGuessr" class="switch-large">
+            <span class="switch-text switch-text-large" title="Guess IQ scores before they're calculated! Score points based on accuracy, with higher confidence guesses earning more points. Track your total score and view detailed stats by hovering over (desktop) or clicking (mobile) the score badge on profile pages or in settings.">Enable IqGuessr</span>
           </label>
-          <p class="setting-desc">Display (for you only) an ever-growing and faster-turning badge as your score increases</p>
+
+          <div id="iqGuessrScore" class="iq-guessr-score" style="display: none; margin-top: 12px;">
+            <span class="score-label">Score:</span>
+            <span class="score-value" id="iqGuessrScoreValue">0</span>
+          </div>
+
+          <div class="setting-item setting-item-sub" style="margin-left: 24px; margin-top: 12px;">
+            <label class="switch-label">
+              <input type="checkbox" id="showProfileScoreBadge" checked>
+              <span class="switch-text">Show Score on Profile Page</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- IqFiltr Settings -->
-    <div class="settings-section">
-      <h2>IqFiltr Settings</h2>
+    <div class="settings-section collapsible">
+      <div class="section-header collapsible-header" data-target="iqFiltrContent">
+        <h2>IqFiltr</h2>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="section-content collapsible-content" id="iqFiltrContent">
+        <div class="setting-item setting-item-large">
+          <label class="switch-label switch-label-large">
+            <input type="checkbox" id="enableIqFiltr" class="switch-large">
+            <span class="switch-text switch-text-large" title="Automatically remove or mute tweets/replies/quoted posts based on IQ score thresholds. Elements are filtered immediately before any animations.">Enable IqFiltr</span>
+          </label>
 
-      <div class="setting-item setting-item-large">
-        <label class="switch-label switch-label-large">
-          <input type="checkbox" id="enableIqFiltr" class="switch-large">
-          <span class="switch-text switch-text-large" title="Automatically remove or mute tweets/replies/quoted posts based on IQ score thresholds. Elements are filtered immediately before any animations.">Enable IqFiltr</span>
-        </label>
-        <p class="setting-desc">Automatically hide posts based on IQ score thresholds</p>
+          <div id="iqFiltrOptions" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
 
-        <div id="iqFiltrOptions" style="display: none; margin-left: 24px; margin-top: 16px; border-left: 2px solid #e0e0e0; padding-left: 16px;">
+            <!-- Filter Mode - At Top -->
+            <div class="filter-subsection">
+              <div class="control-group">
+                <label for="filterMode" class="control-label">Mode:</label>
+                <select id="filterMode" class="control-select" style="width: 200px;">
+                  <option value="remove">Remove Completely</option>
+                  <option value="mute">Mute (Hide with View)</option>
+                </select>
+              </div>
+            </div>
 
-          <!-- Post Types to Filter -->
-          <div class="filter-subsection">
-            <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Post Types</h3>
-            <div class="setting-item" style="margin-top: 8px;">
-              <label class="switch-label">
-                <input type="checkbox" id="filterTweets" checked>
-                <span class="switch-text">Filter Regular Tweets</span>
-              </label>
+            <!-- Post Types - Inline -->
+            <div class="filter-subsection" style="margin-top: 16px;">
+              <label class="subsection-label">Post Types:</label>
+              <div class="inline-checkboxes">
+                <label class="inline-checkbox">
+                  <input type="checkbox" id="filterTweets" checked>
+                  <span>Tweets</span>
+                </label>
+                <label class="inline-checkbox">
+                  <input type="checkbox" id="filterReplies" checked>
+                  <span>Replies</span>
+                </label>
+                <label class="inline-checkbox">
+                  <input type="checkbox" id="filterQuotedPosts" checked>
+                  <span>Quoted</span>
+                </label>
+              </div>
             </div>
-            <div class="setting-item" style="margin-top: 8px;">
-              <label class="switch-label">
-                <input type="checkbox" id="filterReplies" checked>
-                <span class="switch-text">Filter Replies</span>
-              </label>
-            </div>
-            <div class="setting-item" style="margin-top: 8px;">
-              <label class="switch-label">
-                <input type="checkbox" id="filterQuotedPosts" checked>
-                <span class="switch-text">Filter Quoted Posts</span>
-              </label>
-            </div>
-          </div>
 
-          <!-- IQ Threshold Settings -->
-          <div class="filter-subsection" style="margin-top: 20px;">
-            <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">IQ Threshold</h3>
-            <div class="setting-item" style="margin-top: 8px;">
-              <label for="filterIQThreshold" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px;">IQ Threshold:</label>
-              <input type="number" id="filterIQThreshold" min="55" max="145" value="100" style="width: 100px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-              <p class="setting-desc" style="margin-top: 6px;">Filter posts with IQ below or above this threshold</p>
+            <!-- IQ Threshold - Compact -->
+            <div class="filter-subsection" style="margin-top: 16px;">
+              <div class="inline-controls">
+                <select id="filterDirection" class="control-select" style="width: 90px;">
+                  <option value="below">Below</option>
+                  <option value="above">Above</option>
+                </select>
+                <input type="number" id="filterIQThreshold" min="55" max="145" value="100" class="control-input" style="width: 80px;">
+                <span class="control-label" style="margin: 0;">IQ</span>
+              </div>
             </div>
-            <div class="setting-item" style="margin-top: 12px;">
-              <label for="filterDirection" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px;">Filter Direction:</label>
-              <select id="filterDirection" style="width: 180px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-                <option value="below">Below Threshold</option>
-                <option value="above">Above Threshold</option>
-              </select>
-              <p class="setting-desc" style="margin-top: 6px;">Filter posts with IQ below or above the threshold</p>
-            </div>
-          </div>
 
-          <!-- Filter Mode -->
-          <div class="filter-subsection" style="margin-top: 20px;">
-            <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Filter Mode</h3>
-            <div class="setting-item" style="margin-top: 8px;">
-              <label for="filterMode" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px;">How to Handle Filtered Posts:</label>
-              <select id="filterMode" style="width: 250px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-                <option value="remove">Remove Completely</option>
-                <option value="mute">Mute (Hide with View button)</option>
-              </select>
-              <p class="setting-desc" style="margin-top: 6px;">Remove entirely or mute with reveal option</p>
-            </div>
-          </div>
-
-          <!-- Confidence Filter -->
-          <div class="filter-subsection" style="margin-top: 20px;">
-            <h3 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: #333;">Confidence Filter</h3>
-            <div class="setting-item" style="margin-top: 8px;">
+            <!-- Confidence Filter -->
+            <div class="filter-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
               <label class="switch-label">
                 <input type="checkbox" id="useConfidenceInFilter">
-                <span class="switch-text">Use Confidence in Filter</span>
+                <span class="switch-text">Use Confidence Filter</span>
               </label>
-              <p class="setting-desc">Also filter based on confidence percentage</p>
-            </div>
 
-            <div id="confidenceFilterOptions" style="margin-top: 12px; margin-left: 24px; display: none;">
-              <div class="setting-item" style="margin-top: 8px;">
-                <label for="filterConfidenceThreshold" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px;">Confidence Threshold (%):</label>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                  <input type="number" id="filterConfidenceThreshold" min="0" max="100" value="0" style="width: 100px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-                  <span id="confidenceColorPreview" style="display: inline-block; width: 50px; height: 28px; border: 1px solid #ccc; border-radius: 4px; background-color: #d32f2f; vertical-align: middle; flex-shrink: 0;"></span>
+              <div id="confidenceFilterOptions" style="margin-top: 12px; margin-left: 24px; display: none;">
+                <div class="inline-controls">
+                  <select id="filterConfidenceDirection" class="control-select" style="width: 90px;">
+                    <option value="below">Below</option>
+                    <option value="above" selected>Above</option>
+                  </select>
+                  <input type="number" id="filterConfidenceThreshold" min="0" max="100" value="50" class="control-input" style="width: 80px;">
+                  <span class="control-label" style="margin: 0;">%</span>
+                  <span id="confidenceColorPreview" class="color-preview"></span>
                 </div>
-                <p class="setting-desc" style="margin-top: 6px;">Color preview shows the confidence color at this threshold</p>
-              </div>
-              <div class="setting-item" style="margin-top: 12px;">
-                <label for="filterConfidenceDirection" style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 13px;">Confidence Direction:</label>
-                <select id="filterConfidenceDirection" style="width: 180px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;">
-                  <option value="below">Below Threshold</option>
-                  <option value="above">Above Threshold</option>
-                </select>
-                <p class="setting-desc" style="margin-top: 6px;">Filter posts with confidence below or above the threshold (independent of IqFiltr direction)</p>
               </div>
             </div>
           </div>
@@ -172,126 +146,140 @@
     </div>
 
     <!-- Advanced Settings -->
-    <div class="settings-section">
-      <h2>Advanced Settings</h2>
-
-      <div class="setting-item">
-        <label class="switch-label">
-          <input type="checkbox" id="enableDebugLogging" checked>
-          <span class="switch-text">IQ Breakdown Analysis</span>
-        </label>
-        <p class="setting-desc">Shows on hover in F12 console the breakdown of the calculation of the calculated score for that tweet</p>
+    <div class="settings-section collapsible">
+      <div class="section-header collapsible-header" data-target="advancedContent">
+        <h2>Advanced</h2>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="section-content collapsible-content" id="advancedContent" style="display: none;">
+        <div class="setting-item">
+          <label class="switch-label">
+            <input type="checkbox" id="enableDebugLogging" checked>
+            <span class="switch-text">IQ Breakdown Analysis</span>
+          </label>
+          <p class="setting-desc">Shows on hover in F12 console the breakdown of the calculation</p>
+        </div>
       </div>
     </div>
 
     <!-- Information Sections -->
-    <div class="info-section">
-      <h2>How It Works</h2>
-      <div class="info-content">
-        <p><strong>IqGuessr</strong> analyzes tweet text in real-time using a research-based estimator trained on graded samples.</p>
-        <p>It evaluates tweets across four key dimensions:</p>
-        <ul>
-          <li><strong>Vocabulary Sophistication:</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>; <a href="https://doi.org/10.1000/xyz" target="_blank">Wolfram, 2025</a>).</li>
-          <li><strong>Lexical Diversity:</strong> Measures word variety using Type-Token Ratio (TTR) (<a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
-          <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure (<a href="https://doi.org/10.1000/xyz" target="_blank">Hendrix & Yampolskiy, 2017</a>; <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
-          <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>).</li>
-        </ul>
+    <div class="info-section collapsible">
+      <div class="section-header collapsible-header" data-target="infoContent">
+        <h2>How It Works</h2>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="section-content collapsible-content" id="infoContent" style="display: none;">
+        <div class="info-content">
+          <p><strong>IqGuessr</strong> analyzes tweet text in real-time using a research-based estimator trained on graded samples.</p>
+          <p>It evaluates tweets across four key dimensions:</p>
+          <ul>
+            <li><strong>Vocabulary Sophistication:</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>; <a href="https://doi.org/10.1000/xyz" target="_blank">Wolfram, 2025</a>).</li>
+            <li><strong>Lexical Diversity:</strong> Measures word variety using Type-Token Ratio (TTR) (<a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
+            <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure (<a href="https://doi.org/10.1000/xyz" target="_blank">Hendrix & Yampolskiy, 2017</a>; <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
+            <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>).</li>
+          </ul>
 
-        <div class="privacy-notice">
-          <span class="privacy-icon">🔒</span>
-          <div class="privacy-text">
-            <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
+          <div class="privacy-notice">
+            <span class="privacy-icon">🔒</span>
+            <div class="privacy-text">
+              <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
+            </div>
           </div>
-        </div>
-        <div class="privacy-notice data-notice">
-          <span class="privacy-icon">📋</span>
-          <div class="privacy-text">
-            <strong>Data Collection Notice:</strong> This extension processes publicly available Twitter handles and numerical scores. No tweet text or private information is collected or stored. We only store: IQ scores (numeric), Twitter handles (public usernames), guess history (for IqGuessr game mode), and limited metadata (timestamps, language, hashtags).
+          <div class="privacy-notice data-notice">
+            <span class="privacy-icon">📋</span>
+            <div class="privacy-text">
+              <strong>Data Collection Notice:</strong> This extension processes publicly available Twitter handles and numerical scores. No tweet text or private information is collected or stored. We only store: IQ scores (numeric), Twitter handles (public usernames), guess history (for IqGuessr game mode), and limited metadata (timestamps, language, hashtags).
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="color-legend">
-      <h2>Color Coding</h2>
-      <div class="legend-items" id="iqLegend" style="display: none;">
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #d32f2f;"></span>
-          <span>60-70: Very Simple</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #f57c00;"></span>
-          <span>70-85: Simple</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #fbc02d;"></span>
-          <span>85-95: Below Average</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #fdd835;"></span>
-          <span>95-105: Average</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #c5e1a5;"></span>
-          <span>105-115: Above Average</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #81c784;"></span>
-          <span>115-125: High</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #66bb6a;"></span>
-          <span>125-135: Very High</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #4caf50;"></span>
-          <span>135-145: Superior</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #2e7d32;"></span>
-          <span>145+: Exceptional</span>
-        </div>
+    <div class="color-legend collapsible">
+      <div class="section-header collapsible-header" data-target="legendContent">
+        <h2>Color Coding</h2>
+        <span class="collapse-icon">▼</span>
       </div>
-      <div class="legend-items" id="confidenceLegend">
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #d32f2f;"></span>
-          <span>0-10%: Very Low Confidence</span>
+      <div class="section-content collapsible-content" id="legendContent" style="display: none;">
+        <div class="legend-items" id="iqLegend" style="display: none;">
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #d32f2f;"></span>
+            <span>60-70: Very Simple</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #f57c00;"></span>
+            <span>70-85: Simple</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #fbc02d;"></span>
+            <span>85-95: Below Average</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #fdd835;"></span>
+            <span>95-105: Average</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #c5e1a5;"></span>
+            <span>105-115: Above Average</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #81c784;"></span>
+            <span>115-125: High</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #66bb6a;"></span>
+            <span>125-135: Very High</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #4caf50;"></span>
+            <span>135-145: Superior</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #2e7d32;"></span>
+            <span>145+: Exceptional</span>
+          </div>
         </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #f57c00;"></span>
-          <span>10-20%: Low Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #fb8c00;"></span>
-          <span>20-30%: Below Average Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #fbc02d;"></span>
-          <span>30-40%: Average Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #fdd835;"></span>
-          <span>40-50%: Above Average Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #c5e1a5;"></span>
-          <span>50-60%: Good Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #81c784;"></span>
-          <span>60-70%: High Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #66bb6a;"></span>
-          <span>70-80%: Very High Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #4caf50;"></span>
-          <span>80-90%: Excellent Confidence</span>
-        </div>
-        <div class="legend-item">
-          <span class="legend-color" style="background-color: #2e7d32;"></span>
-          <span>90-100%: Maximum Confidence</span>
+        <div class="legend-items" id="confidenceLegend">
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #d32f2f;"></span>
+            <span>0-10%: Very Low Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #f57c00;"></span>
+            <span>10-20%: Low Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #fb8c00;"></span>
+            <span>20-30%: Below Average Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #fbc02d;"></span>
+            <span>30-40%: Average Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #fdd835;"></span>
+            <span>40-50%: Above Average Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #c5e1a5;"></span>
+            <span>50-60%: Good Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #81c784;"></span>
+            <span>60-70%: High Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #66bb6a;"></span>
+            <span>70-80%: Very High Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #4caf50;"></span>
+            <span>80-90%: Excellent Confidence</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-color" style="background-color: #2e7d32;"></span>
+            <span>90-100%: Maximum Confidence</span>
+          </div>
         </div>
       </div>
     </div>

@@ -415,8 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
         filterQuotedPosts: true,
         filterIQThreshold: 100,
         filterDirection: 'below',
-        filterConfidenceThreshold: 0,
-        filterConfidenceDirection: 'below',
+        filterConfidenceThreshold: 50,
+        filterConfidenceDirection: 'above',
         useConfidenceInFilter: false,
         filterMode: 'remove'
       };
@@ -492,13 +492,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const filterConfidenceThresholdElement = document.getElementById('filterConfidenceThreshold');
     if (filterConfidenceThresholdElement) {
-      filterConfidenceThresholdElement.value = result.filterConfidenceThreshold !== undefined ? result.filterConfidenceThreshold : 0;
+      filterConfidenceThresholdElement.value = result.filterConfidenceThreshold !== undefined ? result.filterConfidenceThreshold : 50;
       // Update color preview
       updateConfidenceColorPreview(filterConfidenceThresholdElement.value);
     }
     const filterConfidenceDirectionElement = document.getElementById('filterConfidenceDirection');
     if (filterConfidenceDirectionElement) {
-      filterConfidenceDirectionElement.value = result.filterConfidenceDirection !== undefined ? result.filterConfidenceDirection : 'below';
+      filterConfidenceDirectionElement.value = result.filterConfidenceDirection !== undefined ? result.filterConfidenceDirection : 'above';
     }
     const filterModeElement = document.getElementById('filterMode');
     if (filterModeElement) {
@@ -632,6 +632,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const iqFiltrOptions = document.getElementById('iqFiltrOptions');
       if (iqFiltrOptions) {
         iqFiltrOptions.style.display = isEnabled ? 'block' : 'none';
+        // Trigger height recalculation for smooth transition
+        if (isEnabled) {
+          setTimeout(() => {
+            const content = document.getElementById('iqFiltrContent');
+            if (content && !content.classList.contains('collapsed')) {
+              content.style.maxHeight = content.scrollHeight + 'px';
+            }
+          }, 10);
+        }
       }
       chrome.storage.sync.set({ enableIqFiltr: isEnabled }, () => {
         if (chrome.runtime.lastError) {
@@ -871,6 +880,62 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // Collapsible sections functionality
+  function setupCollapsibleSections() {
+    const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+    collapsibleHeaders.forEach(header => {
+      // Set initial state - expand Game Mode and IqFiltr by default
+      const targetId = header.getAttribute('data-target');
+      const content = document.getElementById(targetId);
+      if (content) {
+        if (targetId === 'gameModeContent' || targetId === 'iqFiltrContent') {
+          // Expanded by default
+          content.style.maxHeight = content.scrollHeight + 'px';
+        } else {
+          // Collapsed by default
+          content.classList.add('collapsed');
+          header.classList.add('collapsed');
+          content.style.maxHeight = '0';
+        }
+      }
+
+      header.addEventListener('click', (e) => {
+        // Don't collapse if clicking on a checkbox or input inside
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.closest('label')) {
+          return;
+        }
+
+        const targetId = header.getAttribute('data-target');
+        const content = document.getElementById(targetId);
+        if (content) {
+          const isCollapsed = content.classList.contains('collapsed');
+          if (isCollapsed) {
+            content.classList.remove('collapsed');
+            header.classList.remove('collapsed');
+            // Set max-height to actual height for smooth transition
+            content.style.maxHeight = content.scrollHeight + 'px';
+            // Update after content is rendered
+            setTimeout(() => {
+              content.style.maxHeight = content.scrollHeight + 'px';
+            }, 10);
+          } else {
+            const currentHeight = content.scrollHeight;
+            content.style.maxHeight = currentHeight + 'px';
+            // Force reflow
+            requestAnimationFrame(() => {
+              content.classList.add('collapsed');
+              header.classList.add('collapsed');
+              content.style.maxHeight = '0';
+            });
+          }
+        }
+      });
+    });
+  }
+
+  // Initialize collapsible sections
+  setupCollapsibleSections();
 
   // Helper function to update average IQ badge display
   async function updateAverageIQBadge() {
