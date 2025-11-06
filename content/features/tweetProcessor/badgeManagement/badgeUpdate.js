@@ -169,7 +169,7 @@
     if (checkAndFilter) {
       // Use the actual tweet element for filtering (or outer element if nested)
       const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
-      const wasFiltered = checkAndFilter(elementToCheck, iq);
+      const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);
       if (wasFiltered) {
         // Element was removed, stop processing immediately
         return;

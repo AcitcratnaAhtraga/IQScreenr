@@ -107,6 +107,36 @@
             </select>
             <p class="setting-desc" style="margin-top: 4px;">Remove posts with IQ below or above the threshold</p>
           </div>
+          <div class="setting-item" style="margin-top: 12px;">
+            <label for="filterMode" style="display: block; margin-bottom: 4px; font-weight: 500;">Filter Mode:</label>
+            <select id="filterMode" style="width: 150px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+              <option value="remove">Remove Completely</option>
+              <option value="mute">Mute (Hide with View button)</option>
+            </select>
+            <p class="setting-desc" style="margin-top: 4px;">How to handle filtered posts - remove entirely or mute with reveal option</p>
+          </div>
+          <div class="setting-item" style="margin-top: 12px;">
+            <label class="switch-label">
+              <input type="checkbox" id="useConfidenceInFilter">
+              <span class="switch-text">Use Confidence in Filter</span>
+            </label>
+            <p class="setting-desc">Also filter based on confidence percentage</p>
+          </div>
+          <div class="setting-item" id="confidenceFilterOptions" style="margin-top: 12px; margin-left: 24px; display: none;">
+            <label for="filterConfidenceThreshold" style="display: block; margin-bottom: 4px; font-weight: 500;">Confidence Threshold (%):</label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="number" id="filterConfidenceThreshold" min="0" max="100" value="0" style="width: 80px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+              <span id="confidenceColorPreview" style="display: inline-block; width: 40px; height: 24px; border: 1px solid #ccc; border-radius: 4px; background-color: #d32f2f; vertical-align: middle;"></span>
+            </div>
+            <div style="margin-top: 8px;">
+              <label for="filterConfidenceDirection" style="display: block; margin-bottom: 4px; font-weight: 500;">Confidence Direction:</label>
+              <select id="filterConfidenceDirection" style="width: 150px; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;">
+                <option value="below">Below Threshold</option>
+                <option value="above">Above Threshold</option>
+              </select>
+            </div>
+            <p class="setting-desc" style="margin-top: 4px;">Filter posts with confidence below or above the threshold (independent of IQ filter direction)</p>
+          </div>
         </div>
       </div>
     </div>

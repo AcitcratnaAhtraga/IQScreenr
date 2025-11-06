@@ -136,7 +136,7 @@
     const { checkAndFilter } = getIQFilter();
     if (checkAndFilter) {
       const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
-      const wasFiltered = checkAndFilter(elementToCheck, iq);
+      const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);
       if (wasFiltered) {
         // Element was removed, stop restoration
         return true;
@@ -246,7 +246,7 @@
     const { checkAndFilter } = getIQFilter();
     if (checkAndFilter) {
       const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
-      const wasFiltered = checkAndFilter(elementToCheck, iq);
+      const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);
       if (wasFiltered) {
         // Element was removed, stop restoration
         return true;

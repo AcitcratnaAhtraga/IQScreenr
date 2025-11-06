@@ -122,6 +122,48 @@
       }
     }
 
+    // Handle IQ filter settings changes - apply filter immediately
+    const filterSettings = [
+      'enableIQFilter',
+      'filterTweets',
+      'filterReplies',
+      'filterQuotedPosts',
+      'filterIQThreshold',
+      'filterDirection',
+      'filterConfidenceThreshold',
+      'filterConfidenceDirection',
+      'useConfidenceInFilter',
+      'filterMode'
+    ];
+
+    const hasFilterChange = filterSettings.some(setting => changes[setting] !== undefined);
+    if (hasFilterChange) {
+      const getIQFilter = () => window.IQFilter || {};
+      const { applyFilterToVisibleTweets, revealAllMutedTweets } = getIQFilter();
+
+      // If filter is being disabled, reveal all muted tweets
+      if (changes.enableIQFilter && !changes.enableIQFilter.newValue) {
+        if (revealAllMutedTweets) {
+          revealAllMutedTweets();
+        }
+      } else if (applyFilterToVisibleTweets) {
+        // Apply filter immediately when settings change
+        // Use setTimeout to ensure settings are updated first
+        setTimeout(() => {
+          applyFilterToVisibleTweets();
+        }, 100);
+      }
+
+      // If filter mode changed from 'mute' to 'remove', remove all currently muted tweets that match filter
+      if (changes.filterMode && changes.filterMode.oldValue === 'mute' && changes.filterMode.newValue === 'remove') {
+        if (applyFilterToVisibleTweets) {
+          setTimeout(() => {
+            applyFilterToVisibleTweets();
+          }, 150);
+        }
+      }
+    }
+
     // Handle minIQ/maxIQ changes - hide/show badges based on range
     if (changes.minIQ !== undefined || changes.maxIQ !== undefined) {
       const minIQ = settings.minIQ || 60;

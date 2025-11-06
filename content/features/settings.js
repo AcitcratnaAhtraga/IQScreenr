@@ -19,7 +19,11 @@ const defaultSettings = {
   filterReplies: true,
   filterQuotedPosts: true,
   filterIQThreshold: 100,
-  filterDirection: 'below' // 'below' or 'above'
+  filterDirection: 'below', // 'below' or 'above'
+  filterConfidenceThreshold: 0, // 0-100, 0 means no confidence filter
+  filterConfidenceDirection: 'below', // 'below' or 'above' - independent of IQ direction
+  useConfidenceInFilter: false, // Whether to use confidence in filtering
+  filterMode: 'remove' // 'remove' or 'mute' - how to handle filtered tweets
 };
 
 const settings = { ...defaultSettings };
@@ -28,7 +32,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -74,6 +78,18 @@ function loadSettings() {
     }
     if (result.filterDirection !== undefined) {
       settings.filterDirection = result.filterDirection;
+    }
+    if (result.filterConfidenceThreshold !== undefined) {
+      settings.filterConfidenceThreshold = result.filterConfidenceThreshold;
+    }
+    if (result.useConfidenceInFilter !== undefined) {
+      settings.useConfidenceInFilter = result.useConfidenceInFilter;
+    }
+    if (result.filterConfidenceDirection !== undefined) {
+      settings.filterConfidenceDirection = result.filterConfidenceDirection;
+    }
+    if (result.filterMode !== undefined) {
+      settings.filterMode = result.filterMode;
     }
   });
 }
@@ -142,6 +158,22 @@ function setupSettingsListener(onChange) {
         settings.filterDirection = changes.filterDirection.newValue;
         relevantChanges.filterDirection = changes.filterDirection;
       }
+      if (changes.filterConfidenceThreshold) {
+        settings.filterConfidenceThreshold = changes.filterConfidenceThreshold.newValue;
+        relevantChanges.filterConfidenceThreshold = changes.filterConfidenceThreshold;
+      }
+      if (changes.useConfidenceInFilter) {
+        settings.useConfidenceInFilter = changes.useConfidenceInFilter.newValue;
+        relevantChanges.useConfidenceInFilter = changes.useConfidenceInFilter;
+      }
+      if (changes.filterConfidenceDirection) {
+        settings.filterConfidenceDirection = changes.filterConfidenceDirection.newValue;
+        relevantChanges.filterConfidenceDirection = changes.filterConfidenceDirection;
+      }
+      if (changes.filterMode) {
+        settings.filterMode = changes.filterMode.newValue;
+        relevantChanges.filterMode = changes.filterMode;
+      }
 
       if (onChange && Object.keys(relevantChanges).length > 0) {
         onChange(relevantChanges);
@@ -171,6 +203,10 @@ if (typeof window !== 'undefined') {
     get filterQuotedPosts() { return settings.filterQuotedPosts; },
     get filterIQThreshold() { return settings.filterIQThreshold; },
     get filterDirection() { return settings.filterDirection; },
+    get filterConfidenceThreshold() { return settings.filterConfidenceThreshold; },
+    get filterConfidenceDirection() { return settings.filterConfidenceDirection; },
+    get useConfidenceInFilter() { return settings.useConfidenceInFilter; },
+    get filterMode() { return settings.filterMode; },
     loadSettings,
     setupSettingsListener,
     // Also export the raw settings object for modules that need it
