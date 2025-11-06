@@ -56,41 +56,6 @@
       </div>
     </div>
 
-    <!-- IqGuessr -->
-    <div class="settings-section collapsible card-section">
-      <div class="section-header collapsible-header" data-target="gameModeContent">
-        <label class="switch-label" style="margin: 0; display: flex; align-items: center; gap: 8px;">
-          <input type="checkbox" id="enableIQGuessr" class="switch-large">
-          <h2 style="margin: 0;">IqGuessr</h2>
-        </label>
-        <span class="collapse-icon">▼</span>
-      </div>
-      <div class="section-content collapsible-content" id="gameModeContent">
-        <div class="setting-item" style="margin-top: 12px;">
-          <p class="setting-desc" style="margin-left: 0; margin-bottom: 12px;" title="Guess IQ scores before they're calculated! Score points based on accuracy">Guess IQ scores before they're calculated! Score points based on accuracy</p>
-
-          <div id="iqGuessrOptions" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
-
-            <!-- Score Display -->
-            <div class="filter-subsection">
-              <div id="iqGuessrScore" class="iq-guessr-score" style="display: none; margin-top: 12px; margin-bottom: 12px;">
-                <span class="score-label">Score:</span>
-                <span class="score-value" id="iqGuessrScoreValue">0</span>
-              </div>
-            </div>
-
-            <!-- Show Score on Profile Page -->
-            <div class="filter-subsection" style="margin-top: 16px;">
-              <label class="switch-label">
-                <input type="checkbox" id="showProfileScoreBadge" checked>
-                <span class="switch-text">Show Score on Profile Page</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- IqFiltr -->
     <div class="settings-section collapsible card-section">
       <div class="section-header collapsible-header" data-target="iqFiltrContent">
@@ -166,6 +131,41 @@
                   <span id="confidenceColorPreview" class="color-preview"></span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IqGuessr -->
+    <div class="settings-section collapsible card-section">
+      <div class="section-header collapsible-header" data-target="gameModeContent">
+        <label class="switch-label" style="margin: 0; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="enableIQGuessr" class="switch-large">
+          <h2 style="margin: 0;">IqGuessr</h2>
+        </label>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="section-content collapsible-content" id="gameModeContent">
+        <div class="setting-item" style="margin-top: 12px;">
+          <p class="setting-desc" style="margin-left: 0; margin-bottom: 12px;" title="Guess IQ scores before they're calculated! Score points based on accuracy">Guess IQ scores before they're calculated! Score points based on accuracy</p>
+
+          <div id="iqGuessrOptions" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
+
+            <!-- Score Display -->
+            <div class="filter-subsection">
+              <div id="iqGuessrScore" class="iq-guessr-score" style="display: none; margin-top: 12px; margin-bottom: 12px;">
+                <span class="score-label">Score:</span>
+                <span class="score-value" id="iqGuessrScoreValue">0</span>
+              </div>
+            </div>
+
+            <!-- Show Score on Profile Page -->
+            <div class="filter-subsection" style="margin-top: 16px;">
+              <label class="switch-label">
+                <input type="checkbox" id="showProfileScoreBadge" checked>
+                <span class="switch-text">Show Score on Profile Page</span>
+              </label>
             </div>
           </div>
         </div>

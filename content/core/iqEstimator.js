@@ -1770,13 +1770,43 @@ class ComprehensiveIQEstimatorUltimate {
     // This naturally handles length limitations - no need for hard caps
     confidence *= sampleSizeConstraint;
 
-    // ========== 7. FINAL BOUNDS ==========
-    // Only apply absolute minimum/maximum bounds - let calculation flow naturally
-    // The sample size constraint and penalties already handle length limitations
+    // ========== 7. WORD-COUNT-BASED MINIMUM FLOOR ==========
+    // Very short texts (1-10 words) need a meaningful minimum confidence floor
+    // Use inverse exponential scaling: first few words give more % boost, then diminishing returns
+    // This ensures even 1-word texts have meaningful (not misleadingly low) confidence
+    // Based on statistical confidence interval research: very small samples need higher minimums
 
-    // Absolute minimum: Very short or poor quality texts can have very low confidence
+    let wordCountMinimum = 0;
+
+    if (wordCount <= 10) {
+      // Inverse exponential scaling for very short texts
+      // Formula: baseMin + (maxMin - baseMin) * (1 - e^(-k * (wordCount - 1)))
+      // This gives: 1 word = 8%, 2 words = 12%, 3 words = 16%, 4 words = 18%, 5 words = 20%
+      // Then gradually increases to 25% at 10 words
+      // The inverse exponential means early words give more % boost, then diminishing returns
+      const baseMin = 8;   // Minimum for 1 word (meaningful floor, not misleadingly low)
+      const maxMin = 26;    // Minimum for 10 words (transitions to logarithmic scaling)
+      const k = 0.3;        // Decay constant - higher k = steeper curve (more boost for early words)
+
+      // Inverse exponential: early words give more boost, then diminishing returns
+      const exponentialFactor = 1 - Math.exp(-k * (wordCount - 1));
+      wordCountMinimum = baseMin + (maxMin - baseMin) * exponentialFactor;
+
+      // Ensure smooth transition at 10 words
+      wordCountMinimum = Math.min(wordCountMinimum, maxMin);
+    } else if (wordCount < 20) {
+      // Transition zone (10-20 words): gradually reduce minimum floor
+      // At 20 words, minimum floor becomes 0 (let calculation determine confidence)
+      const transitionFactor = (20 - wordCount) / 10; // 1.0 at 10 words, 0.0 at 20 words
+      wordCountMinimum = 26 * transitionFactor; // Linearly decrease from 26% to 0%
+    }
+    // 20+ words: No minimum floor (let the calculation determine confidence naturally)
+
+    // ========== 8. FINAL BOUNDS ==========
+    // Apply word-count-based minimum floor for very short texts
+    // This ensures meaningful confidence percentages that reflect statistical reality
     // Absolute maximum: Even perfect signal has some uncertainty
-    confidence = Math.max(1, Math.min(94, confidence));
+    confidence = Math.max(wordCountMinimum, Math.min(94, confidence));
 
     // Round to whole number for display (preserves precision from calculation)
     return Math.round(confidence);
