@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize defaults if not set
   Promise.all([
-    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterMode'], resolve)),
+    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterUserPosts', 'filterMode'], resolve)),
     new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
     new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
@@ -494,9 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
         showProfileScoreBadge: true, // Default to showing profile badge
         showAverageIQ: false, // Default to not showing average IQ
         enableIqFiltr: false,
-        filterTweets: true,
-        filterReplies: true,
-        filterQuotedPosts: true,
         filterIQThreshold: 100,
         filterDirection: 'below',
         filterConfidenceThreshold: 50,
@@ -504,6 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         useIQInFilter: true,
         useConfidenceInFilter: false,
         filterInvalidTweets: false,
+        filterUserPosts: false,
         filterMode: 'mute'
       };
       // Only set score if it doesn't exist
@@ -585,18 +583,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     }
-    if (result.filterTweets !== undefined) {
-      const filterTweetsElement = document.getElementById('filterTweets');
-      if (filterTweetsElement) filterTweetsElement.checked = result.filterTweets !== false;
-    }
-    if (result.filterReplies !== undefined) {
-      const filterRepliesElement = document.getElementById('filterReplies');
-      if (filterRepliesElement) filterRepliesElement.checked = result.filterReplies !== false;
-    }
-    if (result.filterQuotedPosts !== undefined) {
-      const filterQuotedPostsElement = document.getElementById('filterQuotedPosts');
-      if (filterQuotedPostsElement) filterQuotedPostsElement.checked = result.filterQuotedPosts !== false;
-    }
     const filterIQThresholdElement = document.getElementById('filterIQThreshold');
     if (filterIQThresholdElement) {
       filterIQThresholdElement.value = result.filterIQThreshold !== undefined ? result.filterIQThreshold : 100;
@@ -635,6 +621,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filterConfidenceDirectionElement) {
       filterConfidenceDirectionElement.value = result.filterConfidenceDirection !== undefined ? result.filterConfidenceDirection : 'above';
     }
+    // Load filterInvalidTweets checkbox
+    const filterInvalidTweetsElement = document.getElementById('filterInvalidTweets');
+    if (filterInvalidTweetsElement) {
+      filterInvalidTweetsElement.checked = result.filterInvalidTweets === true; // Default to false
+    }
+
+    // Load filterUserPosts checkbox
+    const filterUserPostsElement = document.getElementById('filterUserPosts');
+    if (filterUserPostsElement) {
+      // Explicitly handle true/false/undefined - default to false
+      filterUserPostsElement.checked = result.filterUserPosts === true;
+    }
+
     const filterModeElement = document.getElementById('filterMode');
     if (filterModeElement) {
       filterModeElement.value = result.filterMode !== undefined ? result.filterMode : 'mute';
@@ -666,17 +665,44 @@ document.addEventListener('DOMContentLoaded', () => {
   }).catch((error) => {
     console.warn('[IqScreenr] Error loading settings:', error);
     // Fallback: try sync storage only
-      chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterMode'], (result) => {
+      chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterUserPosts', 'filterMode'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
       // Real-time badge is hidden, but keep logic intact for backend
       const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
       if (showRealtimeBadgeElement) {
         showRealtimeBadgeElement.checked = result.showRealtimeBadge !== false;
       }
-      document.getElementById('enableDebugLogging').checked = result.enableDebugLogging !== false;
+      document.getElementById('enableDebugLogging').checked = result.enableDebugLogging === true;
       document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true;
       document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false;
       document.getElementById('showAverageIQ').checked = result.showAverageIQ === true;
+
+      // Load filter settings
+      const enableIqFiltrElement = document.getElementById('enableIqFiltr');
+      if (enableIqFiltrElement) {
+        enableIqFiltrElement.checked = result.enableIqFiltr === true;
+      }
+
+      const useIQInFilterElement = document.getElementById('useIQInFilter');
+      if (useIQInFilterElement) {
+        useIQInFilterElement.checked = result.useIQInFilter !== false;
+      }
+
+      const useConfidenceInFilterElement = document.getElementById('useConfidenceInFilter');
+      if (useConfidenceInFilterElement) {
+        useConfidenceInFilterElement.checked = result.useConfidenceInFilter === true;
+      }
+
+      const filterInvalidTweetsElement = document.getElementById('filterInvalidTweets');
+      if (filterInvalidTweetsElement) {
+        filterInvalidTweetsElement.checked = result.filterInvalidTweets === true;
+      }
+
+      const filterUserPostsElement = document.getElementById('filterUserPosts');
+      if (filterUserPostsElement) {
+        filterUserPostsElement.checked = result.filterUserPosts === true;
+      }
+
       // Update dependent checkboxes to set initial visibility state
       updateDependentCheckboxes();
       // Update score display after checkbox state is set
@@ -852,6 +878,23 @@ document.addEventListener('DOMContentLoaded', () => {
               updateSectionSpacing();
             }
           }, 50);
+
+          // If no filter options are checked, check "Use IQ Filter"
+          if (!hasAnyFilterEnabled()) {
+            const useIQInFilterElement = document.getElementById('useIQInFilter');
+            if (useIQInFilterElement && !useIQInFilterElement.checked) {
+              useIQInFilterElement.checked = true;
+              const iqFilterOptions = document.getElementById('iqFilterOptions');
+              if (iqFilterOptions) {
+                iqFilterOptions.style.display = 'block';
+              }
+              chrome.storage.sync.set({ useIQInFilter: true }, () => {
+                if (chrome.runtime.lastError) {
+                  showStatus('Error saving setting', 'error');
+                }
+              });
+            }
+          }
         } else {
           iqFiltrOptions.style.display = 'none';
           // Recalculate height when hiding
@@ -886,84 +929,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Helper function to check if at least one post type is enabled (excluding a specific checkbox)
-  function hasAtLeastOnePostType(excludeElement = null) {
-    const filterTweetsElement = document.getElementById('filterTweets');
-    const filterRepliesElement = document.getElementById('filterReplies');
-    const filterQuotedPostsElement = document.getElementById('filterQuotedPosts');
-
-    const isTweetsEnabled = (filterTweetsElement && filterTweetsElement !== excludeElement) ? filterTweetsElement.checked : false;
-    const isRepliesEnabled = (filterRepliesElement && filterRepliesElement !== excludeElement) ? filterRepliesElement.checked : false;
-    const isQuotedEnabled = (filterQuotedPostsElement && filterQuotedPostsElement !== excludeElement) ? filterQuotedPostsElement.checked : false;
-
-    return isTweetsEnabled || isRepliesEnabled || isQuotedEnabled;
-  }
-
-  const filterTweetsElement = document.getElementById('filterTweets');
-  if (filterTweetsElement) {
-    filterTweetsElement.addEventListener('change', (e) => {
-      const isEnabled = e.target.checked;
-
-      // Ensure at least one post type is enabled (check other post types, excluding this one)
-      if (!isEnabled && !hasAtLeastOnePostType(e.target)) {
-        e.target.checked = true;
-        showStatus('At least one post type must be enabled', 'error');
-        return;
-      }
-
-      chrome.storage.sync.set({ filterTweets: isEnabled }, () => {
-        if (chrome.runtime.lastError) {
-          showStatus('Error saving setting', 'error');
-        } else {
-          showStatus('Settings saved', 'success');
-        }
-      });
-    });
-  }
-
-  const filterRepliesElement = document.getElementById('filterReplies');
-  if (filterRepliesElement) {
-    filterRepliesElement.addEventListener('change', (e) => {
-      const isEnabled = e.target.checked;
-
-      // Ensure at least one post type is enabled (check other post types, excluding this one)
-      if (!isEnabled && !hasAtLeastOnePostType(e.target)) {
-        e.target.checked = true;
-        showStatus('At least one post type must be enabled', 'error');
-        return;
-      }
-
-      chrome.storage.sync.set({ filterReplies: isEnabled }, () => {
-        if (chrome.runtime.lastError) {
-          showStatus('Error saving setting', 'error');
-        } else {
-          showStatus('Settings saved', 'success');
-        }
-      });
-    });
-  }
-
-  const filterQuotedPostsElement = document.getElementById('filterQuotedPosts');
-  if (filterQuotedPostsElement) {
-    filterQuotedPostsElement.addEventListener('change', (e) => {
-      const isEnabled = e.target.checked;
-
-      // Ensure at least one post type is enabled (check other post types, excluding this one)
-      if (!isEnabled && !hasAtLeastOnePostType(e.target)) {
-        e.target.checked = true;
-        showStatus('At least one post type must be enabled', 'error');
-        return;
-      }
-
-      chrome.storage.sync.set({ filterQuotedPosts: isEnabled }, () => {
-        if (chrome.runtime.lastError) {
-          showStatus('Error saving setting', 'error');
-        } else {
-          showStatus('Settings saved', 'success');
-        }
-      });
-    });
-  }
 
   const filterIQThresholdElement = document.getElementById('filterIQThreshold');
   if (filterIQThresholdElement) {
@@ -1085,15 +1050,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Helper function to check if at least one filter is enabled (excluding a specific checkbox)
-  function hasAtLeastOneFilter(excludeElement = null) {
+  // Helper function to check if any filter options are enabled
+  function hasAnyFilterEnabled() {
     const useIQInFilterElement = document.getElementById('useIQInFilter');
     const useConfidenceInFilterElement = document.getElementById('useConfidenceInFilter');
     const filterInvalidTweetsElement = document.getElementById('filterInvalidTweets');
 
-    const isIQEnabled = (useIQInFilterElement && useIQInFilterElement !== excludeElement) ? useIQInFilterElement.checked : false;
-    const isConfidenceEnabled = (useConfidenceInFilterElement && useConfidenceInFilterElement !== excludeElement) ? useConfidenceInFilterElement.checked : false;
-    const isInvalidEnabled = (filterInvalidTweetsElement && filterInvalidTweetsElement !== excludeElement) ? filterInvalidTweetsElement.checked : false;
+    const isIQEnabled = useIQInFilterElement ? useIQInFilterElement.checked : false;
+    const isConfidenceEnabled = useConfidenceInFilterElement ? useConfidenceInFilterElement.checked : false;
+    const isInvalidEnabled = filterInvalidTweetsElement ? filterInvalidTweetsElement.checked : false;
 
     return isIQEnabled || isConfidenceEnabled || isInvalidEnabled;
   }
@@ -1104,17 +1069,11 @@ document.addEventListener('DOMContentLoaded', () => {
     useIQInFilterElement.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
 
-      // Ensure at least one filter is enabled (check other filters, excluding this one)
-      if (!isEnabled && !hasAtLeastOneFilter(e.target)) {
-        e.target.checked = true;
-        showStatus('At least one filter must be enabled', 'error');
-        return;
-      }
-
       const iqFilterOptions = document.getElementById('iqFilterOptions');
       if (iqFilterOptions) {
         iqFilterOptions.style.display = isEnabled ? 'block' : 'none';
       }
+
       chrome.storage.sync.set({ useIQInFilter: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
@@ -1122,6 +1081,33 @@ document.addEventListener('DOMContentLoaded', () => {
           showStatus('Settings saved', 'success');
         }
       });
+
+      // If all filter options are unchecked, disable IqFiltr and collapse the card
+      if (!hasAnyFilterEnabled()) {
+        const enableIqFiltrElement = document.getElementById('enableIqFiltr');
+        if (enableIqFiltrElement && enableIqFiltrElement.checked) {
+          enableIqFiltrElement.checked = false;
+          chrome.storage.sync.set({ enableIqFiltr: false }, () => {
+            if (chrome.runtime.lastError) {
+              showStatus('Error saving setting', 'error');
+            }
+          });
+
+          // Collapse the IqFiltr card
+          const iqFiltrContent = document.getElementById('iqFiltrContent');
+          const iqFiltrHeader = document.querySelector('[data-target="iqFiltrContent"]');
+          if (iqFiltrContent && iqFiltrHeader) {
+            const currentHeight = iqFiltrContent.scrollHeight;
+            iqFiltrContent.style.maxHeight = currentHeight + 'px';
+            setTimeout(() => {
+              iqFiltrContent.classList.add('collapsed');
+              iqFiltrHeader.classList.add('collapsed');
+              iqFiltrContent.style.maxHeight = '0';
+              updateSectionSpacing();
+            }, 10);
+          }
+        }
+      }
     });
   }
 
@@ -1131,17 +1117,11 @@ document.addEventListener('DOMContentLoaded', () => {
     useConfidenceInFilterElement.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
 
-      // Ensure at least one filter is enabled (check other filters, excluding this one)
-      if (!isEnabled && !hasAtLeastOneFilter(e.target)) {
-        e.target.checked = true;
-        showStatus('At least one filter must be enabled', 'error');
-        return;
-      }
-
       const confidenceFilterOptions = document.getElementById('confidenceFilterOptions');
       if (confidenceFilterOptions) {
         confidenceFilterOptions.style.display = isEnabled ? 'block' : 'none';
       }
+
       chrome.storage.sync.set({ useConfidenceInFilter: isEnabled }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
@@ -1149,6 +1129,33 @@ document.addEventListener('DOMContentLoaded', () => {
           showStatus('Settings saved', 'success');
         }
       });
+
+      // If all filter options are unchecked, disable IqFiltr and collapse the card
+      if (!hasAnyFilterEnabled()) {
+        const enableIqFiltrElement = document.getElementById('enableIqFiltr');
+        if (enableIqFiltrElement && enableIqFiltrElement.checked) {
+          enableIqFiltrElement.checked = false;
+          chrome.storage.sync.set({ enableIqFiltr: false }, () => {
+            if (chrome.runtime.lastError) {
+              showStatus('Error saving setting', 'error');
+            }
+          });
+
+          // Collapse the IqFiltr card
+          const iqFiltrContent = document.getElementById('iqFiltrContent');
+          const iqFiltrHeader = document.querySelector('[data-target="iqFiltrContent"]');
+          if (iqFiltrContent && iqFiltrHeader) {
+            const currentHeight = iqFiltrContent.scrollHeight;
+            iqFiltrContent.style.maxHeight = currentHeight + 'px';
+            setTimeout(() => {
+              iqFiltrContent.classList.add('collapsed');
+              iqFiltrHeader.classList.add('collapsed');
+              iqFiltrContent.style.maxHeight = '0';
+              updateSectionSpacing();
+            }, 10);
+          }
+        }
+      }
     });
   }
 
@@ -1195,14 +1202,48 @@ document.addEventListener('DOMContentLoaded', () => {
     filterInvalidTweetsElement.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
 
-      // Ensure at least one filter is enabled (check other filters, excluding this one)
-      if (!isEnabled && !hasAtLeastOneFilter(e.target)) {
-        e.target.checked = true;
-        showStatus('At least one filter must be enabled', 'error');
-        return;
-      }
-
       chrome.storage.sync.set({ filterInvalidTweets: isEnabled }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+
+      // If all filter options are unchecked, disable IqFiltr and collapse the card
+      if (!hasAnyFilterEnabled()) {
+        const enableIqFiltrElement = document.getElementById('enableIqFiltr');
+        if (enableIqFiltrElement && enableIqFiltrElement.checked) {
+          enableIqFiltrElement.checked = false;
+          chrome.storage.sync.set({ enableIqFiltr: false }, () => {
+            if (chrome.runtime.lastError) {
+              showStatus('Error saving setting', 'error');
+            }
+          });
+
+          // Collapse the IqFiltr card
+          const iqFiltrContent = document.getElementById('iqFiltrContent');
+          const iqFiltrHeader = document.querySelector('[data-target="iqFiltrContent"]');
+          if (iqFiltrContent && iqFiltrHeader) {
+            const currentHeight = iqFiltrContent.scrollHeight;
+            iqFiltrContent.style.maxHeight = currentHeight + 'px';
+            setTimeout(() => {
+              iqFiltrContent.classList.add('collapsed');
+              iqFiltrHeader.classList.add('collapsed');
+              iqFiltrContent.style.maxHeight = '0';
+              updateSectionSpacing();
+            }, 10);
+          }
+        }
+      }
+    });
+  }
+
+  // Handle filterUserPosts checkbox
+  const filterUserPostsElement = document.getElementById('filterUserPosts');
+  if (filterUserPostsElement) {
+    filterUserPostsElement.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ filterUserPosts: e.target.checked }, () => {
         if (chrome.runtime.lastError) {
           showStatus('Error saving setting', 'error');
         } else {

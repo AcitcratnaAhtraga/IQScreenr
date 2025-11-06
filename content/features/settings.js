@@ -15,9 +15,6 @@ const defaultSettings = {
   enableDebugLogging: false,
   enableIQGuessr: false,
   enableIqFiltr: false,
-  filterTweets: true,
-  filterReplies: true,
-  filterQuotedPosts: true,
   filterIQThreshold: 100,
   filterDirection: 'below', // 'below' or 'above'
   filterConfidenceThreshold: 50, // 0-100, default 50
@@ -25,6 +22,7 @@ const defaultSettings = {
   useIQInFilter: true, // Whether to use IQ threshold in filtering (default true)
   useConfidenceInFilter: false, // Whether to use confidence in filtering
   filterInvalidTweets: false, // Whether to filter tweets with IQ X (invalid/too short)
+  filterUserPosts: false, // Whether to filter the user's own posts if they meet the criteria
   filterMode: 'mute' // 'remove' or 'mute' - how to handle filtered tweets
 };
 
@@ -34,7 +32,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterMode'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIqFiltr', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterUserPosts', 'filterMode'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -66,15 +64,6 @@ function loadSettings() {
     if (result.enableIqFiltr !== undefined) {
       settings.enableIqFiltr = result.enableIqFiltr;
     }
-    if (result.filterTweets !== undefined) {
-      settings.filterTweets = result.filterTweets;
-    }
-    if (result.filterReplies !== undefined) {
-      settings.filterReplies = result.filterReplies;
-    }
-    if (result.filterQuotedPosts !== undefined) {
-      settings.filterQuotedPosts = result.filterQuotedPosts;
-    }
     if (result.filterIQThreshold !== undefined) {
       settings.filterIQThreshold = result.filterIQThreshold;
     }
@@ -95,6 +84,9 @@ function loadSettings() {
     }
     if (result.filterInvalidTweets !== undefined) {
       settings.filterInvalidTweets = result.filterInvalidTweets;
+    }
+    if (result.filterUserPosts !== undefined) {
+      settings.filterUserPosts = result.filterUserPosts;
     }
     if (result.filterMode !== undefined) {
       settings.filterMode = result.filterMode;
@@ -145,18 +137,6 @@ function setupSettingsListener(onChange) {
       if (changes.enableIqFiltr) {
         settings.enableIqFiltr = changes.enableIqFiltr.newValue;
         relevantChanges.enableIqFiltr = changes.enableIqFiltr;
-      }
-      if (changes.filterTweets) {
-        settings.filterTweets = changes.filterTweets.newValue;
-        relevantChanges.filterTweets = changes.filterTweets;
-      }
-      if (changes.filterReplies) {
-        settings.filterReplies = changes.filterReplies.newValue;
-        relevantChanges.filterReplies = changes.filterReplies;
-      }
-      if (changes.filterQuotedPosts) {
-        settings.filterQuotedPosts = changes.filterQuotedPosts.newValue;
-        relevantChanges.filterQuotedPosts = changes.filterQuotedPosts;
       }
       if (changes.filterIQThreshold) {
         settings.filterIQThreshold = changes.filterIQThreshold.newValue;
@@ -214,9 +194,6 @@ if (typeof window !== 'undefined') {
     get enableIQGuessr() { return settings.enableIQGuessr; },
     get showProfileScoreBadge() { return settings.showProfileScoreBadge !== false; },
     get enableIqFiltr() { return settings.enableIqFiltr; },
-    get filterTweets() { return settings.filterTweets; },
-    get filterReplies() { return settings.filterReplies; },
-    get filterQuotedPosts() { return settings.filterQuotedPosts; },
     get filterIQThreshold() { return settings.filterIQThreshold; },
     get filterDirection() { return settings.filterDirection; },
     get filterConfidenceThreshold() { return settings.filterConfidenceThreshold; },
@@ -224,6 +201,7 @@ if (typeof window !== 'undefined') {
     get useIQInFilter() { return settings.useIQInFilter; },
     get useConfidenceInFilter() { return settings.useConfidenceInFilter; },
     get filterInvalidTweets() { return settings.filterInvalidTweets; },
+    get filterUserPosts() { return settings.filterUserPosts; },
     get filterMode() { return settings.filterMode; },
     loadSettings,
     setupSettingsListener,

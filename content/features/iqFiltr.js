@@ -21,9 +21,40 @@
   async function getCurrentUserHandle() {
     const getUserAverageIQ = () => window.UserAverageIQ || {};
     const { getUserHandle } = getUserAverageIQ();
+
+    // Try UserAverageIQ first
     if (getUserHandle) {
-      return await getUserHandle();
+      const handle = await getUserHandle();
+      if (handle) {
+        return handle;
+      }
     }
+
+    // Fallback 1: Try storage directly
+    const storedHandle = await new Promise((resolve) => {
+      chrome.storage.sync.get(['twitterHandle', 'userHandle', 'handle'], (result) => {
+        const handle = result.twitterHandle || result.userHandle || result.handle;
+        resolve(handle ? handle.toLowerCase().trim().replace(/^@/, '') : null);
+      });
+    });
+
+    if (storedHandle) {
+      return storedHandle;
+    }
+
+    // Fallback 2: Check URL if on own profile or own tweet page
+    const pathname = window.location.pathname;
+    const urlMatch = pathname.match(/^\/([a-zA-Z0-9_]+)/);
+    if (urlMatch) {
+      const urlHandle = urlMatch[1].toLowerCase();
+
+      // Check if Edit Profile button exists (indicates own profile)
+      const editProfileButton = document.querySelector('a[data-testid="editProfileButton"]');
+      if (editProfileButton) {
+        return urlHandle;
+      }
+    }
+
     return null;
   }
 
@@ -33,7 +64,9 @@
    * @returns {string|null} The tweet handle or null
    */
   function getTweetHandle(tweetElement) {
-    if (!tweetElement) return null;
+    if (!tweetElement) {
+      return null;
+    }
 
     // First try to get from data attribute (set during processing)
     const handle = tweetElement.getAttribute('data-handle');
@@ -137,12 +170,36 @@
       return false;
     }
 
-    // NEVER filter the current user's own tweets/replies/quoted posts
+    // Check if this is the current user's post
     const tweetHandle = getTweetHandle(tweetElement);
+    let isUserPost = false;
     if (tweetHandle) {
-      const currentUserHandle = await getCurrentUserHandle();
-      if (currentUserHandle && tweetHandle === currentUserHandle.toLowerCase().trim().replace(/^@/, '')) {
-        return false; // Don't filter current user's content
+      const normalizedTweetHandle = tweetHandle.toLowerCase().trim().replace(/^@/, '');
+
+      // Try multiple methods to get user handle
+      let currentUserHandle = await getCurrentUserHandle();
+
+      // Fallback: If on a tweet page and URL handle matches tweet handle, it's likely our tweet
+      if (!currentUserHandle) {
+        const pathname = window.location.pathname;
+        const urlMatch = pathname.match(/^\/([a-zA-Z0-9_]+)\/status\//);
+        if (urlMatch) {
+          const urlHandle = urlMatch[1].toLowerCase();
+          if (urlHandle === normalizedTweetHandle) {
+            // URL handle matches tweet handle - this is likely our own tweet
+            currentUserHandle = urlHandle;
+          }
+        }
+      }
+
+      const normalizedUserHandle = currentUserHandle ? currentUserHandle.toLowerCase().trim().replace(/^@/, '') : null;
+
+      if (normalizedUserHandle && normalizedTweetHandle === normalizedUserHandle) {
+        isUserPost = true;
+        // If filtering user's posts is disabled, don't filter
+        if (settings.filterUserPosts !== true) {
+          return false; // Don't filter current user's content
+        }
       }
     }
 
@@ -169,7 +226,7 @@
     const useIQ = settings.useIQInFilter !== false; // Default to true
     const useConfidence = settings.useConfidenceInFilter === true;
 
-    // At least one filter must be enabled when IqFiltr is enabled
+    // If no filters are enabled, don't filter
     if (!useIQ && !useConfidence && !filterInvalid) {
       return false;
     }
@@ -209,42 +266,20 @@
     // Filter if at least one enabled filter matches (OR logic)
     // If both are enabled, filter if IQ matches OR confidence matches
     // If only one is enabled, filter if that one matches
+    let shouldFilter = false;
     if (useIQ && useConfidence) {
       // Both enabled: filter if IQ matches OR confidence matches
-      if (!matchesIQThreshold && !matchesConfidenceThreshold) {
-        return false;
-      }
+      shouldFilter = matchesIQThreshold || matchesConfidenceThreshold;
     } else if (useIQ) {
       // Only IQ enabled: filter if IQ matches
-      if (!matchesIQThreshold) {
-        return false;
-      }
+      shouldFilter = matchesIQThreshold;
     } else if (useConfidence) {
       // Only confidence enabled: filter if confidence matches
-      if (!matchesConfidenceThreshold) {
-        return false;
-      }
+      shouldFilter = matchesConfidenceThreshold;
     }
 
-    // Check which types to filter
-    const filterTweets = settings.filterTweets !== false;
-    const filterReplies = settings.filterReplies !== false;
-    const filterQuotedPosts = settings.filterQuotedPosts !== false;
-
-    // Determine tweet type and check if it should be filtered
-    if (isQuotedPost(tweetElement) && filterQuotedPosts) {
-      return true;
-    }
-
-    if (isReply(tweetElement) && filterReplies) {
-      return true;
-    }
-
-    if (isRegularTweet(tweetElement) && filterTweets) {
-      return true;
-    }
-
-    return false;
+    // Filter all post types (tweets, replies, quoted posts) - no type restriction
+    return shouldFilter;
   }
 
   // Batch removal queue to prevent scroll jumping

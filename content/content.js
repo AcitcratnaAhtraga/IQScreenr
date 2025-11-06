@@ -125,14 +125,14 @@
     // Handle IqFiltr settings changes - apply filter immediately
     const filterSettings = [
       'enableIqFiltr',
-      'filterTweets',
-      'filterReplies',
-      'filterQuotedPosts',
+      'filterUserPosts',
       'filterIQThreshold',
       'filterDirection',
       'filterConfidenceThreshold',
       'filterConfidenceDirection',
+      'useIQInFilter',
       'useConfidenceInFilter',
+      'filterInvalidTweets',
       'filterMode'
     ];
 

@@ -73,30 +73,17 @@
 
             <!-- Filter Mode - At Top -->
             <div class="filter-subsection">
-              <div class="control-group">
-                <label for="filterMode" class="control-label">Mode:</label>
-                <select id="filterMode" class="control-select" style="width: 200px;">
-                  <option value="mute">Mute (Hide with View)</option>
-                  <option value="remove">Remove Completely (experimental)</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Post Types - Inline -->
-            <div class="filter-subsection" style="margin-top: 16px;">
-              <label class="subsection-label">Post Types:</label>
-              <div class="inline-checkboxes">
-                <label class="inline-checkbox">
-                  <input type="checkbox" id="filterTweets" checked>
-                  <span>Tweets</span>
-                </label>
-                <label class="inline-checkbox">
-                  <input type="checkbox" id="filterReplies" checked>
-                  <span>Replies</span>
-                </label>
-                <label class="inline-checkbox">
-                  <input type="checkbox" id="filterQuotedPosts" checked>
-                  <span>Quoted</span>
+              <div class="control-group" style="display: flex; align-items: center; gap: 16px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <label for="filterMode" class="control-label">Mode:</label>
+                  <select id="filterMode" class="control-select" style="width: 200px;">
+                    <option value="mute">Mute (Hide with View)</option>
+                    <option value="remove">Remove Completely (experimental)</option>
+                  </select>
+                </div>
+                <label class="switch-label" style="margin: 0;">
+                  <input type="checkbox" id="filterUserPosts">
+                  <span class="switch-text" title="Apply filter criteria to your own posts. If unchecked, your posts are never filtered regardless of their IQ/confidence scores.">Including yours</span>
                 </label>
               </div>
             </div>
@@ -105,7 +92,7 @@
             <div class="filter-subsection" style="margin-top: 16px;">
               <label class="switch-label">
                 <input type="checkbox" id="useIQInFilter" checked>
-                <span class="switch-text">Use IQ Filter</span>
+                <span class="switch-text">Filter by IQ</span>
               </label>
 
               <div id="iqFilterOptions" style="margin-top: 12px; margin-left: 24px;">
@@ -124,7 +111,7 @@
             <div class="filter-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
               <label class="switch-label">
                 <input type="checkbox" id="useConfidenceInFilter">
-                <span class="switch-text" title="Filter posts based on the confidence percentage of the IQ estimation. Confidence indicates how reliable the IQ score is - higher confidence means the estimation is more accurate.">Use Confidence Filter</span>
+                <span class="switch-text" title="Filter posts based on the confidence percentage of the IQ estimation. Confidence indicates how reliable the IQ score is - higher confidence means the estimation is more accurate.">Filter by % Confidence</span>
               </label>
 
               <div id="confidenceFilterOptions" style="margin-top: 12px; margin-left: 24px; display: none;">
@@ -144,7 +131,7 @@
             <div class="filter-subsection" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e0e0e0;">
               <label class="switch-label" style="display: flex; align-items: center; gap: 8px;">
                 <input type="checkbox" id="filterInvalidTweets">
-                <span class="switch-text">Filter Posts without Text</span>
+                <span class="switch-text">Filter Textless Posts</span>
                 <span class="iq-badge iq-badge-invalid iq-badge-flip" style="display: inline-flex; width: 32px; height: 32px; font-size: 10px; margin-left: 4px;" title="Tweets with less than 1 word or invalid text">
                   <div class="iq-badge-inner">
                     <div class="iq-badge-front">
