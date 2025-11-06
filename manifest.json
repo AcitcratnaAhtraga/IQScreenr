@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "IqGuessr",
+  "name": "IqScreenr",
   "version": "1.0.0",
   "description": "Analyzes tweet text and displays estimated verbal IQ scores with color-coded badges",
   "permissions": [

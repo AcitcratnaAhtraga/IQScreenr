@@ -816,7 +816,7 @@ article[data-iq-analyzed] {
   animation: pulseGrow 0.3s ease-out;
 }
 
-/* Rotating border animation for IqGuessr calculation */
+/* Rotating border animation for IqGuessr game mode calculation */
 @keyframes rotatingBorder {
   0% {
     box-shadow:

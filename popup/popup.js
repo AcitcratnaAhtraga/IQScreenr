@@ -527,7 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Debug logging
     if (score === 0 && (allSync.iqGuessrScore || allLocal.iqGuessrScore)) {
-      console.log('[IqGuessr Popup] Score found but was 0:', {
+      console.log('[IqScreenr Popup] Score found but was 0:', {
         syncResult: syncResult.iqGuessrScore,
         localResult: localResult.iqGuessrScore,
         allSync: allSync.iqGuessrScore,
@@ -584,7 +584,23 @@ document.addEventListener('DOMContentLoaded', () => {
       showRealtimeBadgeElement.checked = result.showRealtimeBadge !== false; // Default to true
     }
     document.getElementById('enableDebugLogging').checked = result.enableDebugLogging === true; // Default to false
-    document.getElementById('enableIQGuessr').checked = result.enableIQGuessr === true; // Default to false
+    const enableIQGuessrElement = document.getElementById('enableIQGuessr');
+    const iqGuessrOptions = document.getElementById('iqGuessrOptions');
+    const gameModeContent = document.getElementById('gameModeContent');
+    if (enableIQGuessrElement) {
+      enableIQGuessrElement.checked = result.enableIQGuessr === true; // Default to false
+      if (iqGuessrOptions) {
+        iqGuessrOptions.style.display = enableIQGuessrElement.checked ? 'block' : 'none';
+        // Ensure section is expanded if options should be visible
+        if (enableIQGuessrElement.checked && gameModeContent && gameModeContent.classList.contains('collapsed')) {
+          gameModeContent.classList.remove('collapsed');
+          const header = document.querySelector('[data-target="gameModeContent"]');
+          if (header) {
+            header.classList.remove('collapsed');
+          }
+        }
+      }
+    }
     document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false; // Default to true
     // Update dependent checkboxes to set initial visibility state
     updateDependentCheckboxes();
@@ -676,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Update dependent checkboxes state
     updateDependentCheckboxes();
   }).catch((error) => {
-    console.warn('[IqGuessr] Error loading settings:', error);
+    console.warn('[IqScreenr] Error loading settings:', error);
     // Fallback: try sync storage only
     chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useConfidenceInFilter', 'filterMode'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
@@ -739,20 +755,58 @@ document.addEventListener('DOMContentLoaded', () => {
       // Update visibility immediately (before storage save)
       updateDependentCheckboxes();
 
+      const iqGuessrOptions = document.getElementById('iqGuessrOptions');
+      const gameModeContent = document.getElementById('gameModeContent');
+
+      if (iqGuessrOptions) {
+        // Show/hide options
+        if (isEnabled) {
+          iqGuessrOptions.style.display = 'block';
+          // Ensure section is expanded if options are shown
+          if (gameModeContent && gameModeContent.classList.contains('collapsed')) {
+            gameModeContent.classList.remove('collapsed');
+            const header = document.querySelector('[data-target="gameModeContent"]');
+            if (header) {
+              header.classList.remove('collapsed');
+            }
+          }
+          // Trigger height recalculation for smooth transition
+          setTimeout(() => {
+            if (gameModeContent && !gameModeContent.classList.contains('collapsed')) {
+              gameModeContent.style.maxHeight = gameModeContent.scrollHeight + 'px';
+              updateSectionSpacing();
+            }
+          }, 50);
+        } else {
+          iqGuessrOptions.style.display = 'none';
+          // Recalculate height when hiding
+          setTimeout(() => {
+            if (gameModeContent && !gameModeContent.classList.contains('collapsed')) {
+              gameModeContent.style.maxHeight = gameModeContent.scrollHeight + 'px';
+              updateSectionSpacing();
+            }
+          }, 50);
+        }
+      }
+
       // Update score display immediately with current score
       if (isEnabled) {
+        console.log('[IqGuessr Debug] IqGuessr enabled, fetching score from storage...');
         Promise.all([
           new Promise((resolve) => chrome.storage.sync.get(['iqGuessrScore'], resolve)),
           new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve))
         ]).then(([syncResult, localResult]) => {
           const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
+          console.log('[IqGuessr Debug] Score fetched:', { syncResult, localResult, finalScore: score });
           updateIQGuessrScore(score);
-        }).catch(() => {
+        }).catch((error) => {
+          console.error('[IqGuessr Debug] Error fetching score:', error);
           chrome.storage.sync.get(['iqGuessrScore'], (result) => {
             updateIQGuessrScore(result.iqGuessrScore ?? 0);
           });
         });
       } else {
+        console.log('[IqGuessr Debug] IqGuessr disabled, hiding score');
         updateIQGuessrScore(0);
       }
 
@@ -1301,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', () => {
       countText.textContent = `(${averageData.count} tweets)`;
       badgeContainer.appendChild(countText);
     } catch (error) {
-      console.warn('[IqGuessr] Error updating average IQ badge:', error);
+      console.warn('[IqScreenr] Error updating average IQ badge:', error);
       badgeContainer.style.display = 'block';
       badgeContainer.innerHTML = '<span style="color: #6b7280; font-size: 12px;">Error loading average IQ</span>';
     }

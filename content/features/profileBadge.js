@@ -86,7 +86,7 @@
 
     badge.innerHTML = `
       <div style="position: relative; display: inline-block;">
-        <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqGuessr" class="iq-guessr-rotating-icon" style="width: ${iconSize}px; height: ${iconSize}px; display: block; animation-duration: ${rotationDuration}s; transition: animation-duration 0.3s ease;">
+        <img src="${chrome.runtime.getURL('icons/Variants/Fullsize/IqGuessrTrspW.png')}" alt="IqScreenr" class="iq-guessr-rotating-icon" style="width: ${iconSize}px; height: ${iconSize}px; display: block; animation-duration: ${rotationDuration}s; transition: animation-duration 0.3s ease;">
         <span class="score-value" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: ${fontSize}px; font-weight: 700; color: black; text-shadow: 0 1px 3px rgba(255, 255, 255, 0.9); pointer-events: none; z-index: 1;">${score}</span>
       </div>
     `;
@@ -275,7 +275,7 @@
         return badge;
       }
     }).catch((error) => {
-      console.warn('[IqGuessr] Error loading score:', error);
+      console.warn('[IqScreenr] Error loading score:', error);
       // Fallback: try all storage methods
       return new Promise((resolve) => {
         chrome.storage.sync.get(null, (allSync) => {
@@ -501,7 +501,7 @@
     try {
       parent.insertBefore(wrapper, beforeElement);
     } catch (e) {
-      console.warn('[IqGuessr] Error inserting profile badge:', e);
+      console.warn('[IqScreenr] Error inserting profile badge:', e);
     }
   }
 
