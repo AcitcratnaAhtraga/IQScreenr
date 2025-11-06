@@ -233,16 +233,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     scoreElement.setAttribute('data-stats-tooltip-attached', 'true');
-    scoreElement.style.cursor = 'pointer';
-    scoreElement.title = 'Click to view detailed stats';
+    scoreElement.style.cursor = 'help';
+    scoreElement.title = 'Hover to view detailed stats';
 
     // Create stats tooltip functionality for popup
     let currentTooltip = null;
+    let hoverTimeout = null;
+    let isHoveringTooltip = false;
 
     async function showStatsTooltip() {
+      // Clear any pending timeout
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        hoverTimeout = null;
+      }
+
       // Hide existing tooltip if any
       if (currentTooltip) {
-        hideStatsTooltip();
         return;
       }
 
@@ -339,13 +346,14 @@ document.addEventListener('DOMContentLoaded', () => {
         content += '</div>';
         tooltip.innerHTML = content;
 
-        // Get the score element width to match tooltip width
+        // Get the score element width and position to match tooltip
         const scoreElementWidth = scoreElement.offsetWidth;
         const scoreElementRect = scoreElement.getBoundingClientRect();
 
         // Style the tooltip for popup context - match width of score element
+        // Use fixed positioning to ensure it's above everything
         tooltip.style.cssText = `
-          position: absolute;
+          position: fixed;
           background: #000000;
           color: white;
           padding: 16px;
@@ -353,35 +361,31 @@ document.addEventListener('DOMContentLoaded', () => {
           font-size: 12px;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
-          z-index: 10000;
+          z-index: 999999;
           width: ${scoreElementWidth}px;
           max-height: 400px;
           overflow-y: auto;
           pointer-events: auto;
           line-height: 1.5;
-          bottom: 100%;
-          left: 50%;
+          top: ${scoreElementRect.bottom + 8}px;
+          left: ${scoreElementRect.left + (scoreElementRect.width / 2)}px;
           transform: translateX(-50%);
-          margin-bottom: 8px;
           box-sizing: border-box;
         `;
 
-        // Position relative to score element
-        scoreElement.style.position = 'relative';
-        scoreElement.appendChild(tooltip);
+        // Append to body for fixed positioning
+        document.body.appendChild(tooltip);
         currentTooltip = tooltip;
 
-        // Close on click outside
-        const handleClickOutside = (e) => {
-          if (tooltip && !tooltip.contains(e.target) && !scoreElement.contains(e.target)) {
-            hideStatsTooltip();
-            document.removeEventListener('click', handleClickOutside);
-          }
-        };
+        // Track when mouse is over tooltip
+        tooltip.addEventListener('mouseenter', () => {
+          isHoveringTooltip = true;
+        });
 
-        setTimeout(() => {
-          document.addEventListener('click', handleClickOutside);
-        }, 100);
+        tooltip.addEventListener('mouseleave', () => {
+          isHoveringTooltip = false;
+          hideStatsTooltip();
+        });
       } catch (error) {
         console.warn('[IQGuessr] Error showing stats tooltip:', error);
       }
@@ -392,6 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentTooltip.parentElement.removeChild(currentTooltip);
       }
       currentTooltip = null;
+      isHoveringTooltip = false;
     }
 
     // Calculate stats from history (same logic as content script)
@@ -479,11 +484,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Attach click handler
-    scoreElement.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      showStatsTooltip();
+    // Attach hover handlers
+    scoreElement.addEventListener('mouseenter', () => {
+      // Small delay to prevent flickering
+      hoverTimeout = setTimeout(() => {
+        showStatsTooltip();
+      }, 200);
+    });
+
+    scoreElement.addEventListener('mouseleave', () => {
+      // Clear pending timeout
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        hoverTimeout = null;
+      }
+      // Hide tooltip when mouse leaves (with small delay to allow moving to tooltip)
+      setTimeout(() => {
+        if (!isHoveringTooltip) {
+          hideStatsTooltip();
+        }
+      }, 100);
     });
   }
 
@@ -573,10 +593,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load filter settings
     const enableIqFiltrElement = document.getElementById('enableIqFiltr');
     const iqFiltrOptions = document.getElementById('iqFiltrOptions');
+    const iqFiltrContent = document.getElementById('iqFiltrContent');
     if (enableIqFiltrElement) {
       enableIqFiltrElement.checked = result.enableIqFiltr === true; // Default to false
       if (iqFiltrOptions) {
         iqFiltrOptions.style.display = enableIqFiltrElement.checked ? 'block' : 'none';
+        // Ensure section is expanded if options should be visible
+        if (enableIqFiltrElement.checked && iqFiltrContent && iqFiltrContent.classList.contains('collapsed')) {
+          iqFiltrContent.classList.remove('collapsed');
+          const header = document.querySelector('[data-target="iqFiltrContent"]');
+          if (header) {
+            header.classList.remove('collapsed');
+          }
+        }
       }
     }
     if (result.filterTweets !== undefined) {
@@ -775,16 +804,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const isEnabled = e.target.checked;
       const iqFiltrOptions = document.getElementById('iqFiltrOptions');
+      const iqFiltrContent = document.getElementById('iqFiltrContent');
+
       if (iqFiltrOptions) {
-        iqFiltrOptions.style.display = isEnabled ? 'block' : 'none';
-        // Trigger height recalculation for smooth transition
+        // Show/hide options
         if (isEnabled) {
-          setTimeout(() => {
-            const content = document.getElementById('iqFiltrContent');
-            if (content && !content.classList.contains('collapsed')) {
-              content.style.maxHeight = content.scrollHeight + 'px';
+          iqFiltrOptions.style.display = 'block';
+          // Ensure section is expanded if options are shown
+          if (iqFiltrContent && iqFiltrContent.classList.contains('collapsed')) {
+            iqFiltrContent.classList.remove('collapsed');
+            const header = document.querySelector('[data-target="iqFiltrContent"]');
+            if (header) {
+              header.classList.remove('collapsed');
             }
-          }, 10);
+          }
+          // Trigger height recalculation for smooth transition
+          setTimeout(() => {
+            if (iqFiltrContent && !iqFiltrContent.classList.contains('collapsed')) {
+              iqFiltrContent.style.maxHeight = iqFiltrContent.scrollHeight + 'px';
+              updateSectionSpacing();
+            }
+          }, 50);
+        } else {
+          iqFiltrOptions.style.display = 'none';
+          // Recalculate height when hiding
+          setTimeout(() => {
+            if (iqFiltrContent && !iqFiltrContent.classList.contains('collapsed')) {
+              iqFiltrContent.style.maxHeight = iqFiltrContent.scrollHeight + 'px';
+              updateSectionSpacing();
+            }
+          }, 50);
         }
       }
       chrome.storage.sync.set({ enableIqFiltr: isEnabled }, () => {
@@ -1039,6 +1088,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Helper function to update section spacing
+  function updateSectionSpacing() {
+    const collapsibleSections = document.querySelectorAll('.settings-section.collapsible');
+    collapsibleSections.forEach(section => {
+      const content = section.querySelector('.collapsible-content');
+      if (content && !content.classList.contains('collapsed')) {
+        section.style.marginBottom = '24px';
+      } else {
+        section.style.marginBottom = '16px';
+      }
+    });
+  }
+
   // Collapsible sections functionality
   function setupCollapsibleSections() {
     const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
@@ -1057,6 +1119,11 @@ document.addEventListener('DOMContentLoaded', () => {
         header.classList.add('collapsed');
         content.style.maxHeight = '0';
       }
+
+      // Update spacing after initial setup
+      setTimeout(() => {
+        updateSectionSpacing();
+      }, 50);
 
       header.addEventListener('click', (e) => {
         // Don't collapse if clicking on a checkbox or input inside
@@ -1086,6 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Force reflow and animate
           setTimeout(() => {
             content.style.maxHeight = height + 'px';
+            updateSectionSpacing();
           }, 10);
         } else {
           // Collapse
@@ -1096,6 +1164,7 @@ document.addEventListener('DOMContentLoaded', () => {
             content.classList.add('collapsed');
             header.classList.add('collapsed');
             content.style.maxHeight = '0';
+            updateSectionSpacing();
           }, 10);
         }
       });
