@@ -13,7 +13,13 @@ const defaultSettings = {
   maxIQ: 145,
   useConfidenceForColor: true, // Always enabled - badge colors always reflect confidence
   enableDebugLogging: true,
-  enableIQGuessr: false
+  enableIQGuessr: false,
+  enableIQFilter: false,
+  filterTweets: true,
+  filterReplies: true,
+  filterQuotedPosts: true,
+  filterIQThreshold: 100,
+  filterDirection: 'below' // 'below' or 'above'
 };
 
 const settings = { ...defaultSettings };
@@ -22,7 +28,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -50,6 +56,24 @@ function loadSettings() {
     }
     if (result.showAverageIQ !== undefined) {
       settings.showAverageIQ = result.showAverageIQ;
+    }
+    if (result.enableIQFilter !== undefined) {
+      settings.enableIQFilter = result.enableIQFilter;
+    }
+    if (result.filterTweets !== undefined) {
+      settings.filterTweets = result.filterTweets;
+    }
+    if (result.filterReplies !== undefined) {
+      settings.filterReplies = result.filterReplies;
+    }
+    if (result.filterQuotedPosts !== undefined) {
+      settings.filterQuotedPosts = result.filterQuotedPosts;
+    }
+    if (result.filterIQThreshold !== undefined) {
+      settings.filterIQThreshold = result.filterIQThreshold;
+    }
+    if (result.filterDirection !== undefined) {
+      settings.filterDirection = result.filterDirection;
     }
   });
 }
@@ -94,6 +118,30 @@ function setupSettingsListener(onChange) {
         settings.showProfileScoreBadge = changes.showProfileScoreBadge.newValue;
         relevantChanges.showProfileScoreBadge = changes.showProfileScoreBadge;
       }
+      if (changes.enableIQFilter) {
+        settings.enableIQFilter = changes.enableIQFilter.newValue;
+        relevantChanges.enableIQFilter = changes.enableIQFilter;
+      }
+      if (changes.filterTweets) {
+        settings.filterTweets = changes.filterTweets.newValue;
+        relevantChanges.filterTweets = changes.filterTweets;
+      }
+      if (changes.filterReplies) {
+        settings.filterReplies = changes.filterReplies.newValue;
+        relevantChanges.filterReplies = changes.filterReplies;
+      }
+      if (changes.filterQuotedPosts) {
+        settings.filterQuotedPosts = changes.filterQuotedPosts.newValue;
+        relevantChanges.filterQuotedPosts = changes.filterQuotedPosts;
+      }
+      if (changes.filterIQThreshold) {
+        settings.filterIQThreshold = changes.filterIQThreshold.newValue;
+        relevantChanges.filterIQThreshold = changes.filterIQThreshold;
+      }
+      if (changes.filterDirection) {
+        settings.filterDirection = changes.filterDirection.newValue;
+        relevantChanges.filterDirection = changes.filterDirection;
+      }
 
       if (onChange && Object.keys(relevantChanges).length > 0) {
         onChange(relevantChanges);
@@ -117,6 +165,12 @@ if (typeof window !== 'undefined') {
     get enableDebugLogging() { return settings.enableDebugLogging; },
     get enableIQGuessr() { return settings.enableIQGuessr; },
     get showProfileScoreBadge() { return settings.showProfileScoreBadge !== false; },
+    get enableIQFilter() { return settings.enableIQFilter; },
+    get filterTweets() { return settings.filterTweets; },
+    get filterReplies() { return settings.filterReplies; },
+    get filterQuotedPosts() { return settings.filterQuotedPosts; },
+    get filterIQThreshold() { return settings.filterIQThreshold; },
+    get filterDirection() { return settings.filterDirection; },
     loadSettings,
     setupSettingsListener,
     // Also export the raw settings object for modules that need it

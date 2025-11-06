@@ -131,6 +131,18 @@
     const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
     const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
 
+    // CRITICAL: Check IQ filter IMMEDIATELY after getting IQ, before restoring badge
+    const getIQFilter = () => window.IQFilter || {};
+    const { checkAndFilter } = getIQFilter();
+    if (checkAndFilter) {
+      const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
+      const wasFiltered = checkAndFilter(elementToCheck, iq);
+      if (wasFiltered) {
+        // Element was removed, stop restoration
+        return true;
+      }
+    }
+
     const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
 
     // Check if there's a cached guess (since cachedRevealed=true means it was compared)
@@ -228,6 +240,18 @@
     const iq = Math.round(cachedIQ.iq_estimate);
     const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
     const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+
+    // CRITICAL: Check IQ filter IMMEDIATELY after getting IQ, before restoring badge
+    const getIQFilter = () => window.IQFilter || {};
+    const { checkAndFilter } = getIQFilter();
+    if (checkAndFilter) {
+      const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
+      const wasFiltered = checkAndFilter(elementToCheck, iq);
+      if (wasFiltered) {
+        // Element was removed, stop restoration
+        return true;
+      }
+    }
 
     const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
 

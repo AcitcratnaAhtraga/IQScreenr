@@ -162,6 +162,20 @@
     const gameManager = getGameManager();
     const { getIQColor, getConfidenceColor, animateCountUp, logDebugInfo } = badgeManager || {};
 
+    // CRITICAL: Check IQ filter IMMEDIATELY after IQ calculation, before any animations or processing
+    // This removes elements before they can be displayed or animated
+    const getIQFilter = () => window.IQFilter || {};
+    const { checkAndFilter } = getIQFilter();
+    if (checkAndFilter) {
+      // Use the actual tweet element for filtering (or outer element if nested)
+      const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
+      const wasFiltered = checkAndFilter(elementToCheck, iq);
+      if (wasFiltered) {
+        // Element was removed, stop processing immediately
+        return;
+      }
+    }
+
     // Track user's average IQ if this is their own tweet
     const getUserAverageIQ = () => window.UserAverageIQ || {};
     const { addIQScore } = getUserAverageIQ();

@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize defaults if not set
   Promise.all([
-    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore'], resolve)),
+    new Promise((resolve) => chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection'], resolve)),
     new Promise((resolve) => chrome.storage.local.get(['iqGuessrScore'], resolve)),
     new Promise((resolve) => chrome.storage.sync.get(null, resolve)), // Get all sync keys
     new Promise((resolve) => chrome.storage.local.get(null, resolve))  // Get all local keys
@@ -408,7 +408,13 @@ document.addEventListener('DOMContentLoaded', () => {
         enableDebugLogging: true,
         enableIQGuessr: false,
         showProfileScoreBadge: true, // Default to showing profile badge
-        showAverageIQ: false // Default to not showing average IQ
+        showAverageIQ: false, // Default to not showing average IQ
+        enableIQFilter: false,
+        filterTweets: true,
+        filterReplies: true,
+        filterQuotedPosts: true,
+        filterIQThreshold: 100,
+        filterDirection: 'below'
       };
       // Only set score if it doesn't exist
       if (score === 0 && !allSync.iqGuessrScore && !allLocal.iqGuessrScore) {
@@ -441,6 +447,36 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('showProfileScoreBadge').checked = result.showProfileScoreBadge !== false; // Default to true
     document.getElementById('showAverageIQ').checked = result.showAverageIQ === true; // Default to false
 
+    // Load filter settings
+    const enableIQFilterElement = document.getElementById('enableIQFilter');
+    const iqFilterOptions = document.getElementById('iqFilterOptions');
+    if (enableIQFilterElement) {
+      enableIQFilterElement.checked = result.enableIQFilter === true; // Default to false
+      if (iqFilterOptions) {
+        iqFilterOptions.style.display = enableIQFilterElement.checked ? 'block' : 'none';
+      }
+    }
+    if (result.filterTweets !== undefined) {
+      const filterTweetsElement = document.getElementById('filterTweets');
+      if (filterTweetsElement) filterTweetsElement.checked = result.filterTweets !== false;
+    }
+    if (result.filterReplies !== undefined) {
+      const filterRepliesElement = document.getElementById('filterReplies');
+      if (filterRepliesElement) filterRepliesElement.checked = result.filterReplies !== false;
+    }
+    if (result.filterQuotedPosts !== undefined) {
+      const filterQuotedPostsElement = document.getElementById('filterQuotedPosts');
+      if (filterQuotedPostsElement) filterQuotedPostsElement.checked = result.filterQuotedPosts !== false;
+    }
+    const filterIQThresholdElement = document.getElementById('filterIQThreshold');
+    if (filterIQThresholdElement) {
+      filterIQThresholdElement.value = result.filterIQThreshold !== undefined ? result.filterIQThreshold : 100;
+    }
+    const filterDirectionElement = document.getElementById('filterDirection');
+    if (filterDirectionElement) {
+      filterDirectionElement.value = result.filterDirection !== undefined ? result.filterDirection : 'below';
+    }
+
     // Update IqGuessr score display
     updateIQGuessrScore(score);
 
@@ -454,7 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }).catch((error) => {
     console.warn('[IqGuessr] Error loading settings:', error);
     // Fallback: try sync storage only
-    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore'], (result) => {
+    chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIQFilter', 'filterTweets', 'filterReplies', 'filterQuotedPosts', 'filterIQThreshold', 'filterDirection'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
       // Real-time badge is hidden, but keep logic intact for backend
       const showRealtimeBadgeElement = document.getElementById('showRealtimeBadge');
@@ -559,6 +595,93 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // Handle IQ Filter settings
+  const enableIQFilterElement = document.getElementById('enableIQFilter');
+  if (enableIQFilterElement) {
+    enableIQFilterElement.addEventListener('change', (e) => {
+      const isEnabled = e.target.checked;
+      const iqFilterOptions = document.getElementById('iqFilterOptions');
+      if (iqFilterOptions) {
+        iqFilterOptions.style.display = isEnabled ? 'block' : 'none';
+      }
+      chrome.storage.sync.set({ enableIQFilter: isEnabled }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+    });
+  }
+
+  const filterTweetsElement = document.getElementById('filterTweets');
+  if (filterTweetsElement) {
+    filterTweetsElement.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ filterTweets: e.target.checked }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+    });
+  }
+
+  const filterRepliesElement = document.getElementById('filterReplies');
+  if (filterRepliesElement) {
+    filterRepliesElement.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ filterReplies: e.target.checked }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+    });
+  }
+
+  const filterQuotedPostsElement = document.getElementById('filterQuotedPosts');
+  if (filterQuotedPostsElement) {
+    filterQuotedPostsElement.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ filterQuotedPosts: e.target.checked }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+    });
+  }
+
+  const filterIQThresholdElement = document.getElementById('filterIQThreshold');
+  if (filterIQThresholdElement) {
+    filterIQThresholdElement.addEventListener('change', (e) => {
+      const value = parseInt(e.target.value, 10);
+      if (value >= 55 && value <= 145) {
+        chrome.storage.sync.set({ filterIQThreshold: value }, () => {
+          if (chrome.runtime.lastError) {
+            showStatus('Error saving setting', 'error');
+          } else {
+            showStatus('Settings saved', 'success');
+          }
+        });
+      }
+    });
+  }
+
+  const filterDirectionElement = document.getElementById('filterDirection');
+  if (filterDirectionElement) {
+    filterDirectionElement.addEventListener('change', (e) => {
+      chrome.storage.sync.set({ filterDirection: e.target.value }, () => {
+        if (chrome.runtime.lastError) {
+          showStatus('Error saving setting', 'error');
+        } else {
+          showStatus('Settings saved', 'success');
+        }
+      });
+    });
+  }
 
   // Helper function to update average IQ badge display
   async function updateAverageIQBadge() {

@@ -30,6 +30,7 @@
         "content/utils/userAverageIQ.js",
         "content/utils/tweetDetection.js",
         "content/features/settings.js",
+        "content/features/iqFilter.js",
         "content/features/badge/colorUtils.js",
         "content/features/badge/badgeAnimations.js",
         "content/features/badge/badgeCreation/context.js",
