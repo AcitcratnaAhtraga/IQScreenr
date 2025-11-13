@@ -4,3 +4,58 @@ text-to-iq-estimator/
 # Ignore ADS_SETUP_GUIDE.md
 ADS_SETUP_GUIDE.md
 
+# Package files
+*.zip
+!IqScreenr.zip  # Allow the main extension package to be tracked
+iqscreenr-package/
+
+# Node modules (if you add any build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python cache (if any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.backup
+*.bak
+
+# Build artifacts
+dist/
+build/
+*.min.js
+*.min.css
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
