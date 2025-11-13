@@ -111,10 +111,10 @@
     // Based on the user's HTML structure:
     // <div class="css-175oi2r r-13awgt0 r-18u37iz r-1w6e6rj">
     //   <div class="css-175oi2r r-1rtiivn">
-    //     <a href="/HagazagaH/following">...Following...</a>
+    //     <a href="/username/following">...Following...</a>
     //   </div>
     //   <div class="css-175oi2r">
-    //     <a href="/HagazagaH/verified_followers">...Followers...</a>
+    //     <a href="/username/verified_followers">...Followers...</a>
     //   </div>
     // </div>
     // We want to insert the badge as a new child after the followers div
