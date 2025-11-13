@@ -1,0 +1,359 @@
+{
+  "casual_language_patterns": {
+    "text_speak": {
+      "missing_apostrophes": [
+        "im", "hes", "shes", "its", "thats", "theres", "heres", "whats", "whos", "wheres", "hows", "whens", "whys",
+        "ive", "youve", "weve", "theyve", "ive", "youre", "were", "theyre", "were",
+        "cant", "dont", "wont", "isnt", "arent", "wasnt", "werent", "hasnt", "havent", "hadnt",
+        "shouldnt", "wouldnt", "couldnt", "mustnt", "neednt",
+        "lets", "thats", "heres", "theres", "wheres", "whos", "whats", "hows", "whens", "whys",
+        "gonna", "wanna", "gotta", "hafta", "oughta", "shoulda", "woulda", "coulda", "musta"
+      ],
+      "abbreviations": [
+        "ur", "yr", "u", "r", "cuz", "bc", "b/c", "cause", "coz",
+        "thru", "tho", "thruout", "thruout",
+        "nite", "lite", "rite", "rite", "nite", "lite",
+        "2", "4", "b4", "2day", "2morrow", "2nite", "2moro",
+        "gr8", "l8r", "m8", "h8", "w8", "b8",
+        "plz", "pls", "thx", "ty", "yw", "np", "nvm", "nm", "nbd",
+        "tbh", "imo", "imho", "fyi", "idk", "idc", "ikr", "irl", "fwiw",
+        "smh", "lol", "rofl", "lmao", "lmfao", "wtf", "omg", "omfg", "wtf", "ffs",
+        "tbh", "ngl", "fr", "frfr", "deadass", "lowkey", "highkey", "sus", "cap", "no cap",
+        "yeet", "bet", "slaps", "fire", "goat", "bussin", "bussin", "slaps", "fire"
+      ],
+      "standalone_letters": [
+        "u", "r", "c", "y", "n"
+      ]
+    },
+    "internet_slang": {
+      "acronyms": [
+        "lol", "rofl", "lmao", "lmfao", "wtf", "omg", "omfg", "ffs", "smh", "tbh", "imo", "imho",
+        "fyi", "idk", "idc", "ikr", "irl", "fwiw", "nvm", "nm", "nbd", "np", "yw", "ty", "thx",
+        "plz", "pls", "gg", "wp", "gl", "hf", "brb", "afk", "ttyl", "gtg", "g2g", "ttyl",
+        "l8r", "cya", "bbl", "ttys", "ttyn", "ttyt", "ttytt"
+      ],
+      "gen_z_slang": [
+        "yeet", "bet", "cap", "no cap", "fr", "frfr", "deadass", "lowkey", "highkey", "high key",
+        "sus", "bussin", "slaps", "fire", "goat", "goated", "based", "cringe", "cringy", "cringey",
+        "simp", "thirsty", "salty", "savage", "lit", "fam", "bruh", "no cap", "on god", "ong",
+        "periodt", "period", "say less", "say less", "it's giving", "its giving", "no cap",
+        "slay", "slayed", "slaying", "queen", "king", "vibe", "vibes", "vibing", "vibed",
+        "stan", "stanning", "stanned", "ship", "shipping", "shipped", "otp", "ship",
+        "ghost", "ghosted", "ghosting", "left on read", "left on delivered",
+        "flex", "flexing", "flexed", "humble brag", "humblebrag"
+      ],
+      "casual_affirmatives": [
+        "yea", "yeah", "yep", "yup", "ya", "y", "yass", "yas", "yasss",
+        "nah", "nope", "naw", "na", "n", "nein", "nay"
+      ]
+    },
+    "casual_terms": {
+      "terms_of_address": [
+        "papi", "daddy", "mommy", "mama", "papa", "bro", "bruh", "sis", "sister", "brother",
+        "fam", "family", "homie", "homeboy", "homegirl", "dude", "guy", "buddy", "bud",
+        "pal", "mate", "brother", "sister", "cuz", "cousin", "cuzzo", "cuzzie",
+        "bae", "boo", "honey", "hun", "sweetie", "sweetheart", "baby", "babe",
+        "chief", "boss", "captain", "champ", "sport", "kid", "kiddo"
+      ],
+      "casual_greetings": [
+        "hey", "hi", "yo", "sup", "wassup", "whatsup", "what's up", "whats up",
+        "howdy", "hows it going", "how's it going", "hows it goin", "how's it goin",
+        "waddup", "wadup", "wassup", "wazzup", "wazup"
+      ],
+      "casual_responses": [
+        "ok", "okay", "k", "kk", "kkk", "alright", "alrighty", "aight", "ight",
+        "sure", "sure thing", "sure thing", "yep", "yeah", "ya", "y",
+        "cool", "coolio", "cool beans", "sweet", "sweet", "nice", "neat",
+        "rad", "sick", "dope", "lit", "fire", "slaps"
+      ]
+    },
+    "grammatical_casual": {
+      "double_negatives": [
+        "dont have no", "don't have no", "aint got no", "ain't got no",
+        "cant get no", "can't get no", "wont do no", "won't do no",
+        "never did no", "never done no", "never seen no", "never saw no"
+      ],
+      "casual_contractions": [
+        "gonna", "wanna", "gotta", "hafta", "oughta", "shoulda", "woulda", "coulda", "musta",
+        "lemme", "gimme", "dunno", "kinda", "sorta", "outta", "lotsa", "betcha", "gotcha",
+        "howdy", "yall", "y'all", "yinz", "yuns", "yous", "youse"
+      ],
+      "casual_verb_forms": [
+        "ain't", "aint", "isn't", "isnt", "aren't", "arent", "wasn't", "wasnt",
+        "weren't", "werent", "hasn't", "hasnt", "haven't", "havent", "hadn't", "hadnt",
+        "don't", "dont", "doesn't", "doesnt", "didn't", "didnt", "won't", "wont",
+        "can't", "cant", "couldn't", "couldnt", "shouldn't", "shouldnt", "wouldn't", "wouldnt"
+      ]
+    },
+    "punctuation_patterns": {
+      "excessive_punctuation": [
+        "!!", "!!!", "!!!!", "!!!!!", "??", "???", "????", "?????",
+        "!?", "?!", "!?!", "?!?", "!?!?", "?!?!",
+        "...", "....", ".....", "......"
+      ],
+      "casual_punctuation": [
+        "~", "~~", "~~~", "^", "^^", "^^^", "*", "**", "***"
+      ]
+    },
+    "casual_phrases": {
+      "filler_words": [
+        "like", "um", "uh", "er", "ah", "well", "you know", "you know what", "you know what i mean",
+        "i mean", "i guess", "i think", "i feel like", "i feel", "sort of", "kind of", "kinda", "sorta",
+        "pretty much", "pretty much", "basically", "literally", "literally", "actually", "actually",
+        "right", "right", "you see", "see", "look", "listen", "hear me out", "hear me",
+        "honestly", "honestly", "tbh", "to be honest", "to be honest", "ngl", "not gonna lie"
+      ],
+      "casual_expressions": [
+        "no way", "no way", "way", "way", "for real", "for real", "fr", "frfr",
+        "seriously", "seriously", "deadass", "dead ass", "on god", "ong",
+        "i swear", "i swear to god", "swear to god", "i promise", "promise",
+        "trust me", "trust", "believe me", "believe", "you gotta believe me",
+        "you know what", "you know what", "you know", "you know",
+        "i'm telling you", "im telling you", "telling you", "i tell you",
+        "i'm serious", "im serious", "serious", "i'm not kidding", "im not kidding"
+      ],
+      "casual_questions": [
+        "what's up", "whats up", "wassup", "wassup", "whatsup", "whatsup",
+        "how's it going", "hows it going", "how's it goin", "hows it goin",
+        "what's good", "whats good", "what's poppin", "whats poppin",
+        "you good", "u good", "you alright", "u alright", "you ok", "u ok"
+      ]
+    },
+    "casual_vocabulary": {
+      "simple_replacements": [
+        "yeah", "yep", "yup", "ya", "y",
+        "nah", "nope", "naw", "na", "n",
+        "ok", "okay", "k", "kk", "alright", "aight", "ight",
+        "cool", "sweet", "nice", "neat", "rad", "sick", "dope", "lit", "fire",
+        "bad", "sick", "ill", "wicked", "sweet", "cool", "rad", "dope"
+      ],
+      "intensifiers": [
+        "so", "so so", "sooo", "soooo", "really", "really really", "really really really",
+        "very", "very very", "super", "super super", "super duper", "uber", "mega",
+        "hella", "mad", "wicked", "insane", "crazy", "wild", "nuts", "bonkers"
+      ],
+      "casual_adjectives": [
+        "cool", "sweet", "nice", "neat", "rad", "sick", "dope", "lit", "fire", "slaps",
+        "bad", "sick", "ill", "wicked", "sweet", "cool", "rad", "dope", "tight",
+        "awesome", "amazing", "incredible", "unbelievable", "crazy", "wild", "nuts", "bonkers",
+        "terrible", "awful", "horrible", "terrible", "bad", "sucks", "sucky", "lame"
+      ]
+    },
+    "casual_sentence_starters": {
+      "casual_openers": [
+        "and", "also", "then", "so", "but", "or", "like", "i mean", "you know",
+        "well", "um", "uh", "er", "ah", "ok", "okay", "alright", "so",
+        "anyway", "anyways", "so yeah", "so ya", "so yep", "so yup"
+      ]
+    },
+    "casual_connectors": {
+      "casual_conjunctions": [
+        "and also", "also note", "and then", "and so", "and but", "and or",
+        "so like", "but like", "or like", "and like", "then like",
+        "so yeah", "so ya", "so yep", "so yup", "but yeah", "but ya",
+        "and yeah", "and ya", "then yeah", "then ya"
+      ]
+    },
+    "casual_grammar_errors": {
+      "common_mistakes": [
+        "should of", "should of", "would of", "would of", "could of", "could of", "must of", "must of",
+        "should've", "would've", "could've", "must've",
+        "your welcome", "your welcome", "your right", "your right", "your wrong", "your wrong",
+        "there welcome", "there right", "there wrong", "there", "their", "they're",
+        "its", "it's", "its", "it's", "its", "it's"
+      ],
+      "subject_verb_disagreement": [
+        "i was", "you was", "he was", "she was", "it was", "we was", "they was",
+        "i were", "you were", "he were", "she were", "it were", "we were", "they were"
+      ]
+    },
+    "casual_capitalization": {
+      "patterns": [
+        "all lowercase", "no capitalization", "missing capitalization",
+        "random capitalization", "mixed case", "iNtErNeT cAsE"
+      ]
+    },
+    "emoji_patterns": {
+      "excessive_emoji": [
+        "multiple emojis", "emoji spam", "emoji overload"
+      ],
+      "emoji_replacements": [
+        "emoji for words", "emoji punctuation", "emoji emphasis"
+      ]
+    },
+    "casual_numbers": {
+      "number_replacements": [
+        "2", "4", "b4", "2day", "2morrow", "2nite", "2moro", "2gether", "2gether",
+        "gr8", "l8r", "m8", "h8", "w8", "b8", "d8", "d8ing", "d8ed",
+        "4ever", "4ever", "4get", "4got", "4gotten", "4give", "4given",
+        "1", "won", "1der", "1derful", "1dering"
+      ]
+    },
+    "casual_spelling": {
+      "intentional_misspellings": [
+        "nite", "lite", "rite", "rite", "nite", "lite", "thru", "tho", "thruout",
+        "kewl", "kool", "coool", "cooool", "coooool",
+        "sooo", "soooo", "sooooo", "soooooo",
+        "yeahh", "yeahhh", "yeahhhh", "yeahhhhh",
+        "nooo", "noooo", "nooooo", "noooooo",
+        "yesss", "yessss", "yesssss", "yessssss",
+        "plz", "pls", "pleez", "pleeze", "pleease", "pleeease"
+      ]
+    },
+    "casual_interjections": {
+      "exclamations": [
+        "omg", "omfg", "wtf", "ffs", "smh", "tbh", "ngl", "fr", "frfr",
+        "yass", "yasss", "yassss", "yas", "yas queen", "yas queen",
+        "slay", "slayed", "slaying", "queen", "king",
+        "periodt", "period", "and that's on period", "and thats on period"
+      ]
+    },
+    "casual_agreement": {
+      "agreement_phrases": [
+        "i know right", "ikr", "i know", "i know", "you know", "you know",
+        "right", "right", "exactly", "exactly", "totally", "totally",
+        "for sure", "for sure", "definitely", "definitely", "absolutely", "absolutely",
+        "same", "same", "same here", "same here", "me too", "me too", "me as well", "me as well",
+        "i agree", "i agree", "agreed", "agreed", "i feel you", "i feel you", "i feel that", "i feel that"
+      ]
+    },
+    "casual_disagreement": {
+      "disagreement_phrases": [
+        "nah", "nope", "naw", "na", "n", "no way", "no way", "way", "way",
+        "i don't think so", "i dont think so", "i don't think", "i dont think",
+        "i disagree", "i disagree", "disagree", "disagree", "i don't agree", "i dont agree",
+        "that's not right", "thats not right", "that's wrong", "thats wrong",
+        "that's not true", "thats not true", "that's false", "thats false"
+      ]
+    },
+    "casual_uncertainty": {
+      "uncertainty_phrases": [
+        "i think", "i think", "i guess", "i guess", "i suppose", "i suppose",
+        "maybe", "maybe", "perhaps", "perhaps", "possibly", "possibly",
+        "i'm not sure", "im not sure", "i don't know", "i dont know", "idk", "idk",
+        "i'm not certain", "im not certain", "i'm uncertain", "im uncertain",
+        "sort of", "sort of", "kind of", "kind of", "kinda", "kinda", "sorta", "sorta",
+        "a bit", "a bit", "a little", "a little", "somewhat", "somewhat", "rather", "rather"
+      ]
+    },
+    "casual_emphasis": {
+      "emphasis_words": [
+        "literally", "literally", "actually", "actually", "really", "really", "very", "very",
+        "so", "so", "so so", "so so", "sooo", "soooo", "sooooo",
+        "super", "super", "super super", "super duper", "uber", "mega",
+        "hella", "mad", "wicked", "insane", "crazy", "wild", "nuts", "bonkers",
+        "totally", "totally", "completely", "completely", "absolutely", "absolutely",
+        "definitely", "definitely", "for sure", "for sure", "no doubt", "no doubt"
+      ]
+    },
+    "casual_questions": {
+      "question_patterns": [
+        "what's up", "whats up", "wassup", "wassup", "whatsup", "whatsup",
+        "how's it going", "hows it going", "how's it goin", "hows it goin",
+        "what's good", "whats good", "what's poppin", "whats poppin",
+        "you good", "u good", "you alright", "u alright", "you ok", "u ok",
+        "what's happening", "whats happening", "what's going on", "whats going on",
+        "how are you", "how are u", "how r u", "how r you", "hru", "hru",
+        "what are you doing", "what are u doing", "what r u doing", "what r you doing", "wru", "wru",
+        "where are you", "where are u", "where r u", "where r you", "wru", "wru"
+      ]
+    },
+    "casual_responses": {
+      "response_patterns": [
+        "ok", "okay", "k", "kk", "kkk", "alright", "alrighty", "aight", "ight",
+        "sure", "sure thing", "sure thing", "yep", "yeah", "ya", "y",
+        "cool", "coolio", "cool beans", "sweet", "sweet", "nice", "neat",
+        "rad", "sick", "dope", "lit", "fire", "slaps", "goat", "goated",
+        "bet", "bet", "i bet", "i bet", "you bet", "you bet", "betcha", "betcha",
+        "gotcha", "gotcha", "i got you", "i got u", "i gotcha", "i gotcha"
+      ]
+    },
+    "casual_complaints": {
+      "complaint_patterns": [
+        "that sucks", "that sucks", "sucks", "sucks", "sucky", "sucky",
+        "that's terrible", "thats terrible", "terrible", "terrible",
+        "that's awful", "thats awful", "awful", "awful",
+        "that's horrible", "thats horrible", "horrible", "horrible",
+        "that's bad", "thats bad", "bad", "bad",
+        "that's lame", "thats lame", "lame", "lame",
+        "that's weak", "thats weak", "weak", "weak",
+        "that's wack", "thats wack", "wack", "wack"
+      ]
+    },
+    "casual_praise": {
+      "praise_patterns": [
+        "that's awesome", "thats awesome", "awesome", "awesome",
+        "that's amazing", "thats amazing", "amazing", "amazing",
+        "that's incredible", "thats incredible", "incredible", "incredible",
+        "that's great", "thats great", "great", "great",
+        "that's good", "thats good", "good", "good",
+        "that's cool", "thats cool", "cool", "cool",
+        "that's sweet", "thats sweet", "sweet", "sweet",
+        "that's nice", "thats nice", "nice", "nice",
+        "that's neat", "thats neat", "neat", "neat",
+        "that's rad", "thats rad", "rad", "rad",
+        "that's sick", "thats sick", "sick", "sick",
+        "that's dope", "thats dope", "dope", "dope",
+        "that's lit", "thats lit", "lit", "lit",
+        "that's fire", "thats fire", "fire", "fire",
+        "that's slaps", "thats slaps", "slaps", "slaps",
+        "that's goat", "thats goat", "goat", "goat", "goated", "goated"
+      ]
+    },
+    "casual_agreement_strong": {
+      "strong_agreement": [
+        "exactly", "exactly", "precisely", "precisely", "absolutely", "absolutely",
+        "definitely", "definitely", "for sure", "for sure", "no doubt", "no doubt",
+        "totally", "totally", "completely", "completely", "entirely", "entirely",
+        "i know right", "ikr", "i know", "i know", "you know", "you know",
+        "right", "right", "that's right", "thats right", "you're right", "youre right",
+        "that's true", "thats true", "true", "true", "that's correct", "thats correct"
+      ]
+    },
+    "casual_disagreement_strong": {
+      "strong_disagreement": [
+        "no way", "no way", "way", "way", "absolutely not", "absolutely not",
+        "definitely not", "definitely not", "for sure not", "for sure not",
+        "that's not right", "thats not right", "that's wrong", "thats wrong",
+        "that's not true", "thats not true", "that's false", "thats false",
+        "that's incorrect", "thats incorrect", "that's inaccurate", "thats inaccurate",
+        "i don't think so", "i dont think so", "i don't agree", "i dont agree",
+        "i disagree", "i disagree", "disagree", "disagree", "i don't buy it", "i dont buy it"
+      ]
+    },
+    "casual_uncertainty_strong": {
+      "strong_uncertainty": [
+        "i don't know", "i dont know", "idk", "idk", "i'm not sure", "im not sure",
+        "i'm not certain", "im not certain", "i'm uncertain", "im uncertain",
+        "i'm not positive", "im not positive", "i'm not confident", "im not confident",
+        "maybe", "maybe", "perhaps", "perhaps", "possibly", "possibly", "potentially", "potentially",
+        "i think", "i think", "i guess", "i guess", "i suppose", "i suppose", "i assume", "i assume",
+        "sort of", "sort of", "kind of", "kind of", "kinda", "kinda", "sorta", "sorta",
+        "a bit", "a bit", "a little", "a little", "somewhat", "somewhat", "rather", "rather"
+      ]
+    }
+  },
+  "penalty_config": {
+    "text_speak_base_penalty": {
+      "short_texts_under_10_words": 4.0,
+      "longer_texts_10_plus_words": 2.5
+    },
+    "text_speak_diminishing_factor": 0.75,
+    "capitalization_max_penalty": 8.0,
+    "capitalization_base_penalty": 3.0,
+    "excessive_punctuation_base_penalty": 1.5,
+    "excessive_punctuation_diminishing_factor": 0.85,
+    "short_text_max_penalty": 35.0,
+    "short_text_min_penalty": 5.0,
+    "diversity_correction_max": 0.9,
+    "diversity_correction_min": 0.3,
+    "notes": {
+      "text_speak": "Uses logarithmic scaling: penalty = base * (1 + log(1 + count * factor)). Density-weighted for text length normalization.",
+      "capitalization": "Uses quadratic scaling: penalty = base * (ratio^2) for partial errors, max_penalty for all lowercase.",
+      "punctuation": "Uses square root scaling: penalty = base * sqrt(count * factor) for diminishing returns.",
+      "short_text": "Uses exponential decay: penalty = max * exp(-decay_rate * (word_count - 1)). Reliability increases exponentially with sample size.",
+      "diversity_correction": "Uses linear interpolation: factor = max - (max - min) * ((word_count - 1) / 8). Decreases smoothly from 0.9 (1 word) to 0.3 (9 words)."
+    }
+  }
+}
+

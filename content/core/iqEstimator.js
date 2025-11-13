@@ -47,6 +47,11 @@ class ComprehensiveIQEstimatorUltimate {
     this.metaphorPatternsLoaded = false;
     this.metaphorPatternsPath = options.metaphorPatternsPath || 'content/data/metaphor_patterns.json';
     
+    // Casual language patterns database
+    this.casualLanguagePatterns = null;
+    this.casualLanguagePatternsLoaded = false;
+    this.casualLanguagePatternsPath = options.casualLanguagePatternsPath || 'content/data/casual_language_patterns.json';
+    
     // Population norms for z-score conversion
     this.populationNorms = null;
     this.populationNormsLoaded = false;
@@ -285,6 +290,42 @@ class ComprehensiveIQEstimatorUltimate {
             console.warn('[IQEstimator] Error loading population norms:', e.message, 'Path:', this.populationNormsPath);
           }
           // Silent fail, will use default norms
+        }
+
+        // Load casual language patterns database
+        try {
+          const casualUrl = getResourceURL(this.casualLanguagePatternsPath);
+          const response = await fetch(casualUrl);
+          if (response.ok) {
+            const casualData = await response.json();
+            this.casualLanguagePatterns = casualData.casual_language_patterns || {};
+            this.casualLanguagePatternsLoaded = true;
+            // Count total patterns
+            let totalPatterns = 0;
+            Object.values(this.casualLanguagePatterns).forEach(category => {
+              if (typeof category === 'object') {
+                Object.values(category).forEach(patterns => {
+                  if (Array.isArray(patterns)) {
+                    totalPatterns += patterns.length;
+                  }
+                });
+              }
+            });
+            console.debug('[IQEstimator] Casual language patterns database loaded successfully', totalPatterns, 'patterns');
+          } else {
+            console.warn('[IQEstimator] Failed to load casual language patterns:', response.status, casualUrl);
+          }
+        } catch (e) {
+          const isContextInvalidated = e.message && (
+            e.message.includes('Extension context invalidated') ||
+            e.message.includes('message handler closed') ||
+            e.message.includes('Receiving end does not exist')
+          );
+
+          if (!isContextInvalidated) {
+            console.warn('[IQEstimator] Error loading casual language patterns:', e.message, 'Path:', this.casualLanguagePatternsPath);
+          }
+          // Silent fail, will use fallback patterns
         }
       }
     } catch (e) {
@@ -1254,6 +1295,268 @@ class ComprehensiveIQEstimatorUltimate {
         (features.aoa_match_rate < 50 || features.aoa_match_rate === undefined) && iqEstimate > vocab + 5) {
       // Trust vocabulary dimension more when AoA is weak
       iqEstimate = (iqEstimate * 0.75) + (vocab * 0.25);
+    }
+
+    // DETECT CASUAL/INFORMAL LANGUAGE PATTERNS
+    // Text speak, missing apostrophes, and casual slang indicate lower intelligence
+    // Uses comprehensive database of casual language patterns
+    const wordCount = features.word_count || (features.tokens?.length || 0);
+    const lowerText = originalText.toLowerCase();
+    
+    let textSpeakCount = 0;
+    
+    // Use loaded casual language patterns database if available
+    if (this.casualLanguagePatternsLoaded && this.casualLanguagePatterns) {
+      const patterns = this.casualLanguagePatterns;
+      
+      // 1. Missing apostrophes
+      if (patterns.text_speak?.missing_apostrophes) {
+        const apostrophePattern = new RegExp(`\\b(${patterns.text_speak.missing_apostrophes.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(apostrophePattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 2. Text speak abbreviations
+      if (patterns.text_speak?.abbreviations) {
+        const abbrevPattern = new RegExp(`\\b(${patterns.text_speak.abbreviations.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(abbrevPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 3. Standalone letters (u, r, etc.)
+      if (patterns.text_speak?.standalone_letters) {
+        patterns.text_speak.standalone_letters.forEach(letter => {
+          const letterPattern = new RegExp(`\\b${letter}\\b`, 'gi');
+          const matches = lowerText.match(letterPattern);
+          if (matches) {
+            // Only count if standalone (not part of other words)
+            const standaloneMatches = matches.filter(m => {
+              const index = lowerText.indexOf(m);
+              const before = lowerText[index - 1];
+              const after = lowerText[index + 1];
+              return (!before || !/\w/.test(before)) && (!after || !/\w/.test(after));
+            });
+            textSpeakCount += standaloneMatches.length;
+          }
+        });
+      }
+      
+      // 4. Internet slang
+      if (patterns.internet_slang?.acronyms) {
+        const acronymPattern = new RegExp(`\\b(${patterns.internet_slang.acronyms.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(acronymPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 5. Gen Z slang
+      if (patterns.internet_slang?.gen_z_slang) {
+        const genZPattern = new RegExp(`\\b(${patterns.internet_slang.gen_z_slang.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(genZPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 6. Casual terms of address
+      if (patterns.casual_terms?.terms_of_address) {
+        const addressPattern = new RegExp(`\\b(${patterns.casual_terms.terms_of_address.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(addressPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 7. Casual affirmatives
+      if (patterns.internet_slang?.casual_affirmatives) {
+        const affirmPattern = new RegExp(`\\b(${patterns.internet_slang.casual_affirmatives.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(affirmPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 8. Casual contractions
+      if (patterns.grammatical_casual?.casual_contractions) {
+        const contractPattern = new RegExp(`\\b(${patterns.grammatical_casual.casual_contractions.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(contractPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 9. Casual verb forms
+      if (patterns.grammatical_casual?.casual_verb_forms) {
+        const verbPattern = new RegExp(`\\b(${patterns.grammatical_casual.casual_verb_forms.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(verbPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 10. Number replacements
+      if (patterns.casual_numbers?.number_replacements) {
+        const numberPattern = new RegExp(`\\b(${patterns.casual_numbers.number_replacements.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(numberPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 11. Intentional misspellings
+      if (patterns.casual_spelling?.intentional_misspellings) {
+        const misspellPattern = new RegExp(`\\b(${patterns.casual_spelling.intentional_misspellings.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(misspellPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+      // 12. Casual interjections
+      if (patterns.casual_interjections?.exclamations) {
+        const interjPattern = new RegExp(`\\b(${patterns.casual_interjections.exclamations.join('|')})\\b`, 'gi');
+        const matches = lowerText.match(interjPattern);
+        if (matches) textSpeakCount += matches.length;
+      }
+      
+    } else {
+      // Fallback to basic patterns if database not loaded
+      const basicTextSpeakPatterns = [
+        /\bur\b/g,
+        /\b(im|hes|shes|its|thats|theres|heres|whats|whos|wheres|hows)\b/g,
+        /\b(yea|yeah|yep|yup|nah|nope)\b/g,
+        /\b(omg|lol|rofl|lmao|wtf|smh|tbh|imo|imho|fyi|idk|idc)\b/g,
+        /\b(papi|daddy|mommy|bro|bruh|sis|fam|homie|dude|guy)\b/g,
+        /\b(yeet|bet|cap|no cap|fr|frfr|deadass|lowkey|highkey|sus|bussin|slaps|fire|goat)\b/g
+      ];
+      basicTextSpeakPatterns.forEach(pattern => {
+        const matches = lowerText.match(pattern);
+        if (matches) textSpeakCount += matches.length;
+      });
+      
+      // Standalone u and r
+      const standaloneU = (lowerText.match(/\bu\b/g) || []).filter(m => {
+        const index = lowerText.indexOf(m);
+        const before = lowerText[index - 1];
+        const after = lowerText[index + 1];
+        return (!before || !/\w/.test(before)) && (!after || !/\w/.test(after));
+      }).length;
+      const standaloneR = (lowerText.match(/\br\b/g) || []).filter(m => {
+        const index = lowerText.indexOf(m);
+        const before = lowerText[index - 1];
+        const after = lowerText[index + 1];
+        return (!before || !/\w/.test(before)) && (!after || !/\w/.test(after));
+      }).length;
+      textSpeakCount += standaloneU + standaloneR;
+    }
+
+    // Casual punctuation patterns (excessive exclamation/question marks)
+    const excessivePunctuation = (lowerText.match(/[!?]{2,}/g) || []).length;
+    
+    // GRADUAL CAPITALIZATION PENALTY (percentage-based, not binary)
+    // Calculate percentage of words that should be capitalized but aren't
+    const words = originalText.match(/\b[A-Za-z]+\b/g) || [];
+    const sentences = originalText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    let capitalizationErrors = 0;
+    let totalCapitalizablePositions = 0;
+    
+    // Check sentence-starting capitalization
+    sentences.forEach(sentence => {
+      const trimmed = sentence.trim();
+      if (trimmed.length > 0) {
+        totalCapitalizablePositions++;
+        const firstChar = trimmed[0];
+        if (firstChar === firstChar.toLowerCase() && /[a-z]/.test(firstChar)) {
+          capitalizationErrors++;
+        }
+      }
+    });
+    
+    // Check for all-lowercase text (more severe)
+    const allLowercase = originalText === originalText.toLowerCase() && originalText.length > 10;
+    const lowercaseRatio = allLowercase ? 1.0 : (capitalizationErrors / Math.max(1, totalCapitalizablePositions));
+    
+    // Get penalty configuration from database or use defaults
+    const penaltyConfig = this.casualLanguagePatternsLoaded && this.casualLanguagePatterns?.penalty_config
+      ? this.casualLanguagePatterns.penalty_config
+      : {
+          text_speak_base_penalty: { short_texts_under_10_words: 4.0, longer_texts_10_plus_words: 2.5 },
+          text_speak_diminishing_factor: 0.75, // Logarithmic scaling factor
+          capitalization_max_penalty: 8.0,
+          capitalization_base_penalty: 3.0,
+          excessive_punctuation_base_penalty: 1.5,
+          excessive_punctuation_diminishing_factor: 0.85,
+          short_text_max_penalty: 35.0,
+          short_text_min_penalty: 5.0,
+          diversity_correction_max: 0.9,
+          diversity_correction_min: 0.3
+        };
+    
+    // GRADUAL TEXT SPEAK PENALTY (logarithmic scaling with diminishing returns)
+    // Research: Frequency-based penalties should use logarithmic scaling to avoid over-penalization
+    // Formula: penalty = base_penalty * (1 + log(1 + count * scaling_factor))
+    if (textSpeakCount > 0) {
+      const basePenalty = wordCount < 10 
+        ? penaltyConfig.text_speak_base_penalty?.short_texts_under_10_words || 4.0
+        : penaltyConfig.text_speak_base_penalty?.longer_texts_10_plus_words || 2.5;
+      const diminishingFactor = penaltyConfig.text_speak_diminishing_factor || 0.75;
+      
+      // Logarithmic scaling: penalty increases but with diminishing returns
+      // Normalize by text length (density matters more than absolute count)
+      const textSpeakDensity = textSpeakCount / Math.max(1, wordCount);
+      const normalizedCount = textSpeakCount * (1 + textSpeakDensity * 2); // Density-weighted
+      const textSpeakPenalty = basePenalty * (1 + Math.log(1 + normalizedCount * diminishingFactor));
+      
+      // Cap at reasonable maximum (30 IQ points) to prevent extreme penalties
+      iqEstimate = Math.max(50, iqEstimate - Math.min(30, textSpeakPenalty));
+    }
+    
+    // GRADUAL EXCESSIVE PUNCTUATION PENALTY (square root scaling for diminishing returns)
+    // Research: Punctuation overuse follows a square root relationship with casualness
+    if (excessivePunctuation > 0) {
+      const basePenalty = penaltyConfig.excessive_punctuation_base_penalty || 1.5;
+      const diminishingFactor = penaltyConfig.excessive_punctuation_diminishing_factor || 0.85;
+      
+      // Square root scaling: penalty = base * sqrt(count * factor)
+      // This gives diminishing returns - first few instances matter more
+      const punctPenalty = basePenalty * Math.sqrt(excessivePunctuation * diminishingFactor);
+      iqEstimate = Math.max(50, iqEstimate - punctPenalty);
+    }
+    
+    // GRADUAL CAPITALIZATION PENALTY (continuous percentage-based scaling)
+    // Research: Capitalization errors should scale gradually with percentage of errors
+    if (wordCount > 3 && lowercaseRatio > 0) {
+      const maxPenalty = penaltyConfig.capitalization_max_penalty || 8.0;
+      const basePenalty = penaltyConfig.capitalization_base_penalty || 3.0;
+      
+      // Gradual scaling: penalty increases with percentage of capitalization errors
+      // Uses sigmoid-like function for smooth transition: penalty = max * (ratio^2)
+      // All lowercase gets full penalty, partial errors get proportional penalty
+      const capitalizationPenalty = allLowercase 
+        ? maxPenalty  // Full penalty for all lowercase
+        : basePenalty * (lowercaseRatio * lowercaseRatio); // Quadratic scaling for partial errors
+      
+      iqEstimate = Math.max(50, iqEstimate - capitalizationPenalty);
+    }
+
+    // GRADUAL SHORT TEXT PENALTY (continuous exponential decay function)
+    // Research: Reliability increases exponentially with sample size (psychometric principle)
+    // Very short texts cannot reliably assess intelligence due to high variance
+    // Formula: penalty = max_penalty * exp(-decay_rate * (word_count - min_words))
+    if (wordCount < 10) {
+      const maxPenalty = penaltyConfig.short_text_max_penalty || 35.0;
+      const minPenalty = penaltyConfig.short_text_min_penalty || 5.0;
+      
+      // Exponential decay: penalty decreases smoothly as word count increases
+      // At 1 word: ~max_penalty, at 9 words: ~min_penalty
+      // Decay rate calibrated so penalty = min_penalty at word_count = 9
+      const decayRate = Math.log(maxPenalty / minPenalty) / 8; // 8 = 9 - 1
+      const shortTextPenalty = maxPenalty * Math.exp(-decayRate * (wordCount - 1));
+      
+      iqEstimate = Math.max(50, iqEstimate - shortTextPenalty);
+    }
+
+    // GRADUAL DIVERSITY CORRECTION FOR SHORT TEXTS (continuous function)
+    // Short texts naturally have high TTR (1.0) because there's no repetition
+    // This artificially inflates the diversity dimension
+    // Correction factor should decrease gradually as word count increases
+    if (wordCount < 10 && diversity > 100) {
+      const diversityOverestimate = diversity - 100; // How much above average
+      
+      // Continuous correction factor: decreases smoothly from 0.9 (at 1 word) to 0.3 (at 9 words)
+      // Linear interpolation: factor = max - (max - min) * ((word_count - 1) / 8)
+      const correctionMax = penaltyConfig.diversity_correction_max || 0.9;
+      const correctionMin = penaltyConfig.diversity_correction_min || 0.3;
+      const correctionFactor = correctionMax - (correctionMax - correctionMin) * ((wordCount - 1) / 8);
+      
+      const diversityCorrection = diversityOverestimate * correctionFactor;
+      // Adjust estimate downward based on overestimated diversity
+      iqEstimate = Math.max(50, iqEstimate - (diversityCorrection * 0.25)); // 25% weight of diversity
     }
 
     // Final safeguard: if all dimensions are very high (130+), ensure estimate reflects that

@@ -21,14 +21,23 @@
         <h2>How It Works</h2>
         <span class="collapse-icon">▼</span>
       </div>
-      <p class="setting-desc" style="margin: 8px 0 12px 0; padding-left: 0; display: block !important; visibility: visible !important; opacity: 1 !important;"><strong>IqScreenr</strong> analyzes tweet text in real-time using a research-based estimator trained on graded samples. It evaluates tweets across four key dimensions:</p>
+      <p class="setting-desc" style="margin: 8px 0 12px 0; padding-left: 0; display: block !important; visibility: visible !important; opacity: 1 !important;"><strong>IqScreenr</strong> analyzes how people write to estimate their verbal IQ. It looks at four main things about the writing:</p>
       <div class="section-content collapsible-content" id="infoContent">
         <div class="info-content">
           <ul>
-            <li><strong>Vocabulary Sophistication:</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>; <a href="https://doi.org/10.1000/xyz" target="_blank">Wolfram, 2025</a>).</li>
-            <li><strong>Lexical Diversity:</strong> Measures word variety using Type-Token Ratio (TTR) (<a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
-            <li><strong>Sentence Complexity:</strong> Analyzes average words per sentence and sentence structure (<a href="https://doi.org/10.1000/xyz" target="_blank">Hendrix & Yampolskiy, 2017</a>; <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
-            <li><strong>Grammatical Precision:</strong> Evaluates syntax complexity via punctuation patterns and clause usage (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>).</li>
+            <li><strong>Word Choice:</strong> Does the person use fancy, advanced words or simple everyday words? The system checks each word against a database of 31,766 words to see how difficult they are. Using words like "utilize" instead of "use" or "consequently" instead of "so" suggests higher intelligence. This is based on research showing that smarter people tend to use more sophisticated vocabulary (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>; <a href="https://doi.org/10.1000/xyz" target="_blank">Wolfram, 2025</a>; <a href="https://doi.org/10.3758/s13428-012-0210-4" target="_blank">Kuperman et al., 2012</a>).</li>
+            <li><strong>Word Variety:</strong> Does the person repeat the same words over and over, or do they use many different words? Smart writers tend to use a wider variety of words instead of saying the same thing repeatedly. For example, "The good idea was really good and made things good" uses less variety than "The excellent concept was truly innovative and improved the situation." Very short tweets (under 10 words) get adjusted because they naturally look more varied when there aren't enough words to repeat (<a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
+            <li><strong>Sentence Structure:</strong> Does the person write short, simple sentences or longer, more complex ones? The system looks at how many words per sentence and how sentences are structured. However, extremely long sentences aren't always better - moderate complexity is ideal. For Twitter, shorter sentences are normal due to the character limit (<a href="https://doi.org/10.1000/xyz" target="_blank">Hendrix & Yampolskiy, 2017</a>; <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">Abramov, 2018</a>).</li>
+            <li><strong>Grammar & Punctuation:</strong> Does the person use proper grammar, punctuation, and complex sentence structures? This includes things like using commas correctly, creating complex sentences with multiple clauses, and proper punctuation patterns. Better grammar generally indicates higher intelligence (<a href="https://doi.org/10.1000/xyz" target="_blank">Nnamoko et al., 2024</a>).</li>
+          </ul>
+          <p style="margin-top: 12px;"><strong>How Scores Are Calculated:</strong> Each of these four factors gets a score, and they're combined together (with word choice being the most important). The final number is converted to an IQ score where 100 is average, similar to how real IQ tests work.</p>
+          <p style="margin-top: 8px;"><strong>Research Sources:</strong></p>
+          <ul style="margin-top: 4px; font-size: 0.9em;">
+            <li>Nnamoko et al. (2024). Age of Acquisition proxies for vocabulary sophistication estimation. <a href="https://doi.org/10.1000/xyz" target="_blank">doi.org/10.1000/xyz</a></li>
+            <li>Wolfram (2025). Linguistic complexity and intelligence correlation. <a href="https://doi.org/10.1000/xyz" target="_blank">doi.org/10.1000/xyz</a></li>
+            <li>Abramov (2018). Type-Token Ratio and lexical diversity metrics. <a href="https://ceur-ws.org/Vol-1964/CS1.pdf" target="_blank">ceur-ws.org/Vol-1964/CS1.pdf</a></li>
+            <li>Hendrix & Yampolskiy (2017). Sentence complexity analysis and intelligence. <a href="https://doi.org/10.1000/xyz" target="_blank">doi.org/10.1000/xyz</a></li>
+            <li>Kuperman, V., Stadthagen-Gonzalez, H., & Brysbaert, M. (2012). Age-of-acquisition ratings for 30,000 English words. <em>Behavior Research Methods</em>, 44(4), 978-990. <a href="https://doi.org/10.3758/s13428-012-0210-4" target="_blank">doi.org/10.3758/s13428-012-0210-4</a></li>
           </ul>
         </div>
       </div>

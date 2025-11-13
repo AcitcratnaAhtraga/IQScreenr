@@ -104,6 +104,7 @@
         "content/data/dependency_depth_calibration.json",
         "content/data/metaphor_patterns.json",
         "content/data/population_norms.json",
+        "content/data/casual_language_patterns.json",
         "icons/Variants/Fullsize/IqGuessrT.png",
         "icons/Variants/Fullsize/IqGuessrTrspW.png"
       ],
