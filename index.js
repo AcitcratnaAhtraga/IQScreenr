@@ -11,6 +11,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if Chrome extension APIs are available (for future Chrome Web Store integration)
   const isChrome = typeof chrome !== 'undefined' && chrome.runtime;
 
+  // Set up download link immediately
+  downloadLink.href = 'IqScreenr.zip';
+  downloadLink.download = 'IqScreenr.zip';
+  
+  // Ensure download link works properly
+  downloadLink.addEventListener('click', (e) => {
+    // Allow the download to proceed - don't prevent default
+    // The browser will handle the download automatically
+  });
+
   // Handle install button click
   installButton.addEventListener('click', () => {
     // Check if we can use Chrome Web Store inline installation
@@ -32,19 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
       // Scroll to instructions if already shown
       installInstructions.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
-
-    // Set up download link
-    // You'll need to create a ZIP file of your extension and host it
-    // For now, this is a placeholder - replace with your actual download URL
-    downloadLink.href = '#'; // Replace with actual ZIP file URL
-    downloadLink.onclick = (e) => {
-      // If you have a ZIP file hosted, uncomment this:
-      // return true; // Allow download
-      
-      // Otherwise, show alert:
-      e.preventDefault();
-      alert('Please package your extension as a ZIP file and update the download link in landing-page.js');
-    };
   });
 
   // Alternative: Try to detect if extension is already installed
@@ -59,8 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // });
   }
 
-  // Smooth scroll for anchor links
+  // Smooth scroll for anchor links (only for links starting with #)
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    // Skip the download link
+    if (anchor.id === 'downloadLink') return;
+    
     anchor.addEventListener('click', function (e) {
       e.preventDefault();
       const target = document.querySelector(this.getAttribute('href'));

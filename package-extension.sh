@@ -61,6 +61,6 @@ echo "📁 Size: $(du -h $ZIP_FILE | cut -f1)"
 echo ""
 echo "Next steps:"
 echo "1. Upload $ZIP_FILE to your web server"
-echo "2. Update the download link in landing-page.js"
+echo "2. Update the download link in index.js"
 echo "3. Test the download on your landing page"
 
