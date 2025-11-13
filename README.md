@@ -189,12 +189,6 @@ Edit `styles/badge.css` to customize badge appearance, size, and positioning.
 - It may not accurately reflect actual IQ
 - Scores are relative to other tweets, not absolute measurements
 
-### Performance Issues
-
-- The extension processes tweets as they appear
-- If you notice slowdowns, try disabling "Show Linguistic Breakdown"
-- The extension uses debouncing to limit processing frequency
-
 ## License
 
 This extension is provided as-is for educational and demonstration purposes.

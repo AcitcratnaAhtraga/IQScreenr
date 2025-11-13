@@ -1,8 +1,6 @@
 # Ignore text-to-iq-estimator folder
 text-to-iq-estimator/
 
-# Ignore ADS_SETUP_GUIDE.md
-ADS_SETUP_GUIDE.md
 
 # Package files
 *.zip
