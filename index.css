@@ -458,6 +458,13 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+.button-icon-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .related-project-button:hover {
   background-color: #c0392b;
   transform: translateY(-2px);
