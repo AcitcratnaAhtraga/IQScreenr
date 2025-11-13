@@ -280,9 +280,10 @@ IQScreenr uses research-validated methods and data:
 
 ### Research Papers
 - Kuperman, V., Stadthagen-Gonzalez, H., & Brysbaert, M. (2012). Age-of-acquisition ratings for 30,000 English words. *Behavior Research Methods*, 44(4), 978-990.
-- Nnamoko et al. (2024). Age of Acquisition proxies for vocabulary sophistication estimation.
-- Abramov (2018). Type-Token Ratio and lexical diversity metrics.
-- Hendrix & Yampolskiy (2017). Sentence complexity analysis and intelligence.
+- Nnamoko et al. (2024). Age of Acquisition proxies for vocabulary sophistication estimation. https://doi.org/10.1016/j.nlp.2024.100094
+- Wolfram (2025). Linguistic complexity and intelligence correlation. https://doi.org/10.1038/s44271-025-00274-x
+- Abramov (2018). Type-Token Ratio and lexical diversity metrics. https://doi.org/10.18297/etd/2922
+- Hendrix, A., & Yampolskiy, R. (2017). Automated IQ Estimation from Writing Samples. https://ceur-ws.org/Vol-1964/CS1.pdf
 
 ### Methodology
 - **Z-Score Conversion**: Standard statistical method for IQ score standardization
