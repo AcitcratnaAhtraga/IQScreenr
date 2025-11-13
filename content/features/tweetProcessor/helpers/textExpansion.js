@@ -51,25 +51,46 @@
 
     if (alreadyExpanded) {
       const expandedTextRaw = extractTweetText(actualTweetElement);
-      return expandedTextRaw && removeUrlsFromText ? removeUrlsFromText(expandedTextRaw) : expandedTextRaw;
+      const result = expandedTextRaw && removeUrlsFromText ? removeUrlsFromText(expandedTextRaw) : expandedTextRaw;
+      return result;
     }
 
-    if (isTweetTruncated(actualTweetElement)) {
+    const isTruncated = isTweetTruncated(actualTweetElement);
+
+    if (isTruncated) {
+      // First try non-visual extraction as optimization (might get full text from DOM)
       let tweetText = tryExtractFullTextWithoutExpanding(actualTweetElement);
+      
       // Ensure URLs are removed
       if (tweetText && removeUrlsFromText) {
         tweetText = removeUrlsFromText(tweetText);
       }
 
       const baselineTextRaw = extractTweetText(actualTweetElement);
+      
       // Ensure URLs are removed from baseline text too
       const baselineText = baselineTextRaw && removeUrlsFromText ? removeUrlsFromText(baselineTextRaw) : baselineTextRaw;
       const baselineLength = baselineText ? baselineText.length : 0;
       const extractedLength = tweetText ? tweetText.length : 0;
-      const likelyTruncated = !tweetText ||
-                              Math.abs(extractedLength - baselineLength) < 100;
+      
+      // If we detected a "show more" button, we need to expand to get the full text
+      // Non-visual extraction might only get partial text from DOM
+      // Check if extracted text seems incomplete (ends abruptly, too short, or similar to baseline)
+      const textEndsAbruptly = tweetText && (
+        tweetText.endsWith('...') ||
+        tweetText.endsWith('…')
+      );
+      
+      // Determine if we should expand: if no text extracted, or difference is small, or ends abruptly
+      // More aggressive threshold: if extracted is less than 250 chars longer than baseline, likely incomplete
+      const shouldExpand = !tweetText ||
+                          Math.abs(extractedLength - baselineLength) < 250 ||
+                          textEndsAbruptly ||
+                          (baselineLength > 20 && extractedLength < baselineLength + 300);
 
-      if (likelyTruncated && baselineLength > 50) {
+      // Always expand if we detected truncation and baseline text exists
+      // This ensures we get the FULL text, not just what's visible in DOM
+      if (shouldExpand && baselineLength > 15) {
         // Ensure loading badge is in place before expanding
         let badgeToEnsure = loadingBadge;
         if (settings.showIQBadge) {
@@ -181,6 +202,7 @@
 
         // Expand text without visual expansion
         const expandedTextRaw = await extractFullTextWithoutVisualExpansion(actualTweetElement);
+        
         // Ensure URLs are removed from expanded text too
         const expandedText = expandedTextRaw && removeUrlsFromText ? removeUrlsFromText(expandedTextRaw) : expandedTextRaw;
 
@@ -237,11 +259,12 @@
         } else {
           return baselineText;
         }
-      } else if (!tweetText) {
-        return baselineText;
+      } else {
+        if (!tweetText) {
+          return baselineText;
+        }
+        return tweetText;
       }
-
-      return tweetText;
     }
 
     return currentText;

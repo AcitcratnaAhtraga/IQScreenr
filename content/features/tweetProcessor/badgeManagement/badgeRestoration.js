@@ -185,7 +185,7 @@
    * @param {Set} processedTweets - Set of processed tweets to update
    * @returns {boolean} Whether a badge was restored
    */
-  async function restoreFromCachedGuess(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets) {
+  async function restoreFromCachedGuess(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets, expandedText) {
     const settings = getSettings();
     if (!settings.showIQBadge) {
       return false;
@@ -227,6 +227,25 @@
     const cachedIQ = getCachedIQ(tweetHandle);
     if (!cachedIQ || cachedIQ.iq_estimate === undefined) {
       return false;
+    }
+
+    // CRITICAL: Validate cache against expanded text before restoring
+    // If cache was calculated with truncated text but we now have expanded text, invalidate cache
+    if (cachedIQ && expandedText) {
+      const cachedTextLength = cachedIQ.text_length;
+      const currentTextLength = expandedText.length;
+      
+      // If text_length is missing from cache, it's an old cache entry (before we stored text_length)
+      // If current text is significantly longer (>50 chars), it's likely expanded, so invalidate
+      if (cachedTextLength === undefined && currentTextLength > 300) {
+        return false;
+      }
+      
+      // If text lengths differ significantly (>5 chars), cache is stale (calculated with truncated text)
+      if (cachedTextLength !== undefined && Math.abs(cachedTextLength - currentTextLength) > 5) {
+        // Don't restore - let it recalculate with expanded text
+        return false;
+      }
     }
 
     // We have both cached guess and cached IQ - restore calculated badge directly
@@ -292,7 +311,7 @@
    * @param {Set} processedTweets - Set of processed tweets to update
    * @returns {boolean} Whether a badge was restored (and processing should stop)
    */
-  async function tryRestoreBadge(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets) {
+  async function tryRestoreBadge(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets, expandedText) {
     const settings = getSettings();
     if (!settings.showIQBadge) {
       return false;
@@ -315,6 +334,27 @@
     const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
 
     if (cachedRevealed) {
+      // CRITICAL: Validate cache against expanded text before restoring
+      // If cache was calculated with truncated text but we now have expanded text, invalidate cache
+      const cachedIQResult = await gameManager.getCachedRevealedIQResult(tweetId);
+      
+      if (cachedIQResult && cachedIQResult.result && expandedText) {
+        const cachedTextLength = cachedIQResult.result.text_length;
+        const currentTextLength = expandedText.length;
+        
+        // If text_length is missing from cache, it's an old cache entry (before we stored text_length)
+        // If current text is significantly longer (>50 chars), it's likely expanded, so invalidate
+        if (cachedTextLength === undefined && currentTextLength > 300) {
+          return false;
+        }
+        
+        // If text lengths differ significantly (>5 chars), cache is stale (calculated with truncated text)
+        if (cachedTextLength !== undefined && Math.abs(cachedTextLength - currentTextLength) > 5) {
+          // Don't restore - let it recalculate with expanded text
+          return false;
+        }
+      }
+      
       // Try to restore from revealed IQ (tweet-ID-based cache)
       const restored = await restoreFromRevealedIQ(actualTweetElement, outerElement, hasNestedStructure, tweetId, isNotificationsPage, processedTweets);
       if (restored) {
@@ -330,7 +370,7 @@
     // SECOND: Try to restore from cached guess + handle-based IQ cache
     // Only do this when IQGuessr is enabled (otherwise no guess badges should be shown)
     if (isGameModeEnabled) {
-      const restored = await restoreFromCachedGuess(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets);
+      const restored = await restoreFromCachedGuess(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets, expandedText);
       if (restored) {
         // Mark as analyzed and return early (skip calculation and all other processing)
         const { markAsAnalyzed } = getNestedTweetHandler();

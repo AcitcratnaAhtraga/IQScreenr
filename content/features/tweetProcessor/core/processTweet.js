@@ -223,11 +223,21 @@
       return;
     }
 
-    // FIRST: Check if we should restore a calculated badge (cached guess + cached IQ)
-    // This must happen BEFORE we create or convert any badges
+    // CRITICAL: Expand tweet text BEFORE badge restoration
+    // This ensures that badge restoration checks cache with the FULL expanded text,
+    // not the truncated text. If we restore before expanding, we'll restore badges
+    // calculated with truncated text, which is incorrect.
+    const { expandTweetText } = getTextExpansion();
+    let finalTweetText = tweetText;
+    if (expandTweetText) {
+      finalTweetText = await expandTweetText(actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage, tweetText, null);
+    }
+
+    // NOW: Check if we should restore a calculated badge (cached guess + cached IQ)
+    // This happens AFTER text expansion, so we check cache with the full expanded text
     const { tryRestoreBadge } = getBadgeRestoration();
     if (tryRestoreBadge) {
-      const restored = await tryRestoreBadge(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets);
+      const restored = await tryRestoreBadge(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets, finalTweetText);
       if (restored) {
         // Badge was restored, processing complete
         return;
@@ -314,12 +324,8 @@
       }
     }
 
-    // Expand tweet text if truncated
-    const { expandTweetText } = getTextExpansion();
-    let finalTweetText = tweetText;
-    if (expandTweetText) {
-      finalTweetText = await expandTweetText(actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage, tweetText, loadingBadge);
-    }
+    // Text expansion already happened above (before badge restoration)
+    // finalTweetText is already set to the expanded text
 
     // Ensure loading badge is in place before estimation
     if (settings.showIQBadge && loadingBadge) {

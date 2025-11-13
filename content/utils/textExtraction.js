@@ -489,8 +489,11 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
       const observer = new MutationObserver((mutations) => {
         // Check if text has expanded (length increased significantly)
         const currentText = extractTweetText(tweetElement);
+        const currentLength = currentText ? currentText.length : 0;
+        
         if (currentText && currentText.length > baselineLength + 50 && !expansionDetected) {
           expansionDetected = true;
+          
           // extractTweetText already removes URLs, but ensure it's cleaned
           fullText = removeUrlsFromText(currentText);
 
@@ -706,6 +709,8 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
         if (!expansionDetected) {
           observer.disconnect();
           const currentText = extractTweetText(tweetElement);
+          const currentLength = currentText ? currentText.length : 0;
+          
           if (currentText && currentText.length > capturedBaselineLength + 50) {
             // extractTweetText already removes URLs, but ensure it's cleaned
             const cleanedText = removeUrlsFromText(currentText);
@@ -771,6 +776,8 @@ async function extractFullTextWithoutVisualExpansion(tweetElement) {
           } else {
             resolve(null);
           }
+        } else {
+          resolve(fullText);
         }
       }, 500);
 
