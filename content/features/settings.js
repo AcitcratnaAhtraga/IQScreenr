@@ -100,6 +100,9 @@ function loadSettings() {
 function setupSettingsListener(onChange) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'sync') {
+      const debugLogging = settings.enableDebugLogging;
+      
+
       const relevantChanges = {};
 
       if (changes.showIQBadge) {

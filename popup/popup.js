@@ -932,6 +932,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const filterIQThresholdElement = document.getElementById('filterIQThreshold');
   if (filterIQThresholdElement) {
+    // Handle input events for immediate filtering as user types
+    filterIQThresholdElement.addEventListener('input', (e) => {
+      const value = parseInt(e.target.value, 10);
+      if (value >= 55 && value <= 145) {
+        chrome.storage.sync.set({ filterIQThreshold: value }, () => {
+          if (chrome.runtime.lastError) {
+            showStatus('Error saving setting', 'error');
+          } else {
+            showStatus('Settings saved', 'success');
+          }
+        });
+      }
+    });
+    // Also handle change events for when user finishes editing
     filterIQThresholdElement.addEventListener('change', (e) => {
       const value = parseInt(e.target.value, 10);
       if (value >= 55 && value <= 145) {
@@ -1162,15 +1176,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // Handle filterConfidenceThreshold input
   const filterConfidenceThresholdElement = document.getElementById('filterConfidenceThreshold');
   if (filterConfidenceThresholdElement) {
+    // Handle input events for immediate filtering as user types
     filterConfidenceThresholdElement.addEventListener('input', (e) => {
       const value = parseInt(e.target.value, 10);
       if (value >= 0 && value <= 100) {
         updateConfidenceColorPreview(value);
+        chrome.storage.sync.set({ filterConfidenceThreshold: value }, () => {
+          if (chrome.runtime.lastError) {
+            showStatus('Error saving setting', 'error');
+          } else {
+            showStatus('Settings saved', 'success');
+          }
+        });
       }
     });
+    // Also handle change events for when user finishes editing
     filterConfidenceThresholdElement.addEventListener('change', (e) => {
       const value = parseInt(e.target.value, 10);
       if (value >= 0 && value <= 100) {
+        updateConfidenceColorPreview(value);
         chrome.storage.sync.set({ filterConfidenceThreshold: value }, () => {
           if (chrome.runtime.lastError) {
             showStatus('Error saving setting', 'error');

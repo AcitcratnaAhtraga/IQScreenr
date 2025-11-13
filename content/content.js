@@ -138,6 +138,10 @@
 
     const hasFilterChange = filterSettings.some(setting => changes[setting] !== undefined);
     if (hasFilterChange) {
+      const settings = getSettings();
+      const debugLogging = settings.enableDebugLogging;
+
+
       const getIqFiltr = () => window.IqFiltr || {};
       const { applyFilterToVisibleTweets, revealAllMutedTweets } = getIqFiltr();
 
@@ -148,18 +152,18 @@
         }
       } else if (applyFilterToVisibleTweets) {
         // Apply filter immediately when settings change
-        // Use setTimeout to ensure settings are updated first
-        setTimeout(() => {
+        // Use requestAnimationFrame to ensure settings are updated and DOM is ready
+        requestAnimationFrame(() => {
           applyFilterToVisibleTweets();
-        }, 100);
+        });
       }
 
       // If filter mode changed from 'mute' to 'remove', remove all currently muted tweets that match filter
       if (changes.filterMode && changes.filterMode.oldValue === 'mute' && changes.filterMode.newValue === 'remove') {
         if (applyFilterToVisibleTweets) {
-          setTimeout(() => {
+          requestAnimationFrame(() => {
             applyFilterToVisibleTweets();
-          }, 150);
+          });
         }
       }
     }

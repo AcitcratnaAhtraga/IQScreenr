@@ -851,3 +851,145 @@ input[type="range"]::-moz-range-thumb {
   background: rgba(255, 255, 255, 0.5);
 }
 
+/* Ad Section Styles */
+.ad-section {
+  margin: 20px 0;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.ad-container {
+  position: relative;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-label {
+  font-size: 10px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.ad-content {
+  width: 100%;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom Ad Styles */
+.custom-ad-link {
+  text-decoration: none;
+  display: block;
+  width: 100%;
+  transition: transform 0.2s ease;
+}
+
+.custom-ad-link:hover {
+  transform: scale(1.02);
+}
+
+.custom-ad {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px;
+  border-radius: 6px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.custom-ad-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.custom-ad-text strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.custom-ad-text span {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* Text Ad Styles */
+.text-ad {
+  text-align: center;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  width: 100%;
+}
+
+.text-ad p {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #111827;
+}
+
+.text-ad p:first-child {
+  font-weight: 600;
+  color: #000000;
+}
+
+.ad-button {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 16px;
+  background: #000000;
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.ad-button:hover {
+  background: #333333;
+}
+
+/* Google AdSense responsive */
+.adsbygoogle {
+  display: block;
+  width: 100%;
+  min-height: 100px;
+}
+
+/* Dark mode for ads */
+@media (prefers-color-scheme: dark) {
+  .ad-section {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
+
+  .ad-label {
+    color: #6b7280;
+  }
+
+  .text-ad {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
+
+  .text-ad p {
+    color: #f9fafb;
+  }
+
+  .text-ad p:first-child {
+    color: #ffffff;
+  }
+}
+

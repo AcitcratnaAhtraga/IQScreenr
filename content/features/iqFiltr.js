@@ -260,6 +260,7 @@
           // 'above' direction: filter if confidence is greater than threshold
           matchesConfidenceThreshold = confidenceValue > confidenceThreshold;
         }
+
       }
     }
 
@@ -277,6 +278,7 @@
       // Only confidence enabled: filter if confidence matches
       shouldFilter = matchesConfidenceThreshold;
     }
+
 
     // Filter all post types (tweets, replies, quoted posts) - no type restriction
     return shouldFilter;
@@ -697,6 +699,7 @@
           revealMutedTweet(tweetElement);
         }
       }, true);
+
     }
 
     // Also allow clicking the placeholder itself
@@ -825,14 +828,16 @@
       return false;
     }
 
-    // Don't filter if manually revealed by user
-    if (tweetElement.hasAttribute('data-iq-manually-revealed')) {
-      return false;
-    }
-
     const shouldFilter = await shouldFilterTweet(tweetElement, iq, confidence);
+    const settings = getSettings();
+
     if (shouldFilter) {
-      const settings = getSettings();
+      // If tweet should be filtered, remove the manually-revealed flag if it exists
+      // This allows tweets to be re-filtered when filter settings change
+      if (tweetElement.hasAttribute('data-iq-manually-revealed')) {
+        tweetElement.removeAttribute('data-iq-manually-revealed');
+      }
+
       const filterMode = settings.filterMode || 'remove';
 
       if (filterMode === 'mute') {
@@ -844,6 +849,8 @@
     } else {
       // If tweet should not be filtered, check if it's currently muted and reveal it
       // But only if it wasn't manually revealed (user might have changed settings)
+      // Note: We still respect manually-revealed flag when revealing, but we clear it
+      // when filter settings change in applyFilterToVisibleTweets
       if (tweetElement.hasAttribute('data-iq-muted') && !tweetElement.hasAttribute('data-iq-manually-revealed')) {
         revealMutedTweet(tweetElement);
       }
@@ -884,6 +891,18 @@
       allTweets = Array.from(document.querySelectorAll('article'));
     }
 
+    // IMPORTANT: When filter settings change, clear the manually-revealed flag
+    // from all tweets so they can be re-evaluated with the new filter criteria
+    // This allows tweets that were previously revealed to be filtered again if they match
+    allTweets.forEach(tweetElement => {
+      if (tweetElement && tweetElement.hasAttribute('data-iq-manually-revealed')) {
+        tweetElement.removeAttribute('data-iq-manually-revealed');
+      }
+    });
+
+    let filteredCount = 0;
+    let checkedCount = 0;
+
     // Check each tweet that has an IQ result
     for (const tweetElement of allTweets) {
       // Skip if already removed or doesn't exist
@@ -907,7 +926,11 @@
               : null;
 
             // Check and filter this tweet
-            await checkAndFilter(tweetElement, iq, confidence);
+            checkedCount++;
+            const wasFiltered = await checkAndFilter(tweetElement, iq, confidence);
+            if (wasFiltered) {
+              filteredCount++;
+            }
           }
         }
         continue;
@@ -919,9 +942,15 @@
         ? iqResult.confidence
         : null;
 
-      await checkAndFilter(tweetElement, iq, confidence);
+      checkedCount++;
+      const wasFiltered = await checkAndFilter(tweetElement, iq, confidence);
+      if (wasFiltered) {
+        filteredCount++;
+      }
     }
+
   }
+
 
   // Export for use in other modules
   if (typeof window !== 'undefined') {
