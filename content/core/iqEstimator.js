@@ -999,11 +999,12 @@ class ComprehensiveIQEstimatorUltimate {
     let iq_estimate = this._combineDimensions(dimensions, features, isTweetLength);
     iq_estimate = this._finalCalibrationPass(iq_estimate, dimensions, features);
 
-    // Global upward bias: +20 points to compensate for systematic underestimation
-    // Research shows our methodologies tend to underestimate high-IQ texts
-    iq_estimate += 20;
+    // REMOVED: Global +20 bias was inflating all scores and making it impossible to see scores below 90
+    // The baselines (70, 70, 60, 53) already account for average performance at ~100 IQ
+    // Adding +20 to everything was pushing even poor tweets above 90
+    // If calibration is needed, it should be conditional or much smaller
 
-    // Cap after bias adjustment (keep display range at 55-145)
+    // Cap to keep display range at 55-145
     iq_estimate = Math.max(55, Math.min(145, iq_estimate));
 
     const confidence = this._computeConfidence(dimensions, features, words.length, text);
@@ -2164,8 +2165,9 @@ class ComprehensiveIQEstimatorUltimate {
       // Apply penalty: reduce the effective dependency depth
       if (runOnDepthPenalty > 0) {
         const adjustedDepDepth = Math.max(1.795, depDepth - runOnDepthPenalty);
-        // Recalculate IQ with adjusted depth
-        iq = 53 + (adjustedDepDepth - 1.795) * 80;
+        // Recalculate IQ with adjusted depth using z-score conversion (consistent with rest of codebase)
+        const adjustedZScore = (adjustedDepDepth - popMean) / popStdDev;
+        iq = 100 + (adjustedZScore * correlation * 15);
       }
 
       // Apply direct IQ penalty for obvious run-ons

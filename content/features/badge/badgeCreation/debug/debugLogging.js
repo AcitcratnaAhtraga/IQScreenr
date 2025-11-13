@@ -92,16 +92,38 @@
       console.log(`  Advanced Vocabulary (%): ${features.pct_advanced?.toFixed(1) || 'N/A'}%`);
       console.log(`  AoA Dictionary Match Rate: ${features.aoa_match_rate?.toFixed(1) || 0}%`);
     }
-    // Get population norms for display
+    // Get population norms for display (must match actual calculation)
     const vocabNorms = { mean: 9.02, stddev: 3.76 }; // From Kuperman AoA dictionary analysis
     const vocabZScore = features.mean_aoa !== undefined ? (features.mean_aoa - vocabNorms.mean) / vocabNorms.stddev : 0;
     const vocabCorrelation = 0.55; // Research-validated correlation
-    const vocabIQFromZ = 100 + (vocabZScore * vocabCorrelation * 15);
+    let vocabIQFromZ = 100 + (vocabZScore * vocabCorrelation * 15);
+    
+    // Calculate advanced boost (must match _vocabularyIQ method exactly)
+    const pctAdvanced = features.pct_advanced || 0;
+    const matchRate = features.aoa_match_rate || 0;
+    const isTweetLength = result.is_twitter_calibrated || false;
+    const aoaDictionaryLoaded = features.aoa_match_rate !== undefined && features.aoa_match_rate !== null;
+    
+    // Advanced boost calculation (matches actual method)
+    let advancedBoost = aoaDictionaryLoaded && matchRate > 50
+      ? (pctAdvanced / 100) * 1.0  // Full boost with good dictionary coverage
+      : (pctAdvanced / 100) * 0.8;  // Reduced boost with approximation
+    // Twitter adjustment: 20% boost for word efficiency in constrained space
+    if (isTweetLength) {
+      advancedBoost *= 1.2;
+    }
+    const vocabIQWithBoost = vocabIQFromZ + advancedBoost;
+    const finalVocabIQ = Math.max(50, Math.min(145, vocabIQWithBoost));
     
     console.log(`  Research-Validated Mapping (Z-Score Conversion):`);
     console.log(`    Population Norms: Mean AoA = ${vocabNorms.mean}, StdDev = ${vocabNorms.stddev}`);
     console.log(`    Z-Score: ${vocabZScore.toFixed(3)} = (${features.mean_aoa?.toFixed(2) || 'N/A'} - ${vocabNorms.mean}) / ${vocabNorms.stddev}`);
-    console.log(`    IQ = 100 + (z-score × correlation × 15) = 100 + (${vocabZScore.toFixed(3)} × ${vocabCorrelation} × 15) = ${vocabIQFromZ.toFixed(1)}`);
+    console.log(`    Base IQ = 100 + (z-score × correlation × 15) = 100 + (${vocabZScore.toFixed(3)} × ${vocabCorrelation} × 15) = ${vocabIQFromZ.toFixed(1)}`);
+    if (advancedBoost > 0) {
+      console.log(`    Advanced Vocabulary Boost: +${advancedBoost.toFixed(2)} pts (${pctAdvanced.toFixed(1)}% advanced words${isTweetLength ? ', Twitter 20% bonus' : ''})`);
+      console.log(`    = ${vocabIQFromZ.toFixed(1)} + ${advancedBoost.toFixed(2)} = ${vocabIQWithBoost.toFixed(1)}`);
+    }
+    console.log(`    Final Vocabulary IQ: ${finalVocabIQ.toFixed(1)} (clamped to 50-145)`);
     console.log(`    %cNote: Uses research-validated population norms and correlation coefficients`, 'color: #666; font-style: italic;');
 
     console.log(`%c🔤 Lexical Diversity Features:`, 'font-weight: bold; color: #3F51B5;');
@@ -237,7 +259,40 @@
       console.log(`  Research-Validated Mapping (Z-Score Conversion):`);
       console.log(`    Population Norms: Mean Dependency Depth = ${grammarNorms.mean}, StdDev = ${grammarNorms.stddev}`);
       console.log(`    Z-Score: ${grammarZScore.toFixed(3)} = (${originalDepDepth.toFixed(3)} - ${grammarNorms.mean}) / ${grammarNorms.stddev}`);
-      console.log(`    IQ = 100 + (z-score × correlation × 15) = 100 + (${grammarZScore.toFixed(3)} × ${grammarCorrelation} × 15) = ${grammarIQFromZ.toFixed(1)}`);
+      let grammarIQWithBoosts = grammarIQFromZ;
+      
+      // Show punctuation entropy boost (if applicable)
+      const punctEntropy = features.punctuation_entropy || 0;
+      const originalTextForGrammar = result.features?.original_text || text || '';
+      const wordCountForGrammar = features.word_count || tokens.length;
+      const parentheticalCount = (originalTextForGrammar.match(/\([^)]+\)/g) || []).length;
+      const parentheticalRatio = wordCountForGrammar > 0 ? parentheticalCount / wordCountForGrammar : 0;
+      if (punctEntropy > 2.0) {
+        let entropyBoost = (punctEntropy - 2.0) * 1.0;
+        if (parentheticalRatio > 0.05) {
+          entropyBoost *= (1 - parentheticalRatio * 10);
+        }
+        const finalEntropyBoost = Math.min(4, Math.max(0, entropyBoost));
+        if (finalEntropyBoost > 0) {
+          grammarIQWithBoosts += finalEntropyBoost;
+          console.log(`    Punctuation Entropy Boost: +${finalEntropyBoost.toFixed(2)} pts (entropy=${punctEntropy.toFixed(2)}${parentheticalRatio > 0.05 ? `, reduced for parenthetical-heavy text` : ''})`);
+        }
+      }
+      
+      // Show connective density boost (if applicable)
+      const connectiveDensity = features.connective_density || 0;
+      if (connectiveDensity > 0.08 && connectiveDensity < 0.20) {
+        const connectiveBoost = Math.min(3, (connectiveDensity - 0.08) * 25);
+        grammarIQWithBoosts += connectiveBoost;
+        console.log(`    Connective Density Boost: +${connectiveBoost.toFixed(2)} pts (density=${connectiveDensity.toFixed(4)}, optimal range)`);
+      }
+      
+      const finalGrammarIQ = Math.max(50, Math.min(145, grammarIQWithBoosts));
+      console.log(`    Base IQ = 100 + (z-score × correlation × 15) = 100 + (${grammarZScore.toFixed(3)} × ${grammarCorrelation} × 15) = ${grammarIQFromZ.toFixed(1)}`);
+      if (grammarIQWithBoosts !== grammarIQFromZ) {
+        console.log(`    With boosts: ${grammarIQWithBoosts.toFixed(1)}`);
+      }
+      console.log(`    Final Grammar IQ: ${finalGrammarIQ.toFixed(1)} (clamped to 50-145)`);
 
       // Show run-on adjustments for dependency depth
       const avgWordsForGrammar = features.avg_words_per_sentence || (sentences.length > 0 ? (tokens.length / sentences.length) : 0);
@@ -262,20 +317,21 @@
         iqPenalty += casualConnectiveCount * 8;
 
         if (depthPenalty > 0 || iqPenalty > 0) {
-          const adjustedDepth = Math.max(1.95, originalDepDepth - depthPenalty);
-          // Calculate using z-score conversion
+          const adjustedDepth = Math.max(1.795, originalDepDepth - depthPenalty); // Use 1.795 as minimum (matches actual code)
+          // Calculate using z-score conversion (must match actual calculation)
           const grammarNorms = { mean: 1.95, stddev: 0.35 };
           const grammarCorrelation = 0.45;
           const originalGrammarZScore = (originalDepDepth - grammarNorms.mean) / grammarNorms.stddev;
           const adjustedGrammarZScore = (adjustedDepth - grammarNorms.mean) / grammarNorms.stddev;
           const originalGrammarIQ = 100 + (originalGrammarZScore * grammarCorrelation * 15);
-          const adjustedGrammarIQ = 100 + (adjustedGrammarZScore * grammarCorrelation * 15);
-          const finalGrammarIQ = Math.max(50, adjustedGrammarIQ - iqPenalty);
+          let adjustedGrammarIQ = 100 + (adjustedGrammarZScore * grammarCorrelation * 15);
+          // Apply direct IQ penalty for run-ons
+          adjustedGrammarIQ = Math.max(50, adjustedGrammarIQ - iqPenalty);
 
           console.log(`  %c🚫 Run-on Adjustment (Dependency Depth):`, 'font-weight: bold; color: #F44336;');
           console.log(`    Depth Penalty: ${depthPenalty.toFixed(3)} → Adjusted Depth: ${adjustedDepth.toFixed(3)}`);
           console.log(`    Direct IQ Penalty: ${iqPenalty.toFixed(1)} points`);
-          console.log(`    Base Grammar IQ: ${originalGrammarIQ.toFixed(1)} → After adjustments: ${finalGrammarIQ.toFixed(1)}`);
+          console.log(`    Base Grammar IQ: ${originalGrammarIQ.toFixed(1)} → After depth adjustment: ${(100 + (adjustedGrammarZScore * grammarCorrelation * 15)).toFixed(1)} → After IQ penalty: ${adjustedGrammarIQ.toFixed(1)}`);
           console.log(`    %cNote: High dependency depth from run-ons (lack of punctuation) is penalized`, 'color: #666; font-style: italic;');
         }
       }
@@ -316,8 +372,12 @@
                   `(${(result.dimension_scores.lexical_diversity || 100).toFixed(1)} × ${weights.lexical_diversity.toFixed(2)}) + ` +
                   `(${(result.dimension_scores.sentence_complexity || 100).toFixed(1)} × ${weights.sentence_complexity.toFixed(2)}) + ` +
                   `(${(result.dimension_scores.grammatical_precision || 100).toFixed(1)} × ${weights.grammatical_precision.toFixed(2)})`);
-      console.log(`  = ${calculated.toFixed(2)} → Final: ${iq.toFixed(1)}`);
-      console.log(`  %cNote: IQ score is length-independent - quality matters, not quantity`, 'color: #666; font-style: italic;');
+      console.log(`  = ${calculated.toFixed(2)}`);
+      console.log(`  %cNote: This is the weighted combination. Final IQ may include additional adjustments from final calibration pass (sophisticated content bonuses, high-IQ calibration, etc.)`, 'color: #666; font-style: italic;');
+      console.log(`  Final IQ (after all adjustments): ${iq.toFixed(1)}`);
+      if (Math.abs(calculated - iq) > 2) {
+        console.log(`  %c⚠️ Note: Final IQ differs from weighted combination by ${Math.abs(calculated - iq).toFixed(1)} points due to final calibration adjustments`, 'color: #FF9800; font-style: italic;');
+      }
 
       // Show run-on penalty notice if applicable
       const hasRunOnPenalty = (sentenceCount === 1 && avgWords > 15 &&
@@ -687,33 +747,88 @@
         }
       }
 
-      // Calculate gaming penalty (must match actual calculation)
+      // Calculate gaming penalty (must match actual calculation exactly)
+      // NOTE: This must match _computeConfidence method in iqEstimator.js
       let gamingPenalty = 0;
       const repetitionRatio = wordCount > 0 ? (wordCount - uniqueWords) / wordCount : 0;
+      
+      // Detect sophisticated content to reduce repetition penalties (must match actual calculation)
+      // This checks for metaphors, abstract concepts, and structured organization
+      const originalText = result.features?.original_text || text || '';
+      const lowerText = originalText.toLowerCase();
+      let metaphorCount = 0;
+      let abstractCount = 0;
+      let hasStructure = false;
+      
+      // Basic sophisticated content detection (simplified version matching actual logic)
+      const metaphorPatterns = /\b(metaphor|analogy|symbol|symbolic|represent|embody|reflect|mirror|echo|resonate)\b/gi;
+      const abstractPatterns = /\b(thought|thinking|pattern|process|mechanism|system|structure|framework|concept|idea|notion|principle|theory|approach|method|strategy|technique)\b/gi;
+      const structurePatterns = /(^|\n)[\s]*[-•*]\s+|\d+\.\s+|(first|second|third|finally|in conclusion|to summarize)/i;
+      
+      metaphorCount = (originalText.match(metaphorPatterns) || []).length;
+      abstractCount = (originalText.match(abstractPatterns) || []).length;
+      hasStructure = structurePatterns.test(originalText);
+      
+      const sophisticatedContent = {
+        hasSophisticatedMarkers: metaphorCount >= 2 || abstractCount >= 5 || (hasStructure && wordCount > 200)
+      };
+      
+      // Repetition penalties with sophisticated content reduction (must match exactly)
       if (repetitionRatio > 0.6 && wordCount > 30) {
-        gamingPenalty += 15;
+        let penalty = 15; // Highly repetitive = weak signal
+        if (wordCount > 200 && sophisticatedContent.hasSophisticatedMarkers) {
+          penalty *= 0.4; // Reduce penalty significantly for sophisticated longer texts
+        } else if (wordCount > 150 && sophisticatedContent.hasSophisticatedMarkers) {
+          penalty *= 0.6; // Reduce penalty moderately
+        }
+        gamingPenalty += penalty;
       } else if (repetitionRatio > 0.5 && wordCount > 20) {
-        gamingPenalty += 10;
+        let penalty = 10; // Moderately repetitive
+        if (wordCount > 200 && sophisticatedContent.hasSophisticatedMarkers) {
+          penalty *= 0.5;
+        } else if (wordCount > 150 && sophisticatedContent.hasSophisticatedMarkers) {
+          penalty *= 0.7;
+        }
+        gamingPenalty += penalty;
       } else if (repetitionRatio > 0.4 && wordCount > 15) {
-        gamingPenalty += 5;
+        let penalty = 5; // Some repetition
+        if (wordCount > 200 && sophisticatedContent.hasSophisticatedMarkers) {
+          penalty *= 0.6;
+        }
+        gamingPenalty += penalty;
       }
       
       // Check for fragmentary text
       const avgWordsPerSentence = features.avg_words_per_sentence || (sentences.length > 0 ? (tokens.length / sentences.length) : 0);
       if (avgWordsPerSentence < 4 && sentenceCount > 3) {
-        gamingPenalty += 10;
+        gamingPenalty += 10; // Fragmentary text = weak signal
       }
       
-      // Run-on confidence penalty (if applicable)
+      // Run-on confidence penalty (if applicable) - must match actual calculation
       let runOnConfidencePenalty = 0;
       if (sentenceCount === 1 && avgWordsPerSentence > 15) {
+        // Low punctuation density indicates run-on, not sophisticated structure
         if (punctuationDensity < 0.05) {
-          runOnConfidencePenalty += (avgWordsPerSentence - 15) * 0.3 + 10;
+          // Very likely a run-on - significant penalty
+          runOnConfidencePenalty += (avgWordsPerSentence - 15) * 0.3; // Scale with length
+          runOnConfidencePenalty += 10; // Base penalty for run-on pattern
         } else if (punctuationDensity < 0.10) {
-          runOnConfidencePenalty += (avgWordsPerSentence - 15) * 0.15 + 5;
+          // Possibly a run-on
+          runOnConfidencePenalty += (avgWordsPerSentence - 15) * 0.15;
+          runOnConfidencePenalty += 5;
         }
-        if (startsWithCasual) runOnConfidencePenalty += 8;
-        runOnConfidencePenalty += casualConnectiveCount * 5;
+
+        // Additional penalty for casual connectives (confirms casual speech pattern)
+        if (startsWithCasual) {
+          runOnConfidencePenalty += 8; // Starting with "And also" = casual, less reliable
+        }
+        runOnConfidencePenalty += casualConnectiveCount * 5; // Each casual connective reduces reliability
+
+        // Parenthetical-heavy pattern
+        const parentheticalCount = (originalText.match(/\([^)]+\)/g) || []).length;
+        if (parentheticalCount >= 4) {
+          runOnConfidencePenalty += 8; // Casual run-on pattern
+        }
       }
       gamingPenalty += runOnConfidencePenalty;
 
