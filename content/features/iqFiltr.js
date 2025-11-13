@@ -520,8 +520,11 @@
   /**
    * Mute a tweet element - hide content and show placeholder matching X's muted post style
    * @param {HTMLElement} tweetElement - The tweet element to mute
+   * @param {number|null} iq - Optional IQ score (for generating filter message)
+   * @param {string|null} filterDirection - Optional filter direction ('below' or 'above')
+   * @param {number|null} filterThreshold - Optional filter threshold
    */
-  function muteTweetElement(tweetElement) {
+  function muteTweetElement(tweetElement, iq = null, filterDirection = null, filterThreshold = null) {
     if (!tweetElement || !tweetElement.parentElement) {
       return;
     }
@@ -706,6 +709,21 @@
       return;
     }
 
+    // Generate filter message based on IQ and filter direction
+    let filterMessage = 'This post has been filtered.';
+    if (iq !== null && iq !== undefined && filterDirection && filterThreshold !== null && filterThreshold !== undefined) {
+      const settings = getSettings();
+      const useIQ = settings.useIQInFilter !== false; // Default to true
+      
+      if (useIQ) {
+        if (filterDirection === 'below') {
+          filterMessage = `This post has been muted for being too low IQ (< ${filterThreshold} IQ).`;
+        } else if (filterDirection === 'above') {
+          filterMessage = `This post has been muted for being too high IQ (> ${filterThreshold} IQ).`;
+        }
+      }
+    }
+
     // Create placeholder matching X's exact styling
     const placeholder = document.createElement('div');
     placeholder.className = 'css-175oi2r r-1iusvr4 r-16y2uox r-1777fci';
@@ -716,7 +734,7 @@
           <div class="css-175oi2r r-1adg3ll r-1wbh5a2 r-jusfrs">
             <div dir="auto" class="css-146c3p1 r-bcqeeo r-1ttztb7 r-qvutc0 r-37j5jr r-a023e6 r-rjixqe r-16dba41" style="color: rgb(113, 118, 123);">
               <span dir="ltr" class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3 r-1udh08x">
-                <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3">This post has been filtered.</span>
+                <span class="css-1jxf684 r-bcqeeo r-1ttztb7 r-qvutc0 r-poiln3">${filterMessage}</span>
               </span>
             </div>
           </div>
@@ -1092,6 +1110,7 @@
       if (shouldFilter) {
         const settings = getSettings();
         if (settings.filterMode === 'mute') {
+          // For invalid tweets, we don't have valid IQ data, so use generic message
           await muteTweetElement(tweetElement);
         } else {
           await removeTweetElement(tweetElement);
@@ -1119,7 +1138,10 @@
       const filterMode = settings.filterMode || 'remove';
 
       if (filterMode === 'mute') {
-        muteTweetElement(tweetElement);
+        // Pass IQ and filter settings to show appropriate message
+        const filterDirection = settings.filterDirection || 'below';
+        const filterThreshold = settings.filterIQThreshold || 100;
+        muteTweetElement(tweetElement, iq, filterDirection, filterThreshold);
       } else {
         removeTweetElement(tweetElement);
       }
