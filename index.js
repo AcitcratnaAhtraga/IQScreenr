@@ -65,7 +65,32 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       const target = document.querySelector(this.getAttribute('href'));
       if (target) {
+        // Expand the section if it's collapsed
+        if (target.classList.contains('collapsed')) {
+          const toggle = target.querySelector('.legal-toggle');
+          const content = target.querySelector('.legal-content');
+          if (toggle && content) {
+            target.classList.remove('collapsed');
+            content.style.display = 'block';
+          }
+        }
         target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Toggle legal sections when clicking the title
+  document.querySelectorAll('.legal-toggle').forEach(toggle => {
+    toggle.addEventListener('click', function() {
+      const section = this.closest('.legal-section');
+      const content = section.querySelector('.legal-content');
+      
+      if (section.classList.contains('collapsed')) {
+        section.classList.remove('collapsed');
+        content.style.display = 'block';
+      } else {
+        section.classList.add('collapsed');
+        content.style.display = 'none';
       }
     });
   });
