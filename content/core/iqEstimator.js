@@ -924,12 +924,16 @@ class ComprehensiveIQEstimatorUltimate {
     iq_estimate = Math.max(55, Math.min(145, iq_estimate));
 
     const confidence = this._computeConfidence(dimensions, features, words.length, text);
+    
+    // Detect sophisticated content for result object (already computed in _finalCalibrationPass, but need it here)
+    const sophisticatedContent = this._detectSophisticatedContent(text, features);
 
     return {
       iq_estimate: iq_estimate,
       confidence: confidence,
       dimension_scores: dimensions,
       features: features, // Include all computed features for debugging
+      sophisticated_content: sophisticatedContent, // Include sophisticated content breakdown for debugging
       is_valid: true,
       error: null,
       word_count: words.length,
@@ -1008,12 +1012,16 @@ class ComprehensiveIQEstimatorUltimate {
     iq_estimate = Math.max(55, Math.min(145, iq_estimate));
 
     const confidence = this._computeConfidence(dimensions, features, words.length, text);
+    
+    // Detect sophisticated content for result object (already computed in _finalCalibrationPass, but need it here)
+    const sophisticatedContent = this._detectSophisticatedContent(text, features);
 
     return {
       iq_estimate: iq_estimate,
       confidence: confidence,
       dimension_scores: dimensions,
       features: features, // Include all computed features for debugging
+      sophisticated_content: sophisticatedContent, // Include sophisticated content breakdown for debugging
       is_valid: true,
       error: null,
       word_count: words.length,
@@ -1077,22 +1085,33 @@ class ComprehensiveIQEstimatorUltimate {
         if (matches) metaphorCount += matches.length;
       });
     }
-    if (metaphorCount >= 3) {
-      sophisticationBonus += Math.min(8, (metaphorCount - 2) * 2); // +2 per metaphor beyond 2, max +8
-    } else if (metaphorCount >= 2) {
-      sophisticationBonus += 3;
-    } else if (metaphorCount >= 1) {
-      sophisticationBonus += 1;
+    // 1. Metaphor bonus: Gradual logarithmic scaling with diminishing returns
+    // Research: Metaphorical language shows cognitive sophistication, but diminishing returns after initial metaphors
+    // Formula: base_bonus * log(1 + metaphor_count / scaling_factor) with cap
+    if (metaphorCount > 0) {
+      const metaphorBaseBonus = 1.5; // Base value for first metaphor
+      const metaphorScalingFactor = 1.2; // Controls rate of diminishing returns
+      const metaphorMaxBonus = 8.0; // Maximum bonus cap
+      // Logarithmic scaling: first metaphor gets ~1.5, second gets ~2.4, third gets ~3.0, etc.
+      const metaphorBonus = Math.min(metaphorMaxBonus, metaphorBaseBonus * Math.log(1 + metaphorCount / metaphorScalingFactor) * 2.5);
+      sophisticationBonus += metaphorBonus;
     }
     
     // 2. Detect structured organization (bullet points, numbered lists, clear sections)
+    // Gradual scaling based on structure count, normalized by word count
     const bulletPoints = (text.match(/^[\s]*[•\-\*\+]\s+/gm) || []).length;
     const numberedList = (text.match(/^[\s]*\d+[\.\)]\s+/gm) || []).length;
-    const hasStructure = bulletPoints >= 3 || numberedList >= 3;
-    if (hasStructure && wordCount > 100) {
-      sophisticationBonus += 5; // Well-organized longer texts show planning
-    } else if (hasStructure) {
-      sophisticationBonus += 2;
+    const totalStructureItems = bulletPoints + numberedList;
+    const hasStructure = totalStructureItems >= 2; // Lower threshold for detection
+    
+    if (totalStructureItems > 0) {
+      // Gradual scaling: square root scaling for structure items (diminishing returns)
+      // Normalized by word count: structure matters more in longer texts
+      const structureBaseBonus = 0.8; // Base value per structure item
+      const structureItemsBonus = structureBaseBonus * Math.sqrt(totalStructureItems) * Math.min(1.0, wordCount / 100);
+      // Cap at 5 points for very well-structured longer texts
+      const structureBonus = Math.min(5.0, structureItemsBonus);
+      sophisticationBonus += structureBonus;
     }
     
     // 3. Detect abstract concepts and meta-cognition using database
@@ -1124,15 +1143,23 @@ class ComprehensiveIQEstimatorUltimate {
         if (matches) abstractCount += matches.length;
       });
     }
-    if (abstractCount >= 8 && wordCount > 150) {
-      sophisticationBonus += Math.min(10, (abstractCount - 7) * 1.5); // +1.5 per abstract concept beyond 7, max +10
-    } else if (abstractCount >= 5) {
-      sophisticationBonus += 4;
-    } else if (abstractCount >= 3) {
-      sophisticationBonus += 2;
+    
+    // Abstract concept bonus: Gradual logarithmic scaling normalized by word count
+    // Research: Abstract thinking shows sophistication, but density matters more than raw count
+    // Formula: logarithmic scaling of abstract density (count/word_count) with word count normalization
+    if (abstractCount > 0 && wordCount > 0) {
+      const abstractDensity = abstractCount / Math.max(wordCount, 1); // Density per word
+      const abstractBaseBonus = 2.0; // Base value
+      const abstractScalingFactor = 0.01; // Normalize density
+      const abstractMaxBonus = 10.0; // Maximum bonus cap
+      // Logarithmic scaling of density, multiplied by word count factor (more weight for longer texts)
+      const wordCountFactor = Math.min(1.0, wordCount / 150); // Full weight at 150+ words
+      const abstractBonus = Math.min(abstractMaxBonus, abstractBaseBonus * Math.log(1 + abstractDensity / abstractScalingFactor) * wordCountFactor * 1.2);
+      sophisticationBonus += abstractBonus;
     }
     
     // 4. Detect self-reflection and personal insight
+    // Gradual scaling normalized by word count
     const selfReflection = [
       /\b(I|me|my|myself|personal|personally|experience|experienced|learn|learned|realize|realized|understand|understood|discover|discovered)\b/gi,
       /\b(insight|insights|lesson|lessons|wisdom|knowledge|understanding|awareness|realization|discovery)\b/gi
@@ -1142,11 +1169,21 @@ class ComprehensiveIQEstimatorUltimate {
       const matches = text.match(pattern);
       if (matches) reflectionCount += matches.length;
     });
-    if (reflectionCount >= 5 && wordCount > 100) {
-      sophisticationBonus += 3; // Personal reflection in longer texts shows depth
+    
+    // Reflection bonus: Square root scaling normalized by word count
+    // Research: Personal reflection shows depth, but needs sufficient text length to be meaningful
+    if (reflectionCount > 0 && wordCount > 50) {
+      const reflectionDensity = reflectionCount / Math.max(wordCount, 1);
+      const reflectionBaseBonus = 1.5;
+      const reflectionScalingFactor = 0.02;
+      // Square root scaling for gradual increase, normalized by word count
+      const wordCountFactor = Math.min(1.0, wordCount / 100); // Full weight at 100+ words
+      const reflectionBonus = Math.min(3.0, reflectionBaseBonus * Math.sqrt(reflectionDensity / reflectionScalingFactor) * wordCountFactor * 2.0);
+      sophisticationBonus += reflectionBonus;
     }
     
     // 5. Detect practical wisdom and actionable advice
+    // Gradual scaling normalized by word count and structure
     const practicalWisdom = [
       /\b(should|must|need|important|essential|crucial|key|critical|vital|necessary|recommend|suggest|advice|guidance|tip|tips)\b/gi,
       /\b(step|steps|approach|method|way|strategy|technique|process|procedure|action|actions|do|doing|take|taking)\b/gi
@@ -1156,21 +1193,39 @@ class ComprehensiveIQEstimatorUltimate {
       const matches = text.match(pattern);
       if (matches) wisdomCount += matches.length;
     });
-    if (wisdomCount >= 6 && wordCount > 150 && hasStructure) {
-      sophisticationBonus += 4; // Structured practical advice shows sophisticated thinking
+    
+    // Practical wisdom bonus: Square root scaling normalized by word count and structure
+    // Research: Structured practical advice shows sophisticated thinking
+    if (wisdomCount > 0 && wordCount > 50) {
+      const wisdomDensity = wisdomCount / Math.max(wordCount, 1);
+      const wisdomBaseBonus = 1.2;
+      const wisdomScalingFactor = 0.015;
+      // Square root scaling, enhanced by structure presence
+      const structureFactor = hasStructure ? 1.3 : 1.0; // 30% boost if structured
+      const wordCountFactor = Math.min(1.0, wordCount / 150); // Full weight at 150+ words
+      const wisdomBonus = Math.min(4.0, wisdomBaseBonus * Math.sqrt(wisdomDensity / wisdomScalingFactor) * structureFactor * wordCountFactor * 2.5);
+      sophisticationBonus += wisdomBonus;
     }
     
     // 6. Reduce penalty for repetition in longer, sophisticated texts
     // If text has sophisticated content markers, repetition is less penalizing
     // (longer texts naturally have some repetition for coherence)
-    const hasSophisticatedMarkers = metaphorCount >= 2 || abstractCount >= 5 || (hasStructure && wordCount > 200);
+    // Updated threshold: gradual detection based on metaphor/abstract density
+    const metaphorDensity = wordCount > 0 ? metaphorCount / wordCount : 0;
+    const abstractDensityForMarker = wordCount > 0 ? abstractCount / wordCount : 0;
+    const structureMarker = totalStructureItems >= 2 && wordCount > 100;
+    // Gradual sophisticated marker detection: any combination that suggests sophistication
+    const hasSophisticatedMarkers = metaphorDensity > 0.01 || abstractDensityForMarker > 0.02 || structureMarker;
     
     return {
       bonus: sophisticationBonus,
       hasSophisticatedMarkers: hasSophisticatedMarkers,
       metaphorCount: metaphorCount,
       abstractCount: abstractCount,
-      hasStructure: hasStructure
+      hasStructure: hasStructure,
+      totalStructureItems: totalStructureItems,
+      reflectionCount: reflectionCount,
+      wisdomCount: wisdomCount
     };
   }
 

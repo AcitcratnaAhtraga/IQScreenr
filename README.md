@@ -1,164 +1,130 @@
-# 🧠 IQScreenr - Tweet Text IQ Analyzer
+# 🧠 IQScreenr
 
-A Chrome extension that analyzes tweets on X.com (Twitter) and displays estimated verbal IQ scores with color-coded badges. Uses research-validated linguistic metrics and z-score conversion for accurate IQ estimation.
+> **Real-time verbal IQ analysis for Twitter/X tweets**  
+> A privacy-first browser extension that analyzes tweet text using research-validated linguistic metrics and displays estimated IQ scores with color-coded badges.
 
-## Features
+[![License](https://img.shields.io/badge/license-Custom-blue.svg)](LICENSE)
+[![Chrome](https://img.shields.io/badge/Chrome-Extension-green.svg)](https://chrome.google.com/webstore)
+[![Privacy](https://img.shields.io/badge/Privacy-Client--side-brightgreen.svg)](https://iqscreenr.win)
 
-- **Real-time Analysis**: Automatically analyzes tweets as you scroll
-- **IQ Scoring**: Estimates verbal IQ from 60-145+ based on linguistic features
-- **Color-coded Badges**: Gradient colors from red (simpler) to green (complex)
-- **Research-Validated Metrics**: Uses z-score conversion with population norms
+---
+
+## ✨ Features
+
+### 🎯 Core Functionality
+- **Real-time Analysis**: Automatically analyzes tweets as you scroll through your Twitter/X feed
+- **IQ Scoring**: Estimates verbal IQ from 60-145+ based on comprehensive linguistic analysis
+- **Confidence-Based Colors**: Visual gradient indicators from red (low confidence) to green (high confidence)
+- **Privacy-first**: All processing happens client-side in your browser - no data sent anywhere
+
+### 🔬 Research-Validated
+- **Z-Score Conversion**: Uses population norms and correlation coefficients from linguistic research
+- **4-Dimensional Analysis**: Vocabulary Sophistication, Lexical Diversity, Sentence Complexity, Grammatical Precision
+- **31,766-Word Dictionary**: Age of Acquisition (AoA) database from Kuperman et al. research
 - **Sophisticated Content Detection**: Recognizes metaphors, abstract concepts, and structured organization
-- **Customizable Settings**: Toggle badges, breakdown info, and adjust scoring scale
-- **Hover Details**: Detailed linguistic breakdown on badge hover (enabled by default)
-- **Developer Mode**: Press `CTRL+I+Q` to enable dev mode with detailed debugging
 
-## Installation
+### 🎮 Interactive Features
+- **IqGuessr Game Mode**: Guess the IQ of tweets before revealing scores
+- **IqFiltr Filtering**: Filter tweets by IQ range to focus on specific content quality
+- **Developer Mode**: Press `CTRL+I+Q` for detailed debugging and analysis breakdowns
+- **Hover Details**: Comprehensive linguistic breakdown on badge hover (enabled by default)
 
-### Step 1: Prepare Icons
+### ⚙️ Customization
+- **Toggle Badges**: Show/hide IQ scores on demand
+- **Adjustable Scale**: Customize minimum and maximum IQ display range (default: 60-145)
+- **Confidence Display**: Badge colors always reflect confidence levels (0-100%)
+- **Linguistic Breakdown**: Enable/disable detailed analysis tooltips
+- **Cache Management**: Clear cached scores for recalculation
 
-You'll need to create icon files for the extension. Create three PNG images:
-- `icons/icon16.png` (16x16 pixels)
-- `icons/icon48.png` (48x48 pixels)
-- `icons/icon128.png` (128x128 pixels)
+---
 
-You can use any image editor or online tools to create a brain emoji (🧠) icon or any design you prefer.
+## 🚀 Quick Start
 
-### Step 2: Load the Extension
+### Installation
 
-1. Open Chrome and navigate to `chrome://extensions/`
-2. Enable "Developer mode" (toggle in the top-right corner)
-3. Click "Load unpacked"
-4. Select the `IQScreenr` folder (this directory)
-5. The extension should now appear in your extensions list
+1. **Download the Extension**
+   - Clone this repository or download the ZIP file
+   - Extract to a folder on your computer
 
-### Step 3: Verify Installation
+2. **Load in Chrome/Edge/Brave**
+   - Open `chrome://extensions/` (or `edge://extensions/` for Edge)
+   - Enable "Developer mode" (toggle in top-right)
+   - Click "Load unpacked"
+   - Select the `IQScreenr` folder
 
-1. Navigate to https://x.com or https://twitter.com
-2. The extension will automatically start analyzing tweets
-3. You should see IQ badges (🧠 IQ XX) appearing next to tweets
+3. **Verify Installation**
+   - Navigate to [x.com](https://x.com) or [twitter.com](https://twitter.com)
+   - IQ badges should automatically appear next to tweets
+   - Click the extension icon in your toolbar to access settings
 
-## Usage
+### First Use
 
-### Viewing IQ Scores
+1. Visit Twitter/X and scroll through your feed
+2. Watch IQ badges appear next to each tweet
+3. Hover over badges to see detailed linguistic breakdowns
+4. Open browser console (F12) while hovering for comprehensive debug logs
 
-IQ badges appear automatically next to each tweet. The color indicates the complexity:
-- **Red (60-70)**: Very simple phrasing
-- **Orange (70-85)**: Simple phrasing
-- **Yellow-Orange (85-95)**: Below average
-- **Yellow (95-105)**: Average
-- **Yellow-Green (105-115)**: Above average
-- **Light Green (115-125)**: High complexity
-- **Green (125-135)**: Very high complexity
-- **Dark Green (135-145)**: Superior complexity
-- **Very Dark Green (145+)**: Exceptional complexity
+---
 
-### Settings
+## 📊 How It Works
 
-Click the extension icon in your Chrome toolbar to open the settings popup:
+### The Science Behind IQ Estimation
 
-- **Show IQ Badge**: Toggle to show/hide IQ scores
-- **Show Linguistic Breakdown**: Enable/disable detailed analysis on badge hover (on by default)
-- **Scoring Scale**: Adjust minimum and maximum IQ values (default: 60-145)
-- **Clear Cache**: Clear all cached IQ scores and recalculation data
+IQScreenr uses a **research-validated estimator** that analyzes four key dimensions of written language:
 
-The linguistic breakdown includes:
-- **Vocabulary**: Age of Acquisition (AoA), advanced vocabulary percentage
-- **Word Length**: Average characters per word
-- **Syllables**: Average syllables per word
-- **Sentence Structure**: Average words per sentence, variance
-- **Readability**: Flesch-Kincaid, SMOG, ARI, LIX indices
-- **Syntax Complexity**: Dependency depth, punctuation entropy, subordinate clauses
-- **Lexical Diversity**: Type-Token Ratio (TTR), MSTTR, MTLD, Yule's K
-- **Overall Complexity**: Combined complexity assessment
-- **Statistics**: Total word and sentence counts
+#### 1. Vocabulary Sophistication (35-45% weight)
+**What it measures**: The complexity and sophistication of word choices
 
-### Developer Mode
+- Uses Age of Acquisition (AoA) ratings from a 31,766-word dictionary
+- Higher AoA = words learned later in life = more sophisticated vocabulary
+- **Formula**: `IQ = 100 + (z-score × 0.55 × 15)`
+- **Population Norms**: Mean AoA = 9.02 years, StdDev = 3.76
+- **Correlation**: r = 0.55 (research-validated)
 
-Press `CTRL+I+Q` (or `CMD+I+Q` on Mac) to toggle developer mode:
+**Example**: "utilize" (AoA ~12) vs "use" (AoA ~3) indicates higher sophistication
 
-- **Hover**: See detailed badge information in tooltip
-- **Click**: Recalculate IQ score for a badge
-- **Right-click**: Track changes to a badge over time
-- **Console**: Detailed debug logs appear in browser console (F12)
+#### 2. Lexical Diversity (25% weight)
+**What it measures**: Word variety and repetition patterns
 
-### Reset Settings
+- Analyzes Type-Token Ratio (TTR), Mean Segmental TTR (MSTTR), MTLD, and Yule's K
+- Higher diversity = more varied vocabulary = higher IQ indicator
+- **Formula**: `IQ = 100 + (z-score × 0.40 × 15)`
+- **Population Norms**: Mean TTR = 0.65, StdDev = 0.12
+- **Correlation**: r = 0.40 (research-validated)
 
-Click "Reset to Defaults" in the popup to restore original settings.
+**Example**: "The good idea was really good" (low diversity) vs "The excellent concept was truly innovative" (high diversity)
 
-## File Structure
+#### 3. Sentence Complexity (15-20% weight)
+**What it measures**: Sentence structure and length patterns
 
-```
-IQScreenr/
-├── manifest.json              # Extension manifest
-├── content/
-│   ├── core/
-│   │   ├── iqEstimator.js                  # Research-based IQ estimator with z-score conversion
-│   │   └── dependencyParser.js              # Dependency parsing approximation
-│   ├── data/
-│   │   ├── aoa_dictionary.json             # Age of Acquisition dictionary (31,766 words)
-│   │   ├── dependency_depth_calibration.json # Dependency depth calibration coefficients
-│   │   ├── metaphor_patterns.json           # Metaphor and abstract concept patterns database
-│   │   └── population_norms.json            # Research-validated population norms for z-score conversion
-│   ├── features/
-│   │   ├── badge/                           # Badge creation and management
-│   │   ├── devMode/                         # Developer mode features
-│   │   ├── gameManager/                     # IQ guessing game features
-│   │   └── tweetProcessor/                  # Tweet processing pipeline
-│   └── content.js                          # Content script (tweet detection & badge injection)
-├── popup/
-│   ├── popup.html             # Settings UI
-│   ├── popup.css              # Popup styles
-│   └── popup.js               # Popup logic
-├── styles/
-│   └── badge.css              # Badge styling
-├── background/
-│   └── background.js          # Background service worker
-├── icons/                     # Extension icons (you need to add these)
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md                  # This file
-```
+- Analyzes average words per sentence with optimality factors
+- Moderate complexity is optimal (extremely long sentences aren't always better)
+- **Formula**: `IQ = 100 + (z-score × 0.35 × 15 × optimality_factor)`
+- **Population Norms**: Mean = 12.5 words (essay), 8.5 words (Twitter)
+- **Correlation**: r = 0.35 (research-validated)
 
-## How It Works
+**Twitter Adjustment**: Shorter sentences are normal due to character limits, so Twitter uses a lower baseline (8.5 vs 12.5 words)
 
-### IQ Calculation
+#### 4. Grammatical Precision (15-20% weight)
+**What it measures**: Grammar, punctuation, and syntactic complexity
 
-The extension uses a **research-validated estimator** with z-score conversion. It analyzes 4 dimensions:
+- Approximates dependency depth from punctuation patterns, clauses, and sentence structure
+- Analyzes punctuation entropy, subordinate clauses, and connective density
+- **Formula**: `IQ = 100 + (z-score × 0.45 × 15)`
+- **Population Norms**: Mean dependency depth = 1.95, StdDev = 0.35
+- **Correlation**: r = 0.45 (research-validated)
 
-1. **Vocabulary Sophistication (35% weight, 45% for tweets ≤300 chars)**: Age of Acquisition (AoA)
-   - Uses z-score conversion: `IQ = 100 + (z-score × 0.55 × 15)`
-   - Population norms: Mean AoA = 9.02 years, StdDev = 3.76 (from Kuperman dictionary analysis)
-   - Higher AoA = more sophisticated vocabulary = higher IQ
-   - Correlation coefficient: r = 0.55 (research-validated)
-
-2. **Lexical Diversity (25% weight)**: Type-Token Ratio (TTR) and Mean Segmental TTR (MSTTR)
-   - Uses z-score conversion: `IQ = 100 + (z-score × 0.40 × 15)`
-   - Population norms: Mean TTR = 0.65, StdDev = 0.12
-   - Also considers MTLD and Yule's K for comprehensive diversity assessment
-   - Correlation coefficient: r = 0.40 (research-validated)
-
-3. **Sentence Complexity (20% weight, 15% for tweets ≤300 chars)**: Average words per sentence
-   - Uses z-score conversion: `IQ = 100 + (z-score × 0.35 × 15 × optimality_factor)`
-   - Population norms: Mean = 12.5 words (essay), 8.5 words (Twitter), StdDev = 4.5/3.0
-   - Moderate complexity optimal (diminishing returns for extremes)
-   - Correlation coefficient: r = 0.35 (research-validated)
-
-4. **Grammatical Precision (20% weight, 15% for tweets ≤300 chars)**: Dependency depth approximation
-   - Uses z-score conversion: `IQ = 100 + (z-score × 0.45 × 15)`
-   - Population norms: Mean dependency depth = 1.95, StdDev = 0.35
-   - Approximates dependency depth from punctuation, clauses, and sentence structure
-   - Correlation coefficient: r = 0.45 (research-validated)
+**Example**: Proper comma usage, complex sentence structures, varied punctuation patterns
 
 ### Sophisticated Content Detection
 
-The system recognizes sophisticated writing patterns:
-- **Metaphorical Language**: Uses comprehensive metaphor patterns database (2,000+ patterns)
-- **Structured Organization**: Detects bullet points, numbered lists, clear sections
+The system recognizes advanced writing patterns that indicate higher cognitive sophistication:
+
+- **Metaphorical Language**: Detects metaphors using a comprehensive 2,000+ pattern database
 - **Abstract Concepts**: Identifies meta-cognition and abstract thinking patterns
+- **Structured Organization**: Recognizes bullet points, numbered lists, and clear sections
 - **Self-Reflection**: Detects personal insight and introspection
-- **Practical Wisdom**: Recognizes actionable advice and structured guidance
+- **Practical Wisdom**: Identifies actionable advice and structured guidance
 
 Sophisticated content receives bonuses and reduced repetition penalties, as thoughtful longer texts naturally have some repetition for coherence.
 
@@ -172,82 +138,169 @@ IQ = 100 + (z-score × correlation_coefficient × 15)
 ```
 
 This ensures:
-- Scores are standardized to IQ scale (mean=100, SD=15)
-- Each dimension reflects its actual correlation with intelligence
-- Population norms are based on real linguistic research
-- Scores are comparable across different text types
+- ✅ Scores are standardized to IQ scale (mean=100, SD=15)
+- ✅ Each dimension reflects its actual correlation with intelligence
+- ✅ Population norms are based on real linguistic research
+- ✅ Scores are comparable across different text types
 
 ### Final IQ Calculation
 
-The final IQ is a **weighted combination** of these 4 dimensions:
-- Essay/Long Text: Vocab 35% + Diversity 25% + Sentence 20% + Grammar 20%
-- Twitter (≤300 chars): Vocab 45% + Diversity 25% + Sentence 15% + Grammar 15%
+The final IQ is a **weighted combination** of the 4 dimensions:
+
+- **Essay/Long Text**: Vocab 35% + Diversity 25% + Sentence 20% + Grammar 20%
+- **Twitter (≤300 chars)**: Vocab 45% + Diversity 25% + Sentence 15% + Grammar 15%
 
 Additional adjustments:
-- Sophisticated content bonuses
+- Sophisticated content bonuses (metaphors, abstract concepts, structure)
 - Run-on sentence penalties (for casual Twitter patterns)
 - Final calibration pass for high/low IQ extremes
+- Short text adjustments (for very brief tweets)
 
-All processing happens **client-side** in your browser - no data is sent anywhere.
+---
 
-### Debug Mode
+## 🎨 Understanding IQ Scores & Confidence
 
-**Hover over any IQ badge** and open the browser console (F12) to see:
-- Detailed feature extraction (TTR, word length, sentence metrics, AoA, etc.)
-- Dimension breakdown with individual IQ scores
-- Z-score calculations for each dimension
-- Population norms used for conversion
-- Weighted calculation showing how final IQ was computed
-- Confidence calculation breakdown
-- Full feature values and research-validated formulas
-- Complete result object
+### Color Coding (Confidence-Based)
 
-This helps you understand exactly how each tweet was analyzed.
+Badge colors reflect **confidence levels** (0-100%), not IQ scores. Higher confidence indicates more reliable IQ estimates:
 
-### Developer Mode (CTRL+I+Q)
+| Confidence Range | Color | Interpretation |
+|------------------|-------|----------------|
+| 0-10% | 🔴 Dark Red | Very low confidence - unreliable estimate |
+| 10-20% | 🟠 Red-Orange | Low confidence - estimate may be inaccurate |
+| 20-30% | 🟠 Orange | Below average confidence |
+| 30-40% | 🟡 Orange-Yellow | Moderate-low confidence |
+| 40-50% | 🟡 Yellow | Moderate confidence |
+| 50-60% | 🟢 Yellow-Green | Moderate-high confidence |
+| 60-70% | 🟢 Light Green | Good confidence - reliable estimate |
+| 70-80% | 🟢 Green | High confidence - very reliable |
+| 80-90% | 🟢 Bright Green | Very high confidence - highly reliable |
+| 90-95% | 🟢 Maximum Green | Maximum confidence - most reliable estimate |
+
+**Why Confidence Matters**: Confidence reflects signal quality, dimension agreement, feature reliability, and text length. Longer, well-structured texts with consistent linguistic patterns receive higher confidence scores.
+
+### What the IQ Scores Mean
+
+IQ scores range from approximately 60-145+ and represent estimated verbal intelligence:
+
+- **60-85**: Simple, straightforward language with basic vocabulary
+- **85-105**: Average complexity, typical of general population
+- **105-125**: Above average, sophisticated vocabulary and structure
+- **125-145**: High complexity, advanced vocabulary and complex sentence structures
+- **145+**: Exceptional complexity, rare sophisticated writing patterns
+
+**Important Notes**: 
+- These are **estimates** based on linguistic features, not actual IQ test results
+- They provide insights into writing sophistication but should not be treated as definitive intelligence measurements
+- **Confidence percentage** indicates how reliable each estimate is - always check both the IQ score and confidence level
+
+---
+
+## 🛠️ Developer Mode
 
 Press `CTRL+I+Q` (or `CMD+I+Q` on Mac) to enable developer mode:
 
-- **Hover over badges**: See detailed tooltip with badge information
-- **Click badges**: Recalculate IQ score
-- **Right-click badges**: Track changes over time
-- **Console logging**: Detailed debug information in browser console
+### Features
+- **Hover**: See detailed tooltip with badge information
+- **Click**: Recalculate IQ score for a badge
+- **Right-click**: Track changes to a badge over time
+- **Console**: Detailed debug logs appear in browser console (F12)
 
-### Tweet Detection
+### Debug Information
 
-The extension uses a `MutationObserver` to watch for new tweets appearing on the page. When a tweet is detected:
-1. The tweet text is extracted
-2. IQ is calculated using the research-validated algorithm
-3. A badge is injected next to the tweet
-4. The tweet is marked as processed to avoid duplicate analysis
+When developer mode is enabled, hovering over badges shows:
 
-## Technical Details
+- **Feature Extraction**: TTR, word length, sentence metrics, AoA, etc.
+- **Dimension Breakdown**: Individual IQ scores for each dimension
+- **Z-Score Calculations**: Exact z-score conversions for each dimension
+- **Population Norms**: Research-validated norms used for conversion
+- **Weighted Calculation**: Step-by-step breakdown of final IQ computation
+- **Confidence Calculation**: Signal quality, dimension agreement, feature reliability, and length constraints
+- **Sophisticated Content**: Metaphor counts, abstract concepts, structure analysis with gradual scaling formulas
+- **Complete Result Object**: Full feature values and formulas
 
-- **Manifest Version**: 3
-- **Permissions**: `storage`, `activeTab`
-- **Host Permissions**: `*.twitter.com/*`, `*.x.com/*`
-- **Content Script**: Runs on X.com/Twitter pages
-- **Storage**: Settings stored in `chrome.storage.sync`, IQ scores cached in `chrome.storage.local`
-- **Resources**: AoA dictionary, metaphor patterns, population norms loaded as web-accessible resources
+This helps you understand exactly how each tweet was analyzed.
 
-## Research Validation
+---
 
-The IQ estimation system uses:
-- **Kuperman Age of Acquisition Dictionary**: 31,766 English words with AoA ratings
-- **Research-Validated Correlation Coefficients**: Based on linguistic research linking features to intelligence
+## 📁 Project Structure
+
+```
+IQScreenr/
+├── manifest.json                    # Extension manifest (Manifest V3)
+├── LICENSE                           # Custom license (see below)
+├── README.md                         # This file
+│
+├── content/                          # Content scripts
+│   ├── core/
+│   │   ├── iqEstimator.js           # Main IQ estimation engine
+│   │   └── dependencyParser.js      # Dependency parsing approximation
+│   ├── data/
+│   │   ├── aoa_dictionary.json       # Age of Acquisition dictionary (31,766 words)
+│   │   ├── dependency_depth_calibration.json
+│   │   ├── metaphor_patterns.json    # Metaphor patterns database (2,000+ patterns)
+│   │   ├── population_norms.json    # Research-validated population norms
+│   │   └── casual_language_patterns.json
+│   ├── features/
+│   │   ├── badge/                   # Badge creation and management
+│   │   ├── devMode/                 # Developer mode features
+│   │   ├── gameManager/             # IqGuessr game features
+│   │   ├── iqFiltr.js               # IQ filtering functionality
+│   │   └── tweetProcessor/          # Tweet processing pipeline
+│   ├── utils/                       # Utility functions
+│   └── content.js                   # Main content script orchestrator
+│
+├── popup/                            # Settings popup UI
+│   ├── popup.html
+│   ├── popup.css
+│   └── popup.js
+│
+├── styles/
+│   └── badge.css                    # Badge styling
+│
+├── background/
+│   └── background.js                 # Background service worker
+│
+└── icons/                            # Extension icons
+    ├── icon16.png
+    ├── icon48.png
+    └── icon128.png
+```
+
+---
+
+## 🔬 Research Validation
+
+IQScreenr uses research-validated methods and data:
+
+### Data Sources
+- **Kuperman Age of Acquisition Dictionary**: 31,766 English words with AoA ratings (Kuperman et al., 2012)
 - **Population Norms**: Derived from corpus linguistics research and dictionary analysis
-- **Z-Score Conversion**: Standard statistical method for IQ score standardization
+- **Correlation Coefficients**: Based on linguistic research linking features to intelligence
 
-## Customization
+### Research Papers
+- Kuperman, V., Stadthagen-Gonzalez, H., & Brysbaert, M. (2012). Age-of-acquisition ratings for 30,000 English words. *Behavior Research Methods*, 44(4), 978-990.
+- Nnamoko et al. (2024). Age of Acquisition proxies for vocabulary sophistication estimation.
+- Abramov (2018). Type-Token Ratio and lexical diversity metrics.
+- Hendrix & Yampolskiy (2017). Sentence complexity analysis and intelligence.
+
+### Methodology
+- **Z-Score Conversion**: Standard statistical method for IQ score standardization
+- **Multi-Dimensional Analysis**: Four independent dimensions combined with research-validated weights
+- **Gradual Scaling**: Continuous functions instead of categorical thresholds for more accurate scoring
+
+---
+
+## ⚙️ Customization
 
 ### Adjusting Color Gradients
 
-Edit `content/content.js` and modify the `getIQColor()` function to change color ranges.
+Edit `content/features/badge/colorUtils.js` to modify color ranges and gradients. Note that colors are based on confidence intervals (0-100%) by default, not IQ scores. The `getConfidenceColor()` function maps confidence percentages to the color gradient.
 
 ### Modifying IQ Algorithm
 
 Edit `content/core/iqEstimator.js` to adjust:
-- Dimension weights (35%, 25%, 20%, 20% for essays; 45%, 25%, 15%, 15% for tweets ≤300 chars)
+- Dimension weights (35%, 25%, 20%, 20% for essays; 45%, 25%, 15%, 15% for tweets)
 - Twitter-specific calibration (sentence baseline: 8.5 vs 12.5 for essays)
 - Population norms (in `content/data/population_norms.json`)
 - Correlation coefficients (research-validated values)
@@ -257,31 +310,108 @@ Edit `content/core/iqEstimator.js` to adjust:
 
 Edit `styles/badge.css` to customize badge appearance, size, and positioning.
 
-## Troubleshooting
+---
+
+## 🐛 Troubleshooting
 
 ### Badges Not Appearing
-
 1. Refresh the X.com/Twitter page
 2. Check that the extension is enabled in `chrome://extensions/`
-3. Open the browser console (F12) and check for errors
+3. Open browser console (F12) and check for errors
 4. Verify you're on `x.com` or `twitter.com`
 
 ### Incorrect Scores
-
 - The algorithm is an estimation based on linguistic features
 - It may not accurately reflect actual IQ
 - Scores are relative to population norms, not absolute measurements
 - Use developer mode (`CTRL+I+Q`) to see detailed breakdown
 
 ### Cache Issues
-
 - Use "Clear Cache" button in settings popup
 - This clears all cached IQ scores and forces recalculation
 
-## License
+### Performance Issues
+- Very long threads may take time to process
+- The extension processes tweets as you scroll
+- Cached scores improve performance on subsequent visits
 
-This extension is provided as-is for educational and demonstration purposes.
+---
 
-## Version
+## 🔒 Privacy
 
-2.0.0 - Research-validated z-score conversion with population norms
+**IQScreenr is privacy-first:**
+
+- ✅ **100% Client-Side Processing**: All analysis happens in your browser
+- ✅ **No Data Collection**: No tweets, scores, or personal data are sent anywhere
+- ✅ **No Tracking**: No analytics, no telemetry, no external requests
+- ✅ **Local Storage Only**: Settings and cache stored locally in your browser
+- ✅ **Open Source**: Full code available for inspection
+
+Your data stays on your device. Always.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+### Areas for Contribution
+- Bug fixes and improvements
+- Additional linguistic features
+- Performance optimizations
+- Documentation improvements
+- Translation/localization
+
+### Development Setup
+1. Clone the repository
+2. Load as unpacked extension in Chrome/Edge
+3. Make changes and test locally
+4. Submit a pull request with clear description
+
+---
+
+## 📝 License
+
+This project is licensed under a **Custom License** - see the [LICENSE](LICENSE) file for details.
+
+**Summary:**
+- ✅ Free to use, modify, and distribute
+- ✅ Attribution required
+- ✅ Commercial/monetized use requires explicit permission
+- ✅ Non-commercial use is free and open
+
+
+---
+
+## 📞 Support
+
+- **Website**: [iqscreenr.win](https://iqscreenr.win)
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Support for additional social media platforms
+- [ ] Enhanced metaphor detection with ML models
+- [ ] User-defined custom scoring rules
+- [ ] Export analysis data
+- [ ] Batch analysis mode
+- [ ] API for developers
+
+---
+
+## ⚠️ Disclaimer
+
+IQScreenr provides **estimates** based on linguistic analysis, not actual IQ test results. These scores:
+
+- Are based on written language patterns only
+- May not reflect actual intelligence accurately
+- Should not be used for important decisions
+- Are for entertainment and educational purposes
+
+Use responsibly and remember: intelligence is multifaceted and cannot be fully captured by text analysis alone.
+
+---
+
+
+*Last updated: 2025*

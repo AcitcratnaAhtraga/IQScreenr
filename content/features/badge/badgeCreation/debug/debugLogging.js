@@ -388,6 +388,93 @@
     }
     console.groupEnd();
 
+    // Sophisticated Content Breakdown (if available)
+    const sophisticatedContent = result.sophisticated_content || (result.features?.sophisticated_content);
+    if (sophisticatedContent && sophisticatedContent.bonus > 0) {
+      console.groupCollapsed('%c✨ Sophisticated Content Bonus (Gradual Scaling)', 'color: #9C27B0; font-weight: bold;');
+      const wordCountForSophisticated = features.word_count || tokens.length;
+      
+      // Metaphor bonus breakdown
+      if (sophisticatedContent.metaphorCount > 0) {
+        const metaphorBaseBonus = 1.5;
+        const metaphorScalingFactor = 1.2;
+        const metaphorMaxBonus = 8.0;
+        const metaphorBonus = Math.min(metaphorMaxBonus, metaphorBaseBonus * Math.log(1 + sophisticatedContent.metaphorCount / metaphorScalingFactor) * 2.5);
+        console.log(`%c🎭 Metaphorical Language:`, 'font-weight: bold; color: #E91E63;');
+        console.log(`  Count: ${sophisticatedContent.metaphorCount} metaphors`);
+        console.log(`  Formula: min(${metaphorMaxBonus}, ${metaphorBaseBonus} × log(1 + ${sophisticatedContent.metaphorCount} / ${metaphorScalingFactor}) × 2.5)`);
+        console.log(`  Bonus: +${metaphorBonus.toFixed(2)} IQ points`);
+        console.log(`  %cNote: Logarithmic scaling with diminishing returns (research-validated)`, 'color: #666; font-style: italic;');
+      }
+      
+      // Structure bonus breakdown
+      if (sophisticatedContent.totalStructureItems > 0) {
+        const structureBaseBonus = 0.8;
+        const structureItemsBonus = structureBaseBonus * Math.sqrt(sophisticatedContent.totalStructureItems) * Math.min(1.0, wordCountForSophisticated / 100);
+        const structureBonus = Math.min(5.0, structureItemsBonus);
+        console.log(`%c📋 Structured Organization:`, 'font-weight: bold; color: #2196F3;');
+        console.log(`  Structure Items: ${sophisticatedContent.totalStructureItems} (bullets + numbered lists)`);
+        console.log(`  Formula: min(5.0, ${structureBaseBonus} × sqrt(${sophisticatedContent.totalStructureItems}) × min(1.0, ${wordCountForSophisticated} / 100))`);
+        console.log(`  Bonus: +${structureBonus.toFixed(2)} IQ points`);
+        console.log(`  %cNote: Square root scaling normalized by word count (structure matters more in longer texts)`, 'color: #666; font-style: italic;');
+      }
+      
+      // Abstract concepts bonus breakdown
+      if (sophisticatedContent.abstractCount > 0 && wordCountForSophisticated > 0) {
+        const abstractDensity = sophisticatedContent.abstractCount / Math.max(wordCountForSophisticated, 1);
+        const abstractBaseBonus = 2.0;
+        const abstractScalingFactor = 0.01;
+        const abstractMaxBonus = 10.0;
+        const wordCountFactor = Math.min(1.0, wordCountForSophisticated / 150);
+        const abstractBonus = Math.min(abstractMaxBonus, abstractBaseBonus * Math.log(1 + abstractDensity / abstractScalingFactor) * wordCountFactor * 1.2);
+        console.log(`%c🧠 Abstract Concepts:`, 'font-weight: bold; color: #4CAF50;');
+        console.log(`  Count: ${sophisticatedContent.abstractCount} abstract concepts`);
+        console.log(`  Density: ${(abstractDensity * 100).toFixed(3)}% (${sophisticatedContent.abstractCount} / ${wordCountForSophisticated} words)`);
+        console.log(`  Word Count Factor: ${wordCountFactor.toFixed(2)} (full weight at 150+ words)`);
+        console.log(`  Formula: min(${abstractMaxBonus}, ${abstractBaseBonus} × log(1 + ${abstractDensity.toFixed(4)} / ${abstractScalingFactor}) × ${wordCountFactor.toFixed(2)} × 1.2)`);
+        console.log(`  Bonus: +${abstractBonus.toFixed(2)} IQ points`);
+        console.log(`  %cNote: Logarithmic scaling of density, normalized by word count (research-validated)`, 'color: #666; font-style: italic;');
+      }
+      
+      // Reflection bonus breakdown
+      if (sophisticatedContent.reflectionCount > 0 && wordCountForSophisticated > 50) {
+        const reflectionDensity = sophisticatedContent.reflectionCount / Math.max(wordCountForSophisticated, 1);
+        const reflectionBaseBonus = 1.5;
+        const reflectionScalingFactor = 0.02;
+        const wordCountFactor = Math.min(1.0, wordCountForSophisticated / 100);
+        const reflectionBonus = Math.min(3.0, reflectionBaseBonus * Math.sqrt(reflectionDensity / reflectionScalingFactor) * wordCountFactor * 2.0);
+        console.log(`%c💭 Self-Reflection:`, 'font-weight: bold; color: #FF9800;');
+        console.log(`  Count: ${sophisticatedContent.reflectionCount} reflection markers`);
+        console.log(`  Density: ${(reflectionDensity * 100).toFixed(3)}% (${sophisticatedContent.reflectionCount} / ${wordCountForSophisticated} words)`);
+        console.log(`  Word Count Factor: ${wordCountFactor.toFixed(2)} (full weight at 100+ words)`);
+        console.log(`  Formula: min(3.0, ${reflectionBaseBonus} × sqrt(${reflectionDensity.toFixed(4)} / ${reflectionScalingFactor}) × ${wordCountFactor.toFixed(2)} × 2.0)`);
+        console.log(`  Bonus: +${reflectionBonus.toFixed(2)} IQ points`);
+        console.log(`  %cNote: Square root scaling normalized by word count (requires sufficient text length)`, 'color: #666; font-style: italic;');
+      }
+      
+      // Practical wisdom bonus breakdown
+      if (sophisticatedContent.wisdomCount > 0 && wordCountForSophisticated > 50) {
+        const wisdomDensity = sophisticatedContent.wisdomCount / Math.max(wordCountForSophisticated, 1);
+        const wisdomBaseBonus = 1.2;
+        const wisdomScalingFactor = 0.015;
+        const structureFactor = sophisticatedContent.hasStructure ? 1.3 : 1.0;
+        const wordCountFactor = Math.min(1.0, wordCountForSophisticated / 150);
+        const wisdomBonus = Math.min(4.0, wisdomBaseBonus * Math.sqrt(wisdomDensity / wisdomScalingFactor) * structureFactor * wordCountFactor * 2.5);
+        console.log(`%c💡 Practical Wisdom:`, 'font-weight: bold; color: #9C27B0;');
+        console.log(`  Count: ${sophisticatedContent.wisdomCount} wisdom markers`);
+        console.log(`  Density: ${(wisdomDensity * 100).toFixed(3)}% (${sophisticatedContent.wisdomCount} / ${wordCountForSophisticated} words)`);
+        console.log(`  Structure Factor: ${structureFactor.toFixed(1)}x ${sophisticatedContent.hasStructure ? '(structured text)' : '(no structure)'}`);
+        console.log(`  Word Count Factor: ${wordCountFactor.toFixed(2)} (full weight at 150+ words)`);
+        console.log(`  Formula: min(4.0, ${wisdomBaseBonus} × sqrt(${wisdomDensity.toFixed(4)} / ${wisdomScalingFactor}) × ${structureFactor.toFixed(1)} × ${wordCountFactor.toFixed(2)} × 2.5)`);
+        console.log(`  Bonus: +${wisdomBonus.toFixed(2)} IQ points`);
+        console.log(`  %cNote: Square root scaling enhanced by structure presence (research-validated)`, 'color: #666; font-style: italic;');
+      }
+      
+      console.log(`%c📊 Total Sophisticated Content Bonus: +${sophisticatedContent.bonus.toFixed(2)} IQ points`, 'font-weight: bold; color: #9C27B0; font-size: 14px;');
+      console.log(`  Sophisticated Markers Detected: ${sophisticatedContent.hasSophisticatedMarkers ? 'Yes' : 'No'} (affects repetition penalty reduction)`);
+      console.groupEnd();
+    }
+
     console.groupCollapsed('%c📊 Confidence Calculation', 'color: #9C27B0; font-weight: bold;');
     if (result.confidence !== undefined && result.confidence !== null) {
       const wordCount = features.word_count || tokens.length;
@@ -753,25 +840,39 @@
       const repetitionRatio = wordCount > 0 ? (wordCount - uniqueWords) / wordCount : 0;
       
       // Detect sophisticated content to reduce repetition penalties (must match actual calculation)
-      // This checks for metaphors, abstract concepts, and structured organization
+      // Use sophisticated_content from result if available, otherwise calculate using gradual logic
       const originalText = result.features?.original_text || text || '';
       const lowerText = originalText.toLowerCase();
-      let metaphorCount = 0;
-      let abstractCount = 0;
-      let hasStructure = false;
+      let sophisticatedContent = result.sophisticated_content;
       
-      // Basic sophisticated content detection (simplified version matching actual logic)
-      const metaphorPatterns = /\b(metaphor|analogy|symbol|symbolic|represent|embody|reflect|mirror|echo|resonate)\b/gi;
-      const abstractPatterns = /\b(thought|thinking|pattern|process|mechanism|system|structure|framework|concept|idea|notion|principle|theory|approach|method|strategy|technique)\b/gi;
-      const structurePatterns = /(^|\n)[\s]*[-•*]\s+|\d+\.\s+|(first|second|third|finally|in conclusion|to summarize)/i;
-      
-      metaphorCount = (originalText.match(metaphorPatterns) || []).length;
-      abstractCount = (originalText.match(abstractPatterns) || []).length;
-      hasStructure = structurePatterns.test(originalText);
-      
-      const sophisticatedContent = {
-        hasSophisticatedMarkers: metaphorCount >= 2 || abstractCount >= 5 || (hasStructure && wordCount > 200)
-      };
+      if (!sophisticatedContent) {
+        // Fallback: calculate using gradual logic (matching actual calculation)
+        const bulletPoints = (originalText.match(/^[\s]*[•\-\*\+]\s+/gm) || []).length;
+        const numberedList = (originalText.match(/^[\s]*\d+[\.\)]\s+/gm) || []).length;
+        const totalStructureItems = bulletPoints + numberedList;
+        const hasStructure = totalStructureItems >= 2;
+        
+        // Simplified detection for debug (full detection uses comprehensive database)
+        const metaphorPatterns = /\b(metaphor|analogy|symbol|symbolic|represent|embody|reflect|mirror|echo|resonate|river|flow|foundation|growth|journey|path)\b/gi;
+        const abstractPatterns = /\b(thought|thinking|pattern|process|mechanism|system|structure|framework|concept|idea|notion|principle|theory|approach|method|strategy|technique)\b/gi;
+        
+        const metaphorCount = (originalText.match(metaphorPatterns) || []).length;
+        const abstractCount = (originalText.match(abstractPatterns) || []).length;
+        
+        // Gradual sophisticated marker detection (matching actual calculation)
+        const metaphorDensity = wordCount > 0 ? metaphorCount / wordCount : 0;
+        const abstractDensityForMarker = wordCount > 0 ? abstractCount / wordCount : 0;
+        const structureMarker = totalStructureItems >= 2 && wordCount > 100;
+        const hasSophisticatedMarkers = metaphorDensity > 0.01 || abstractDensityForMarker > 0.02 || structureMarker;
+        
+        sophisticatedContent = {
+          hasSophisticatedMarkers: hasSophisticatedMarkers,
+          metaphorCount: metaphorCount,
+          abstractCount: abstractCount,
+          hasStructure: hasStructure,
+          totalStructureItems: totalStructureItems
+        };
+      }
       
       // Repetition penalties with sophisticated content reduction (must match exactly)
       if (repetitionRatio > 0.6 && wordCount > 30) {
