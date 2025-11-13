@@ -1,0 +1,627 @@
+/**
+ * Landing Page Styles - Matches Extension Aesthetic
+ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #ffffff;
+  color: #1f2937;
+  line-height: 1.6;
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.main-header {
+  background: #ffffff;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 30px 0;
+  margin-bottom: 40px;
+}
+
+.header-content {
+  text-align: center;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+}
+
+.main-header h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+.tagline {
+  font-size: 18px;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* Hero Section */
+.hero-section {
+  text-align: center;
+  padding: 60px 20px;
+  margin-bottom: 60px;
+}
+
+.hero-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+.hero-description {
+  font-size: 18px;
+  color: #4b5563;
+  max-width: 800px;
+  margin: 0 auto 40px;
+  line-height: 1.7;
+}
+
+.download-section {
+  margin: 40px 0;
+}
+
+.install-button {
+  background: #000000;
+  color: white;
+  border: none;
+  padding: 16px 40px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.install-button:hover {
+  background: #333333;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.install-button:active {
+  transform: translateY(0);
+}
+
+.button-icon {
+  font-size: 24px;
+}
+
+.button-text {
+  font-size: 18px;
+}
+
+.install-note {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Installation Instructions */
+.install-instructions {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 30px;
+  margin: 30px auto;
+  max-width: 700px;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+}
+
+.install-instructions h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 20px;
+}
+
+.steps-list {
+  margin-left: 20px;
+  margin-bottom: 30px;
+}
+
+.steps-list li {
+  margin-bottom: 12px;
+  font-size: 16px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.steps-list code {
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  color: #111827;
+}
+
+.download-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: #000000;
+  color: white;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.download-button:hover {
+  background: #333333;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Features Section */
+.features-section {
+  padding: 60px 20px;
+  margin-bottom: 60px;
+}
+
+.section-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.feature-card {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border-color: #000000;
+}
+
+.feature-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.feature-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.feature-card p {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+/* Ad Section */
+.ad-section-landing {
+  margin: 60px auto;
+  padding: 20px;
+  max-width: 728px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.ad-container-landing {
+  position: relative;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-label-landing {
+  font-size: 11px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.ad-content-landing {
+  width: 100%;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Custom Ad Styles */
+.custom-ad-link-landing {
+  text-decoration: none;
+  display: block;
+  width: 100%;
+  transition: transform 0.2s ease;
+}
+
+.custom-ad-link-landing:hover {
+  transform: scale(1.02);
+}
+
+.custom-ad-landing {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  width: 100%;
+}
+
+.custom-ad-text-landing {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-ad-text-landing strong {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.custom-ad-text-landing span {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* Text Ad Styles */
+.text-ad-landing {
+  text-align: center;
+  padding: 30px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  width: 100%;
+}
+
+.text-ad-landing p {
+  margin: 12px 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.text-ad-landing p:first-child {
+  font-weight: 600;
+  color: #000000;
+  font-size: 22px;
+}
+
+.ad-button-landing {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 12px 32px;
+  background: #000000;
+  color: white;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.ad-button-landing:hover {
+  background: #333333;
+}
+
+/* Google AdSense responsive */
+.adsbygoogle {
+  display: block;
+  width: 100%;
+  min-height: 250px;
+}
+
+/* How It Works Section */
+.how-it-works-section {
+  padding: 60px 20px;
+  margin-bottom: 60px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.info-content-landing {
+  max-width: 800px;
+  margin: 0 auto;
+  font-size: 16px;
+  color: #4b5563;
+  line-height: 1.7;
+}
+
+.info-content-landing p {
+  margin-bottom: 20px;
+}
+
+.info-content-landing strong {
+  color: #111827;
+}
+
+.info-list {
+  margin: 24px 0 24px 30px;
+}
+
+.info-list li {
+  margin-bottom: 16px;
+  line-height: 1.7;
+}
+
+.privacy-note-landing {
+  margin-top: 30px;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-left: 3px solid #000000;
+}
+
+.privacy-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.privacy-note-landing strong {
+  color: #000000;
+}
+
+/* Footer */
+.main-footer {
+  background: #ffffff;
+  border-top: 2px solid #e5e7eb;
+  padding: 40px 20px;
+  margin-top: 60px;
+  text-align: center;
+}
+
+.footer-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.version-info {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-bottom: 12px;
+}
+
+.footer-note {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 20px;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.footer-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: #111827;
+  text-decoration: underline;
+}
+
+.separator {
+  color: #9ca3af;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 32px;
+  }
+
+  .hero-description {
+    font-size: 16px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-title {
+    font-size: 28px;
+  }
+
+  .logo-section {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .main-header h1 {
+    font-size: 28px;
+  }
+
+  .install-button {
+    padding: 14px 32px;
+    font-size: 16px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #000000;
+    color: #f9fafb;
+  }
+
+  .main-header {
+    background: #000000;
+    border-bottom-color: #374151;
+  }
+
+  .main-header h1 {
+    color: #f9fafb;
+  }
+
+  .tagline {
+    color: #9ca3af;
+  }
+
+  .hero-title {
+    color: #f9fafb;
+  }
+
+  .hero-description {
+    color: #d1d5db;
+  }
+
+  .section-title {
+    color: #f9fafb;
+  }
+
+  .feature-card {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
+
+  .feature-card:hover {
+    border-color: #ffffff;
+  }
+
+  .feature-card h3 {
+    color: #f9fafb;
+  }
+
+  .feature-card p {
+    color: #d1d5db;
+  }
+
+  .ad-section-landing {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
+
+  .ad-label-landing {
+    color: #6b7280;
+  }
+
+  .text-ad-landing {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
+
+  .text-ad-landing p {
+    color: #f9fafb;
+  }
+
+  .text-ad-landing p:first-child {
+    color: #ffffff;
+  }
+
+  .how-it-works-section {
+    background: #1a1a1a;
+  }
+
+  .info-content-landing {
+    color: #d1d5db;
+  }
+
+  .info-content-landing strong {
+    color: #f9fafb;
+  }
+
+  .privacy-note-landing {
+    background: #2a2a2a;
+    border-left-color: #ffffff;
+  }
+
+  .privacy-note-landing strong {
+    color: #ffffff;
+  }
+
+  .main-footer {
+    background: #000000;
+    border-top-color: #374151;
+  }
+
+  .footer-note {
+    color: #9ca3af;
+  }
+
+  .footer-link {
+    color: #9ca3af;
+  }
+
+  .footer-link:hover {
+    color: #f9fafb;
+  }
+
+  .install-instructions {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+  }
+
+  .install-instructions h3 {
+    color: #f9fafb;
+  }
+
+  .steps-list li {
+    color: #d1d5db;
+  }
+
+  .steps-list code {
+    background: #2a2a2a;
+    color: #f9fafb;
+  }
+}
+

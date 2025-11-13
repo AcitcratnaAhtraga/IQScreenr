@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IqScreenr - IQ Analyzer for Twitter/X</title>
+  <link rel="stylesheet" href="landing-page.css">
+</head>
+<body>
+  <div class="page-container">
+    <!-- Header -->
+    <header class="main-header">
+      <div class="header-content">
+        <div class="logo-section">
+          <img src="icons/Variants/Fullsize/IqGuessrT.png" alt="IqScreenr" class="logo">
+          <h1>IqScreenr</h1>
+        </div>
+        <p class="tagline">Analyze, Filter and Guess verbal IQ of tweets</p>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <h2 class="hero-title">Analyze Tweet Intelligence in Real-Time</h2>
+        <p class="hero-description">
+          IqScreenr analyzes tweet text using a research-based estimator trained on graded samples. 
+          It evaluates tweets across four key dimensions: Vocabulary Sophistication, Lexical Diversity, 
+          Sentence Complexity, and Grammatical Precision.
+        </p>
+        
+        <!-- Download/Install Button -->
+        <div class="download-section">
+          <button id="installButton" class="install-button">
+            <span class="button-icon">⬇️</span>
+            <span class="button-text">Install Extension</span>
+          </button>
+          <p class="install-note">Works on Chrome, Edge, Brave, and other Chromium browsers</p>
+        </div>
+
+        <!-- Installation Instructions (Hidden by default) -->
+        <div id="installInstructions" class="install-instructions" style="display: none;">
+          <h3>Installation Steps:</h3>
+          <ol class="steps-list">
+            <li>Click the "Download Extension" button below to download the extension</li>
+            <li>Extract the ZIP file to a folder on your computer</li>
+            <li>Open Chrome and go to <code>chrome://extensions/</code></li>
+            <li>Enable "Developer mode" (toggle in top-right corner)</li>
+            <li>Click "Load unpacked" and select the extracted folder</li>
+            <li>Done! Visit Twitter/X to see IQ badges on tweets</li>
+          </ol>
+          <a id="downloadLink" href="#" download="IqScreenr.zip" class="download-button">
+            <span class="button-icon">📦</span>
+            <span class="button-text">Download Extension (ZIP)</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+      <h2 class="section-title">Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🧠</div>
+          <h3>Real-time Analysis</h3>
+          <p>Automatically analyzes tweets as you scroll with color-coded IQ badges</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h3>IQ Scoring</h3>
+          <p>Estimates verbal IQ from 60-145+ based on linguistic features</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎮</div>
+          <h3>IqGuessr Game</h3>
+          <p>Guess IQ scores before they're calculated! Score points based on accuracy</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>IqFiltr</h3>
+          <p>Automatically filter tweets based on IQ thresholds and confidence levels</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>Privacy First</h3>
+          <p>All processing happens client-side. No data sent to servers</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚙️</div>
+          <h3>Customizable</h3>
+          <p>Toggle badges, adjust settings, and customize your experience</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ad Section -->
+    <section class="ad-section-landing">
+      <div class="ad-container-landing">
+        <div class="ad-label-landing">Advertisement</div>
+        <div class="ad-content-landing" id="adContentLanding">
+          <!-- Option 1: Google AdSense (uncomment and add your publisher ID) -->
+          <!--
+          <ins class="adsbygoogle"
+               style="display:block"
+               data-ad-client="ca-pub-YOUR_PUBLISHER_ID"
+               data-ad-slot="YOUR_AD_SLOT_ID"
+               data-ad-format="auto"
+               data-full-width-responsive="true"></ins>
+          <script>
+               (adsbygoogle = window.adsbygoogle || []).push({});
+          </script>
+          -->
+          
+          <!-- Option 2: Custom affiliate/banner ad -->
+          <a href="https://example.com/affiliate-link" target="_blank" class="custom-ad-link-landing">
+            <div class="custom-ad-landing">
+              <div class="custom-ad-text-landing">
+                <strong>Support Development</strong>
+                <span>Check out our sponsors and help keep this extension free!</span>
+              </div>
+            </div>
+          </a>
+          
+          <!-- Option 3: Simple text ad (replace with your own) -->
+          <!--
+          <div class="text-ad-landing">
+            <p><strong>Premium Features Available!</strong></p>
+            <p>Upgrade for advanced IQ analytics and insights</p>
+            <a href="#" target="_blank" class="ad-button-landing">Learn More</a>
+          </div>
+          -->
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works-section">
+      <h2 class="section-title">How It Works</h2>
+      <div class="info-content-landing">
+        <p><strong>IqScreenr</strong> uses a research-based estimator trained on graded samples. It analyzes tweets across four key dimensions:</p>
+        <ul class="info-list">
+          <li><strong>Vocabulary Sophistication (35% weight):</strong> Estimates word difficulty from length and syllable complexity using Age of Acquisition proxies.</li>
+          <li><strong>Lexical Diversity (25% weight):</strong> Measures word variety using Type-Token Ratio (TTR).</li>
+          <li><strong>Sentence Complexity (20% weight):</strong> Analyzes average words per sentence and sentence structure.</li>
+          <li><strong>Grammatical Precision (20% weight):</strong> Evaluates syntax complexity via punctuation patterns and clause usage.</li>
+        </ul>
+        <p class="privacy-note-landing">
+          <span class="privacy-icon">🔒</span>
+          <strong>Fully client-side:</strong> All processing happens in your browser. No data is sent to any server.
+        </p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+      <div class="footer-content">
+        <p class="version-info">Version 1.1.0</p>
+        <p class="footer-note">This extension is provided as-is for educational and demonstration purposes.</p>
+        <div class="footer-links">
+          <a href="#" class="footer-link">Privacy Policy</a>
+          <span class="separator">•</span>
+          <a href="#" class="footer-link">Terms of Service</a>
+          <span class="separator">•</span>
+          <a href="#" class="footer-link">Support</a>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Google AdSense script (uncomment if using AdSense) -->
+  <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script> -->
+
+  <script src="landing-page.js"></script>
+</body>
+</html>
+
