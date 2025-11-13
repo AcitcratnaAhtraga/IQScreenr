@@ -369,6 +369,88 @@ body {
   border-radius: 12px;
 }
 
+/* Related Project Section */
+.related-project-section {
+  padding: 60px 20px;
+  margin-bottom: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  color: white;
+  text-align: center;
+}
+
+.related-project-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.related-project-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.related-project-section .section-title {
+  color: white;
+  margin-bottom: 16px;
+}
+
+.related-project-description {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.related-project-features {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 30px;
+  text-align: left;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.related-feature {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 0;
+}
+
+.related-feature strong {
+  color: white;
+}
+
+.related-project-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  color: #667eea;
+  padding: 16px 40px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.related-project-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  background: #f9fafb;
+}
+
 /* Legal Sections (Privacy Policy, Terms of Service) */
 .legal-section {
   padding: 30px 20px;
@@ -550,6 +632,14 @@ body {
     padding: 14px 32px;
     font-size: 16px;
   }
+
+  .related-project-features {
+    text-align: center;
+  }
+
+  .related-project-description {
+    font-size: 16px;
+  }
 }
 
 /* Dark mode support */
@@ -630,6 +720,15 @@ body {
   .legal-section {
     background: #1a1a1a;
     border-color: #2a2a2a;
+  }
+
+  .related-project-section {
+    background: linear-gradient(135deg, #4a5568 0%, #5a3d6b 100%);
+  }
+
+  .related-project-button:hover {
+    background: #2a2a2a;
+    color: #ffffff;
   }
 
   .legal-toggle:hover {
