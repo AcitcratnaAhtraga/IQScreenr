@@ -41,11 +41,20 @@
     const newTweets = [];
     const skippedTweets = [];
 
+    // Check if IqFiltr is available to skip removed/muted tweets
+    const getIqFiltr = () => window.IqFiltr || {};
+    const { shouldSkipTweet } = getIqFiltr();
+
     Array.from(tweets).forEach((tweet, index) => {
       if (!tweet) {
         if (isNotificationsPage && index < 5) {
           skippedTweets.push({ reason: 'tweet is null/falsy', index });
         }
+        return;
+      }
+
+      // Skip tweets that were previously removed or muted
+      if (shouldSkipTweet && shouldSkipTweet(tweet)) {
         return;
       }
 
@@ -111,6 +120,10 @@
       }
 
       if (nestedTweet && nestedTweet !== tweet) {
+        // Skip nested tweet if it was removed or muted
+        if (shouldSkipTweet && shouldSkipTweet(nestedTweet)) {
+          return;
+        }
         if (!nestedTweet.hasAttribute('data-iq-analyzed') &&
             !nestedTweet.hasAttribute('data-iq-processing') &&
             !processedTweetElements.has(nestedTweet)) {
@@ -151,9 +164,12 @@
         }
       });
 
-      // Insert all badges at once
+      // Insert all badges at once (but skip removed/muted tweets)
       badgesToInsert.forEach((tweet) => {
-        addLoadingBadgeToTweet(tweet);
+        // Double-check that tweet wasn't removed/muted before adding badge
+        if (!shouldSkipTweet || !shouldSkipTweet(tweet)) {
+          addLoadingBadgeToTweet(tweet);
+        }
       });
 
       // Restore scroll position after all badges are inserted

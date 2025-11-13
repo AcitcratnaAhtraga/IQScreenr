@@ -97,6 +97,16 @@
       return;
     }
 
+    // Check if tweet was previously removed or muted (skip processing entirely)
+    const getIqFiltr = () => window.IqFiltr || {};
+    const { shouldSkipTweet } = getIqFiltr();
+    if (shouldSkipTweet) {
+      // Check both the actual element and outer element for nested structures
+      if (shouldSkipTweet(actualTweetElement) || (outerElement && shouldSkipTweet(outerElement))) {
+        return;
+      }
+    }
+
     // Check if this is a follow notification or Community Note notification and skip processing
     const isNotificationsPage = window.location.href.includes('/notifications');
     if (isNotificationsPage) {

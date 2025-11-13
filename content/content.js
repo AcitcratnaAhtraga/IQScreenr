@@ -143,12 +143,31 @@
 
 
       const getIqFiltr = () => window.IqFiltr || {};
-      const { applyFilterToVisibleTweets, revealAllMutedTweets } = getIqFiltr();
+      const { applyFilterToVisibleTweets, revealAllMutedTweets, setupFilterObserver, stopFilterObserver } = getIqFiltr();
 
-      // If filter is being disabled, reveal all muted tweets
+      // If filter is being disabled, reveal all muted tweets and clear removed tweet IDs
       if (changes.enableIqFiltr && !changes.enableIqFiltr.newValue) {
+        const { clearRemovedTweetIds } = getIqFiltr();
         if (revealAllMutedTweets) {
           revealAllMutedTweets();
+        }
+        if (clearRemovedTweetIds) {
+          clearRemovedTweetIds();
+        }
+        // Stop the filter observer when filter is disabled
+        if (stopFilterObserver) {
+          stopFilterObserver();
+        }
+      } else if (changes.enableIqFiltr && changes.enableIqFiltr.newValue) {
+        // Filter is being enabled - start the observer
+        if (setupFilterObserver) {
+          setupFilterObserver();
+        }
+        if (applyFilterToVisibleTweets) {
+          // Apply filter immediately when settings change
+          requestAnimationFrame(() => {
+            applyFilterToVisibleTweets();
+          });
         }
       } else if (applyFilterToVisibleTweets) {
         // Apply filter immediately when settings change

@@ -84,10 +84,19 @@
 
       if (potentialTweets.length > 0) {
         setTimeout(() => {
+          // Check if IqFiltr is available to skip removed/muted tweets
+          const getIqFiltr = () => window.IqFiltr || {};
+          const { shouldSkipTweet } = getIqFiltr();
+
           potentialTweets.forEach((tweet) => {
             if (tweet.hasAttribute('data-iq-analyzed') ||
                 tweet.hasAttribute('data-iq-processing') ||
                 tweet.querySelector('.iq-badge')) {
+              return;
+            }
+
+            // Skip tweets that were previously removed or muted
+            if (shouldSkipTweet && shouldSkipTweet(tweet)) {
               return;
             }
 

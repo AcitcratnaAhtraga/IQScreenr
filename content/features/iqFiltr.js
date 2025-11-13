@@ -284,11 +284,50 @@
     return shouldFilter;
   }
 
+  // Track removed and muted tweet IDs to prevent them from reappearing when scrolling
+  const removedTweetIds = new Set();
+  const mutedTweetIds = new Set();
+
+  // Dedicated MutationObserver to intercept tweets BEFORE they can be processed
+  // This runs independently and catches tweets as soon as they're added to DOM
+  let filterObserver = null;
+
   // Batch removal queue to prevent scroll jumping
   let removalQueue = [];
   let removalScheduled = false;
   let lastRemovalTime = 0;
   const REMOVAL_BATCH_DELAY = 50; // Small delay between batches to prevent infinite scroll loops
+
+  /**
+   * Get tweet ID from element
+   * @param {HTMLElement} tweetElement - The tweet element
+   * @returns {string|null} The tweet ID or null
+   */
+  function getTweetIdFromElement(tweetElement) {
+    if (!tweetElement) {
+      return null;
+    }
+
+    // First try to get from data attribute (set during processing)
+    let tweetId = tweetElement.getAttribute('data-tweet-id');
+    if (tweetId) {
+      return tweetId;
+    }
+
+    // Fallback: try to extract from element
+    const getTextExtraction = () => window.TextExtraction || {};
+    const { extractTweetId } = getTextExtraction();
+    if (extractTweetId) {
+      const extractedId = extractTweetId(tweetElement);
+      if (extractedId) {
+        // Store it for future reference
+        tweetElement.setAttribute('data-tweet-id', extractedId);
+        return extractedId;
+      }
+    }
+
+    return null;
+  }
 
   /**
    * Remove a tweet element completely from the DOM
@@ -299,6 +338,14 @@
   function removeTweetElement(tweetElement) {
     if (!tweetElement || !tweetElement.parentElement) {
       return;
+    }
+
+    // Extract and track tweet ID before removal
+    const tweetId = getTweetIdFromElement(tweetElement);
+    if (tweetId) {
+      removedTweetIds.add(tweetId);
+      // Remove from muted set if it was muted
+      mutedTweetIds.delete(tweetId);
     }
 
     // Find the outermost container - usually an article or div with role="article"
@@ -479,13 +526,23 @@
       return;
     }
 
+    // Extract and track tweet ID
+    const tweetId = getTweetIdFromElement(tweetElement);
+    if (tweetId) {
+      mutedTweetIds.add(tweetId);
+      // Remove from removed set if it was removed (shouldn't happen, but safety check)
+      removedTweetIds.delete(tweetId);
+    }
+
     // Check if already muted or manually revealed
     if (tweetElement.hasAttribute('data-iq-muted') || tweetElement.hasAttribute('data-iq-manually-revealed')) {
       return;
     }
 
-    // Mark as muted
+    // Mark as muted and filtered to prevent any processing
     tweetElement.setAttribute('data-iq-muted', 'true');
+    tweetElement.setAttribute('data-iq-filtered', 'true');
+    tweetElement.setAttribute('data-iq-processing', 'true'); // Prevent processing
 
     // Find the main tweet content area
     const tweetContentArea = tweetElement.querySelector('[data-testid="tweet"]') || tweetElement;
@@ -747,6 +804,12 @@
       return;
     }
 
+    // Remove from muted set if manually revealed
+    const tweetId = getTweetIdFromElement(tweetElement);
+    if (tweetId) {
+      mutedTweetIds.delete(tweetId);
+    }
+
     // Mark as manually revealed - this prevents re-filtering
     tweetElement.setAttribute('data-iq-manually-revealed', 'true');
     tweetElement.removeAttribute('data-iq-muted');
@@ -787,6 +850,221 @@
       tweet.removeAttribute('data-iq-manually-revealed');
       revealMutedTweet(tweet);
     });
+    // Clear muted set when filter is disabled
+    mutedTweetIds.clear();
+    // Also remove data attributes from any remaining elements
+    document.querySelectorAll('[data-iq-muted]').forEach(el => {
+      el.removeAttribute('data-iq-muted');
+      el.removeAttribute('data-iq-filtered');
+      el.removeAttribute('data-iq-processing');
+    });
+  }
+
+  /**
+   * Clear all removed tweet IDs (used when filter is disabled)
+   */
+  function clearRemovedTweetIds() {
+    removedTweetIds.clear();
+    // Also remove data attributes from any remaining elements
+    document.querySelectorAll('[data-iq-removed]').forEach(el => {
+      el.removeAttribute('data-iq-removed');
+      el.removeAttribute('data-iq-filtered');
+      el.removeAttribute('data-iq-processing');
+    });
+  }
+
+  /**
+   * Immediately intercept and filter a tweet if it was previously removed/muted
+   * This is called by the MutationObserver as soon as tweets are added to DOM
+   * @param {HTMLElement} tweetElement - The tweet element to check
+   * @returns {boolean} True if the tweet was intercepted and filtered
+   */
+  function interceptTweetImmediately(tweetElement) {
+    if (!tweetElement) {
+      return false;
+    }
+
+    // Mark as intercepted to prevent any processing
+    tweetElement.setAttribute('data-iq-filtered', 'true');
+    tweetElement.setAttribute('data-iq-processing', 'true'); // Prevent processing
+
+    const tweetId = getTweetIdFromElement(tweetElement);
+    if (!tweetId) {
+      // If we can't get ID yet, try again after a short delay
+      setTimeout(() => {
+        const delayedId = getTweetIdFromElement(tweetElement);
+        if (delayedId) {
+          if (removedTweetIds.has(delayedId)) {
+            if (tweetElement.parentElement) {
+              removeTweetElement(tweetElement);
+            }
+          } else if (mutedTweetIds.has(delayedId) && !tweetElement.hasAttribute('data-iq-manually-revealed')) {
+            if (!tweetElement.hasAttribute('data-iq-muted')) {
+              muteTweetElement(tweetElement);
+            }
+          }
+        }
+      }, 50);
+      return false;
+    }
+
+    // If tweet was previously removed, remove it immediately
+    if (removedTweetIds.has(tweetId)) {
+      // Mark as removed to prevent any processing
+      tweetElement.setAttribute('data-iq-removed', 'true');
+      if (tweetElement.parentElement) {
+        removeTweetElement(tweetElement);
+      }
+      return true;
+    }
+
+    // If tweet was previously muted, mute it immediately
+    if (mutedTweetIds.has(tweetId) && !tweetElement.hasAttribute('data-iq-manually-revealed')) {
+      // Apply mute (this will also mark it and prevent processing)
+      // Don't set attribute first - let muteTweetElement handle it
+      muteTweetElement(tweetElement);
+      return true;
+    }
+
+    // Not filtered, allow processing
+    tweetElement.removeAttribute('data-iq-filtered');
+    tweetElement.removeAttribute('data-iq-processing');
+    return false;
+  }
+
+  /**
+   * Check if a tweet should be skipped because it was previously removed or muted
+   * @param {HTMLElement} tweetElement - The tweet element to check
+   * @returns {boolean} True if the tweet should be skipped
+   */
+  function shouldSkipTweet(tweetElement) {
+    if (!tweetElement) {
+      return false;
+    }
+
+    // If already marked as filtered/removed/muted, skip immediately
+    if (tweetElement.hasAttribute('data-iq-filtered') ||
+        tweetElement.hasAttribute('data-iq-removed') ||
+        (tweetElement.hasAttribute('data-iq-muted') && !tweetElement.hasAttribute('data-iq-manually-revealed'))) {
+      return true;
+    }
+
+    const tweetId = getTweetIdFromElement(tweetElement);
+    if (!tweetId) {
+      return false;
+    }
+
+    // Skip if tweet was previously removed
+    if (removedTweetIds.has(tweetId)) {
+      // If tweet reappeared, remove it again immediately
+      tweetElement.setAttribute('data-iq-removed', 'true');
+      if (tweetElement.parentElement) {
+        removeTweetElement(tweetElement);
+      }
+      return true;
+    }
+
+    // Skip if tweet was previously muted (unless manually revealed)
+    if (mutedTweetIds.has(tweetId) && !tweetElement.hasAttribute('data-iq-manually-revealed')) {
+      // If tweet reappeared and should still be muted, re-apply mute immediately
+      tweetElement.setAttribute('data-iq-muted', 'true');
+      if (!tweetElement.hasAttribute('data-iq-muted')) {
+        muteTweetElement(tweetElement);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Setup MutationObserver to intercept tweets BEFORE they can be processed
+   * This runs independently and catches tweets as soon as they're added to DOM
+   */
+  function setupFilterObserver() {
+    // Clean up existing observer if any
+    if (filterObserver) {
+      filterObserver.disconnect();
+      filterObserver = null;
+    }
+
+    const settings = getSettings();
+    if (!settings.enableIqFiltr) {
+      return;
+    }
+
+    filterObserver = new MutationObserver((mutations) => {
+      const potentialTweets = [];
+
+      for (let i = 0; i < mutations.length; i++) {
+        const mutation = mutations[i];
+        for (let j = 0; j < mutation.addedNodes.length; j++) {
+          const node = mutation.addedNodes[j];
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            // Check if the added node is an article (tweet)
+            if (node.tagName === 'ARTICLE') {
+              potentialTweets.push(node);
+            }
+            // Check if the added node contains articles
+            if (node.querySelector) {
+              const articles = node.querySelectorAll('article');
+              if (articles.length > 0) {
+                for (let k = 0; k < articles.length; k++) {
+                  potentialTweets.push(articles[k]);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Immediately intercept and filter any tweets that were previously removed/muted
+      if (potentialTweets.length > 0) {
+        // Use requestAnimationFrame to ensure DOM is ready, but run synchronously
+        requestAnimationFrame(() => {
+          potentialTweets.forEach((tweet) => {
+            // Skip if already processed or intercepted
+            if (tweet.hasAttribute('data-iq-analyzed') ||
+                tweet.hasAttribute('data-iq-filtered') ||
+                tweet.hasAttribute('data-iq-removed')) {
+              return;
+            }
+
+            // Immediately intercept and filter
+            interceptTweetImmediately(tweet);
+
+            // Also check nested tweets
+            const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
+                               tweet.querySelector('article[role="article"]');
+            if (nestedTweet && nestedTweet !== tweet) {
+              if (!nestedTweet.hasAttribute('data-iq-analyzed') &&
+                  !nestedTweet.hasAttribute('data-iq-filtered') &&
+                  !nestedTweet.hasAttribute('data-iq-removed')) {
+                interceptTweetImmediately(nestedTweet);
+              }
+            }
+          });
+        });
+      }
+    });
+
+    // Start observing immediately
+    if (document.body) {
+      filterObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+  }
+
+  /**
+   * Stop the filter observer
+   */
+  function stopFilterObserver() {
+    if (filterObserver) {
+      filterObserver.disconnect();
+      filterObserver = null;
+    }
   }
 
   /**
@@ -952,6 +1230,35 @@
   }
 
 
+  // Initialize filter observer when module loads
+  // Wait for DOM to be ready
+  if (typeof window !== 'undefined') {
+    if (document.body) {
+      // Check settings and setup observer if filter is enabled
+      const settings = getSettings();
+      if (settings && settings.enableIqFiltr) {
+        setupFilterObserver();
+      }
+    } else {
+      // Wait for DOM to be ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          const settings = getSettings();
+          if (settings && settings.enableIqFiltr) {
+            setupFilterObserver();
+          }
+        });
+      } else {
+        setTimeout(() => {
+          const settings = getSettings();
+          if (settings && settings.enableIqFiltr) {
+            setupFilterObserver();
+          }
+        }, 100);
+      }
+    }
+  }
+
   // Export for use in other modules
   if (typeof window !== 'undefined') {
     window.IqFiltr = {
@@ -964,7 +1271,13 @@
       muteTweetElement,
       revealMutedTweet,
       revealAllMutedTweets,
-      applyFilterToVisibleTweets
+      applyFilterToVisibleTweets,
+      shouldSkipTweet,
+      getTweetIdFromElement,
+      clearRemovedTweetIds,
+      setupFilterObserver,
+      stopFilterObserver,
+      interceptTweetImmediately
     };
   }
 
