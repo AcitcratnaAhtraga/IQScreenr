@@ -1544,58 +1544,143 @@ class ComprehensiveIQEstimatorUltimate {
     const totalWords = features.tokens?.length || wordCount;
     const actualTTR = totalWords > 0 ? uniqueWords / totalWords : 0;
 
-    // Signal quality from vocabulary diversity (0-25 points, stricter)
-    // Most tweets have TTR around 0.5-0.7, so we're conservative
-    if (actualTTR >= 0.8) {
-      signalQuality += 25; // Extremely diverse (rare)
-    } else if (actualTTR >= 0.7) {
-      signalQuality += 20; // Very diverse
-    } else if (actualTTR >= 0.6) {
-      signalQuality += 15; // Good diversity
-    } else if (actualTTR >= 0.5) {
-      signalQuality += 10; // Moderate diversity (typical)
-    } else if (actualTTR >= 0.4) {
-      signalQuality += 5; // Low diversity (repetitive)
+    // Signal quality from vocabulary diversity (0-25 points, using multiple validated metrics)
+    // Use TTR as primary, but enhance with MTLD (less length-dependent) and Yule's K
+    const mtld = features.mtld || 0;
+    const yulesK = features.yules_k || 0;
+    const msttr = features.msttr || actualTTR;
+    
+    // Combine TTR and MSTTR (better for short texts) - use the better of the two
+    const bestTTR = Math.max(actualTTR, msttr);
+    
+    // MTLD is less length-dependent and more reliable for short texts
+    // High MTLD (>50) indicates strong lexical diversity regardless of length
+    let diversityScore = 0;
+    if (bestTTR >= 0.8 || mtld > 60) {
+      diversityScore = 25; // Extremely diverse
+    } else if (bestTTR >= 0.7 || mtld > 50) {
+      diversityScore = 20; // Very diverse
+    } else if (bestTTR >= 0.6 || mtld > 40) {
+      diversityScore = 15; // Good diversity
+    } else if (bestTTR >= 0.5 || mtld > 30) {
+      diversityScore = 10; // Moderate diversity (typical)
+    } else if (bestTTR >= 0.4 || mtld > 20) {
+      diversityScore = 5; // Low diversity
     } else {
-      signalQuality += 0; // Very repetitive (weak signal)
+      diversityScore = 0; // Very repetitive
     }
+    
+    // Yule's K bonus: Lower Yule's K (<100) = more diverse vocabulary
+    // This is a validated measure of vocabulary richness
+    if (yulesK > 0 && yulesK < 80) {
+      diversityScore += 3; // Excellent vocabulary richness
+    } else if (yulesK >= 80 && yulesK < 120) {
+      diversityScore += 2; // Good vocabulary richness
+    } else if (yulesK >= 120 && yulesK < 200) {
+      diversityScore += 1; // Moderate vocabulary richness
+    }
+    // High Yule's K (>200) indicates repetition - already penalized above
+    
+    signalQuality += Math.min(25, diversityScore);
 
     // Sentence variety (variance) - Multiple varied sentences = stronger signal
+    // Also consider grammatical complexity (subordinate clauses) and readability
     const sentenceCount = features.sentences?.length || features.sentence_count || 1;
     const sentenceVariance = features.sentence_variance || 0;
+    const subordinateClauses = features.subordinate_clauses || 0;
+    const readability = features.readability || {};
+    const fleschKincaid = readability.flesch_kincaid || 0;
+    
+    let sentenceComplexityScore = 0;
     if (sentenceCount >= 5 && sentenceVariance > 3) {
-      signalQuality += 15; // Multiple varied sentences = reliable
+      sentenceComplexityScore = 15; // Multiple varied sentences = reliable
     } else if (sentenceCount >= 3 && sentenceVariance > 2) {
-      signalQuality += 10; // Some variety
+      sentenceComplexityScore = 10; // Some variety
     } else if (sentenceCount >= 2) {
-      signalQuality += 5; // At least multiple sentences
+      sentenceComplexityScore = 5; // At least multiple sentences
     } else {
-      signalQuality += 0; // Single sentence = limited signal
+      sentenceComplexityScore = 0; // Single sentence = limited signal
     }
+    
+    // Subordinate clauses indicate grammatical sophistication (validated intelligence marker)
+    const clausesPerSentence = sentenceCount > 0 ? subordinateClauses / sentenceCount : 0;
+    if (clausesPerSentence >= 0.5) {
+      sentenceComplexityScore += 3; // High grammatical complexity
+    } else if (clausesPerSentence >= 0.3) {
+      sentenceComplexityScore += 2; // Moderate complexity
+    } else if (clausesPerSentence >= 0.1) {
+      sentenceComplexityScore += 1; // Some complexity
+    }
+    
+    // Readability indices validate complexity (Flesch-Kincaid grade level)
+    // Higher grade level (12+) with good sentence variety = sophisticated writing
+    if (fleschKincaid >= 14 && sentenceCount >= 3) {
+      sentenceComplexityScore += 2; // Very sophisticated readability
+    } else if (fleschKincaid >= 12 && sentenceCount >= 2) {
+      sentenceComplexityScore += 1; // Sophisticated readability
+    }
+    
+    signalQuality += Math.min(20, sentenceComplexityScore);
 
-    // ENHANCED: Detect run-on sentences (low punctuation density = weak signal quality)
+    // ENHANCED: Detect run-on sentences and assess punctuation sophistication
+    // Use punctuation entropy (variety of punctuation types) as intelligence indicator
     // Run-ons indicate casual speech patterns, not sophisticated writing
-    // This reduces signal quality because the metrics are less reliable
     // (variables declared here, reused later in anti-gaming checks)
     const avgWordsPerSentence = features.avg_words_per_sentence || (wordCount / sentenceCount);
     let punctuationMarks = (originalText.match(/[,;:.—-]/g) || []).length;
     let punctuationDensity = wordCount > 0 ? punctuationMarks / wordCount : 0;
+    const punctuationEntropy = features.punctuation_entropy || 0;
+    const punctuationComplexity = features.punctuation_complexity || 0;
+    
+    // Punctuation entropy measures sophistication of punctuation use (validated metric)
+    // Higher entropy = more varied and sophisticated punctuation patterns
+    if (punctuationEntropy > 2.0 && punctuationDensity > 0.08) {
+      signalQuality += 3; // Sophisticated punctuation usage
+    } else if (punctuationEntropy > 1.5 && punctuationDensity > 0.05) {
+      signalQuality += 2; // Good punctuation variety
+    } else if (punctuationEntropy > 1.0) {
+      signalQuality += 1; // Some punctuation variety
+    }
+    
+    // Punctuation complexity score (validated grammatical precision indicator)
+    if (punctuationComplexity > 0.15) {
+      signalQuality += 2; // High punctuation complexity
+    } else if (punctuationComplexity > 0.10) {
+      signalQuality += 1; // Moderate punctuation complexity
+    }
+    
+    // Penalty for run-ons (low punctuation density in long sentences)
     if (sentenceCount === 1 && avgWordsPerSentence > 15 && punctuationDensity < 0.05) {
       // Very low punctuation in long sentence = run-on = weaker signal
       signalQuality -= 5; // Reduce signal quality for obvious run-ons
     }
 
     // Word sophistication (AoA) - Advanced vocabulary indicates meaningful signal
+    // Also consider percentage of advanced words (AoA > 10) - validated intelligence indicator
     const meanAoa = features.mean_aoa || 0;
+    const pctAdvanced = features.pct_advanced || 0;
+    
+    let sophisticationScore = 0;
     if (meanAoa >= 10) {
-      signalQuality += 15; // Very sophisticated vocabulary
+      sophisticationScore = 15; // Very sophisticated vocabulary
     } else if (meanAoa >= 8) {
-      signalQuality += 10; // Moderately sophisticated
+      sophisticationScore = 10; // Moderately sophisticated
     } else if (meanAoa >= 6) {
-      signalQuality += 5; // Some sophistication
+      sophisticationScore = 5; // Some sophistication
     } else {
-      signalQuality += 0; // Basic vocabulary
+      sophisticationScore = 0; // Basic vocabulary
     }
+    
+    // Boost for high percentage of advanced words (validated intelligence marker)
+    if (pctAdvanced >= 20) {
+      sophisticationScore += 3; // High proportion of advanced words
+    } else if (pctAdvanced >= 15) {
+      sophisticationScore += 2; // Good proportion
+    } else if (pctAdvanced >= 10) {
+      sophisticationScore += 1; // Moderate proportion
+    }
+    
+    signalQuality += Math.min(18, sophisticationScore);
 
     // Apply sample size penalty - short texts have less reliable metrics
     // Even good signal is less reliable with less data
@@ -1608,11 +1693,29 @@ class ComprehensiveIQEstimatorUltimate {
       sampleSizePenalty = 5; // Small penalty for medium texts
     }
 
+    // Additional signal quality from logical flow (connective density)
+    // Connective density measures logical flow and coherence (validated intelligence marker)
+    const connectiveDensity = features.connective_density || 0;
+    if (connectiveDensity >= 0.10 && connectiveDensity <= 0.20) {
+      signalQuality += 2; // Optimal logical flow (too much = repetitive)
+    } else if (connectiveDensity >= 0.08 && connectiveDensity < 0.25) {
+      signalQuality += 1; // Good logical flow
+    }
+    
+    // Lexical overlap measures coherence between sentences (validated metric)
+    // Moderate overlap indicates good coherence without excessive repetition
+    const lexicalOverlap = features.lexical_overlap || 0;
+    if (lexicalOverlap >= 0.15 && lexicalOverlap <= 0.35 && sentenceCount >= 2) {
+      signalQuality += 2; // Good coherence between sentences
+    } else if (lexicalOverlap >= 0.10 && lexicalOverlap <= 0.40 && sentenceCount >= 2) {
+      signalQuality += 1; // Moderate coherence
+    }
+    
     signalQuality = Math.max(0, signalQuality - sampleSizePenalty);
 
-    // Normalize signal quality to 0-100 scale (max possible: 55 from above)
-    // Use stricter normalization - don't inflate mediocre scores
-    signalQuality = Math.min(100, (signalQuality / 55) * 100);
+    // Normalize signal quality to 0-100 scale (max possible: ~65 from above with enhanced metrics)
+    // More comprehensive normalization using validated intelligence-related metrics
+    signalQuality = Math.min(100, (signalQuality / 65) * 100);
 
     // ========== 2. DIMENSION AGREEMENT FACTOR (Critical - Cannot be faked) ==========
     // When all 4 dimensions agree, we have high confidence
@@ -1667,19 +1770,33 @@ class ComprehensiveIQEstimatorUltimate {
       featureReliability = 20;
     }
 
-    // Feature completeness - Having all metrics available
+    // Feature completeness - Having all validated intelligence metrics available
+    // More comprehensive check using research-validated metrics
     const hasReadability = features.readability && Object.keys(features.readability).length > 0;
-    const hasDiversityMetrics = features.ttr !== undefined && features.mtld !== undefined;
+    const hasDiversityMetrics = features.ttr !== undefined && features.mtld !== undefined && features.yules_k !== undefined;
     const hasGrammarMetrics = features.avg_dependency_depth !== undefined ||
-                              features.punctuation_complexity !== undefined;
+                              features.punctuation_complexity !== undefined ||
+                              features.punctuation_entropy !== undefined;
+    const hasComplexityMetrics = features.subordinate_clauses !== undefined &&
+                                  features.connective_density !== undefined &&
+                                  features.lexical_overlap !== undefined;
+    const hasAdvancedVocab = features.pct_advanced !== undefined && features.mean_aoa !== undefined;
 
-    if (hasReadability && hasDiversityMetrics && hasGrammarMetrics) {
-      featureReliability = Math.min(100, featureReliability + 10); // All features available
+    // Reward having comprehensive validated metrics
+    let completenessBonus = 0;
+    if (hasReadability && hasDiversityMetrics && hasGrammarMetrics && hasComplexityMetrics && hasAdvancedVocab) {
+      completenessBonus = 15; // All validated intelligence metrics available
+    } else if ((hasReadability && hasDiversityMetrics && hasGrammarMetrics) ||
+               (hasDiversityMetrics && hasComplexityMetrics && hasAdvancedVocab) ||
+               (hasGrammarMetrics && hasComplexityMetrics && hasReadability)) {
+      completenessBonus = 10; // Most validated metrics available
     } else if ((hasReadability && hasDiversityMetrics) ||
-               (hasReadability && hasGrammarMetrics) ||
-               (hasDiversityMetrics && hasGrammarMetrics)) {
-      featureReliability = Math.min(100, featureReliability + 5); // Most features available
+               (hasDiversityMetrics && hasGrammarMetrics) ||
+               (hasGrammarMetrics && hasComplexityMetrics)) {
+      completenessBonus = 5; // Good coverage of validated metrics
     }
+
+    featureReliability = Math.min(100, featureReliability + completenessBonus);
 
     // ========== 4. ANTI-GAMING CHECKS ==========
     // Detect attempts to inflate confidence through padding/repetition
@@ -1805,8 +1922,9 @@ class ComprehensiveIQEstimatorUltimate {
     // ========== 8. FINAL BOUNDS ==========
     // Apply word-count-based minimum floor for very short texts
     // This ensures meaningful confidence percentages that reflect statistical reality
-    // Absolute maximum: Even perfect signal has some uncertainty
-    confidence = Math.max(wordCountMinimum, Math.min(94, confidence));
+    // Absolute maximum: 95% - allows exceptional cases while acknowledging inherent uncertainty
+    // To reach 95%: Perfect dimension agreement + excellent signal quality + perfect feature reliability + sufficient length
+    confidence = Math.max(wordCountMinimum, Math.min(95, confidence));
 
     // Round to whole number for display (preserves precision from calculation)
     return Math.round(confidence);

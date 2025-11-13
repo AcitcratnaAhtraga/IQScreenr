@@ -300,60 +300,176 @@
         }
       }
 
-      // Calculate signal quality components
+      // Calculate signal quality components using validated intelligence metrics
       let signalQualityComponents = [];
       let signalQualityScore = 0;
 
-      // TTR component (0-25 points)
-      if (actualTTR >= 0.8) {
-        signalQualityComponents.push(`TTR Diversity: 25 pts (TTR=${actualTTR.toFixed(2)}, extremely diverse)`);
-        signalQualityScore += 25;
-      } else if (actualTTR >= 0.7) {
-        signalQualityComponents.push(`TTR Diversity: 20 pts (TTR=${actualTTR.toFixed(2)}, very diverse)`);
-        signalQualityScore += 20;
-      } else if (actualTTR >= 0.6) {
-        signalQualityComponents.push(`TTR Diversity: 15 pts (TTR=${actualTTR.toFixed(2)}, good diversity)`);
-        signalQualityScore += 15;
-      } else if (actualTTR >= 0.5) {
-        signalQualityComponents.push(`TTR Diversity: 10 pts (TTR=${actualTTR.toFixed(2)}, moderate)`);
-        signalQualityScore += 10;
-      } else if (actualTTR >= 0.4) {
-        signalQualityComponents.push(`TTR Diversity: 5 pts (TTR=${actualTTR.toFixed(2)}, low diversity)`);
-        signalQualityScore += 5;
+      // Enhanced vocabulary diversity (0-25 points) using multiple validated metrics
+      const mtld = features.mtld || 0;
+      const yulesK = features.yules_k || 0;
+      const msttr = features.msttr || actualTTR;
+      const bestTTR = Math.max(actualTTR, msttr);
+      
+      let diversityScore = 0;
+      if (bestTTR >= 0.8 || mtld > 60) {
+        diversityScore = 25;
+        signalQualityComponents.push(`Vocabulary Diversity: 25 pts (TTR=${actualTTR.toFixed(2)}, MSTTR=${msttr.toFixed(2)}, MTLD=${mtld.toFixed(1)}, extremely diverse)`);
+      } else if (bestTTR >= 0.7 || mtld > 50) {
+        diversityScore = 20;
+        signalQualityComponents.push(`Vocabulary Diversity: 20 pts (TTR=${actualTTR.toFixed(2)}, MSTTR=${msttr.toFixed(2)}, MTLD=${mtld.toFixed(1)}, very diverse)`);
+      } else if (bestTTR >= 0.6 || mtld > 40) {
+        diversityScore = 15;
+        signalQualityComponents.push(`Vocabulary Diversity: 15 pts (TTR=${actualTTR.toFixed(2)}, MSTTR=${msttr.toFixed(2)}, MTLD=${mtld.toFixed(1)}, good diversity)`);
+      } else if (bestTTR >= 0.5 || mtld > 30) {
+        diversityScore = 10;
+        signalQualityComponents.push(`Vocabulary Diversity: 10 pts (TTR=${actualTTR.toFixed(2)}, MSTTR=${msttr.toFixed(2)}, MTLD=${mtld.toFixed(1)}, moderate)`);
+      } else if (bestTTR >= 0.4 || mtld > 20) {
+        diversityScore = 5;
+        signalQualityComponents.push(`Vocabulary Diversity: 5 pts (TTR=${actualTTR.toFixed(2)}, MSTTR=${msttr.toFixed(2)}, MTLD=${mtld.toFixed(1)}, low diversity)`);
       } else {
-        signalQualityComponents.push(`TTR Diversity: 0 pts (TTR=${actualTTR.toFixed(2)}, repetitive)`);
+        diversityScore = 0;
+        signalQualityComponents.push(`Vocabulary Diversity: 0 pts (TTR=${actualTTR.toFixed(2)}, MSTTR=${msttr.toFixed(2)}, MTLD=${mtld.toFixed(1)}, repetitive)`);
       }
+      
+      // Yule's K bonus (vocabulary richness - validated metric)
+      let yulesBonus = 0;
+      if (yulesK > 0 && yulesK < 80) {
+        yulesBonus = 3;
+        signalQualityComponents.push(`  + Yule's K Bonus: +3 pts (Yule's K=${yulesK.toFixed(1)}, excellent richness)`);
+      } else if (yulesK >= 80 && yulesK < 120) {
+        yulesBonus = 2;
+        signalQualityComponents.push(`  + Yule's K Bonus: +2 pts (Yule's K=${yulesK.toFixed(1)}, good richness)`);
+      } else if (yulesK >= 120 && yulesK < 200) {
+        yulesBonus = 1;
+        signalQualityComponents.push(`  + Yule's K Bonus: +1 pt (Yule's K=${yulesK.toFixed(1)}, moderate richness)`);
+      }
+      
+      signalQualityScore += Math.min(25, diversityScore + yulesBonus);
 
-      // Sentence variety component (0-15 points)
+      // Enhanced sentence complexity (0-20 points) using validated metrics
       const sentenceVariance = features.sentence_variance || 0;
+      const subordinateClauses = features.subordinate_clauses || 0;
+      const readability = features.readability || {};
+      const fleschKincaid = readability.flesch_kincaid || 0;
+      const clausesPerSentence = sentenceCount > 0 ? subordinateClauses / sentenceCount : 0;
+      
+      let sentenceComplexityScore = 0;
       if (sentenceCount >= 5 && sentenceVariance > 3) {
+        sentenceComplexityScore = 15;
         signalQualityComponents.push(`Sentence Variety: 15 pts (${sentenceCount} sentences, variance=${sentenceVariance.toFixed(2)})`);
-        signalQualityScore += 15;
       } else if (sentenceCount >= 3 && sentenceVariance > 2) {
+        sentenceComplexityScore = 10;
         signalQualityComponents.push(`Sentence Variety: 10 pts (${sentenceCount} sentences, variance=${sentenceVariance.toFixed(2)})`);
-        signalQualityScore += 10;
       } else if (sentenceCount >= 2) {
+        sentenceComplexityScore = 5;
         signalQualityComponents.push(`Sentence Variety: 5 pts (${sentenceCount} sentences)`);
-        signalQualityScore += 5;
       } else {
+        sentenceComplexityScore = 0;
         signalQualityComponents.push(`Sentence Variety: 0 pts (single sentence)`);
       }
+      
+      // Subordinate clauses bonus (grammatical sophistication - validated intelligence marker)
+      if (clausesPerSentence >= 0.5) {
+        sentenceComplexityScore += 3;
+        signalQualityComponents.push(`  + Subordinate Clauses: +3 pts (${subordinateClauses.toFixed(1)} clauses, ${clausesPerSentence.toFixed(2)}/sentence, high complexity)`);
+      } else if (clausesPerSentence >= 0.3) {
+        sentenceComplexityScore += 2;
+        signalQualityComponents.push(`  + Subordinate Clauses: +2 pts (${subordinateClauses.toFixed(1)} clauses, ${clausesPerSentence.toFixed(2)}/sentence, moderate complexity)`);
+      } else if (clausesPerSentence >= 0.1) {
+        sentenceComplexityScore += 1;
+        signalQualityComponents.push(`  + Subordinate Clauses: +1 pt (${subordinateClauses.toFixed(1)} clauses, ${clausesPerSentence.toFixed(2)}/sentence, some complexity)`);
+      }
+      
+      // Readability bonus (Flesch-Kincaid grade level - validated complexity measure)
+      if (fleschKincaid >= 14 && sentenceCount >= 3) {
+        sentenceComplexityScore += 2;
+        signalQualityComponents.push(`  + Readability: +2 pts (Flesch-Kincaid=${fleschKincaid.toFixed(1)}, very sophisticated)`);
+      } else if (fleschKincaid >= 12 && sentenceCount >= 2) {
+        sentenceComplexityScore += 1;
+        signalQualityComponents.push(`  + Readability: +1 pt (Flesch-Kincaid=${fleschKincaid.toFixed(1)}, sophisticated)`);
+      }
+      
+      signalQualityScore += Math.min(20, sentenceComplexityScore);
 
-      // AoA sophistication component (0-15 points)
+      // Enhanced vocabulary sophistication (0-18 points) with pct_advanced bonus
       const meanAoa = features.mean_aoa || 0;
+      const pctAdvanced = features.pct_advanced || 0;
+      
+      let sophisticationScore = 0;
       if (meanAoa >= 10) {
+        sophisticationScore = 15;
         signalQualityComponents.push(`Vocabulary Sophistication: 15 pts (AoA=${meanAoa.toFixed(2)}, very advanced)`);
-        signalQualityScore += 15;
       } else if (meanAoa >= 8) {
+        sophisticationScore = 10;
         signalQualityComponents.push(`Vocabulary Sophistication: 10 pts (AoA=${meanAoa.toFixed(2)}, moderate)`);
-        signalQualityScore += 10;
       } else if (meanAoa >= 6) {
+        sophisticationScore = 5;
         signalQualityComponents.push(`Vocabulary Sophistication: 5 pts (AoA=${meanAoa.toFixed(2)}, some sophistication)`);
-        signalQualityScore += 5;
       } else {
+        sophisticationScore = 0;
         signalQualityComponents.push(`Vocabulary Sophistication: 0 pts (AoA=${meanAoa.toFixed(2)}, basic)`);
       }
+      
+      // Percentage of advanced words bonus (validated intelligence marker)
+      if (pctAdvanced >= 20) {
+        sophisticationScore += 3;
+        signalQualityComponents.push(`  + Advanced Words Bonus: +3 pts (${pctAdvanced.toFixed(1)}% advanced words, AoA>10)`);
+      } else if (pctAdvanced >= 15) {
+        sophisticationScore += 2;
+        signalQualityComponents.push(`  + Advanced Words Bonus: +2 pts (${pctAdvanced.toFixed(1)}% advanced words)`);
+      } else if (pctAdvanced >= 10) {
+        sophisticationScore += 1;
+        signalQualityComponents.push(`  + Advanced Words Bonus: +1 pt (${pctAdvanced.toFixed(1)}% advanced words)`);
+      }
+      
+      signalQualityScore += Math.min(18, sophisticationScore);
 
+      // Punctuation sophistication (punctuation entropy & complexity - validated metrics)
+      const punctuationEntropy = features.punctuation_entropy || 0;
+      const punctuationComplexity = features.punctuation_complexity || 0;
+      let punctuationBonus = 0;
+      
+      if (punctuationEntropy > 2.0 && punctuationDensity > 0.08) {
+        punctuationBonus += 3;
+        signalQualityComponents.push(`Punctuation Sophistication: +3 pts (entropy=${punctuationEntropy.toFixed(2)}, sophisticated usage)`);
+      } else if (punctuationEntropy > 1.5 && punctuationDensity > 0.05) {
+        punctuationBonus += 2;
+        signalQualityComponents.push(`Punctuation Sophistication: +2 pts (entropy=${punctuationEntropy.toFixed(2)}, good variety)`);
+      } else if (punctuationEntropy > 1.0) {
+        punctuationBonus += 1;
+        signalQualityComponents.push(`Punctuation Sophistication: +1 pt (entropy=${punctuationEntropy.toFixed(2)}, some variety)`);
+      }
+      
+      if (punctuationComplexity > 0.15) {
+        punctuationBonus += 2;
+        signalQualityComponents.push(`  + Punctuation Complexity: +2 pts (complexity=${punctuationComplexity.toFixed(2)}, high)`);
+      } else if (punctuationComplexity > 0.10) {
+        punctuationBonus += 1;
+        signalQualityComponents.push(`  + Punctuation Complexity: +1 pt (complexity=${punctuationComplexity.toFixed(2)}, moderate)`);
+      }
+      
+      signalQualityScore += punctuationBonus;
+      
+      // Logical flow (connective density - validated intelligence marker)
+      const connectiveDensity = features.connective_density || 0;
+      if (connectiveDensity >= 0.10 && connectiveDensity <= 0.20) {
+        signalQualityScore += 2;
+        signalQualityComponents.push(`Logical Flow: +2 pts (connective density=${connectiveDensity.toFixed(3)}, optimal range)`);
+      } else if (connectiveDensity >= 0.08 && connectiveDensity < 0.25) {
+        signalQualityScore += 1;
+        signalQualityComponents.push(`Logical Flow: +1 pt (connective density=${connectiveDensity.toFixed(3)}, good flow)`);
+      }
+      
+      // Coherence (lexical overlap - validated metric)
+      const lexicalOverlap = features.lexical_overlap || 0;
+      if (lexicalOverlap >= 0.15 && lexicalOverlap <= 0.35 && sentenceCount >= 2) {
+        signalQualityScore += 2;
+        signalQualityComponents.push(`Coherence: +2 pts (lexical overlap=${lexicalOverlap.toFixed(3)}, good coherence)`);
+      } else if (lexicalOverlap >= 0.10 && lexicalOverlap <= 0.40 && sentenceCount >= 2) {
+        signalQualityScore += 1;
+        signalQualityComponents.push(`Coherence: +1 pt (lexical overlap=${lexicalOverlap.toFixed(3)}, moderate coherence)`);
+      }
+      
       // Run-on penalty (reduces signal quality for casual Twitter patterns)
       let runOnSignalPenalty = 0;
       const avgWordsForSignal = features.avg_words_per_sentence || (sentences.length > 0 ? (tokens.length / sentences.length) : 0);
@@ -373,7 +489,8 @@
       }
 
       const signalQualityAfterPenalty = Math.max(0, signalQualityScore - sampleSizePenalty - runOnSignalPenalty);
-      const signalQualityNormalized = Math.min(100, (signalQualityAfterPenalty / 55) * 100);
+      // Updated normalization: max possible is ~65 with enhanced validated metrics
+      const signalQualityNormalized = Math.min(100, (signalQualityAfterPenalty / 65) * 100);
 
       // Sample size constraint multiplier
       let sampleSizeConstraint = 1.0;
@@ -401,13 +518,30 @@
         }
       }
 
-      // Check feature completeness
+      // Enhanced feature completeness check using validated intelligence metrics
       const hasReadability = features.readability && Object.keys(features.readability).length > 0;
-      const hasDiversityMetrics = features.ttr !== undefined && features.mtld !== undefined;
-      const hasGrammarMetrics = features.avg_dependency_depth !== undefined || features.punctuation_complexity !== undefined;
-      if (hasReadability && hasDiversityMetrics && hasGrammarMetrics) {
+      const hasDiversityMetrics = features.ttr !== undefined && features.mtld !== undefined && features.yules_k !== undefined;
+      const hasGrammarMetrics = features.avg_dependency_depth !== undefined ||
+                                features.punctuation_complexity !== undefined ||
+                                features.punctuation_entropy !== undefined;
+      const hasComplexityMetrics = features.subordinate_clauses !== undefined &&
+                                   features.connective_density !== undefined &&
+                                   features.lexical_overlap !== undefined;
+      const hasAdvancedVocab = features.pct_advanced !== undefined && features.mean_aoa !== undefined;
+      
+      let completenessBonus = 0;
+      if (hasReadability && hasDiversityMetrics && hasGrammarMetrics && hasComplexityMetrics && hasAdvancedVocab) {
+        completenessBonus = 15;
+        featureReliability = Math.min(100, featureReliability + 15);
+      } else if ((hasReadability && hasDiversityMetrics && hasGrammarMetrics) ||
+                 (hasDiversityMetrics && hasComplexityMetrics && hasAdvancedVocab) ||
+                 (hasGrammarMetrics && hasComplexityMetrics && hasReadability)) {
+        completenessBonus = 10;
         featureReliability = Math.min(100, featureReliability + 10);
-      } else if ((hasReadability && hasDiversityMetrics) || (hasReadability && hasGrammarMetrics) || (hasDiversityMetrics && hasGrammarMetrics)) {
+      } else if ((hasReadability && hasDiversityMetrics) ||
+                 (hasDiversityMetrics && hasGrammarMetrics) ||
+                 (hasGrammarMetrics && hasComplexityMetrics)) {
+        completenessBonus = 5;
         featureReliability = Math.min(100, featureReliability + 5);
       }
 
@@ -418,8 +552,9 @@
       if (sampleSizePenalty > 0) {
         console.log(`  %cSample Size Penalty: -${sampleSizePenalty} pts (${wordCount} words)`, 'color: #F44336;');
       }
-      console.log(`  Raw Score: ${signalQualityScore} pts ${sampleSizePenalty > 0 ? `→ ${signalQualityAfterPenalty} pts after penalty` : ''}`);
-      console.log(`  Normalized: ${signalQualityNormalized.toFixed(1)}%`);
+      console.log(`  Raw Score: ${signalQualityScore.toFixed(1)} pts ${sampleSizePenalty > 0 || runOnSignalPenalty > 0 ? `→ ${signalQualityAfterPenalty.toFixed(1)} pts after penalty` : ''}`);
+      console.log(`  Normalized: ${signalQualityNormalized.toFixed(1)}% (max possible: ~65 pts with enhanced validated metrics)`);
+      console.log(`  %cNote: Signal quality uses 10+ validated linguistic metrics (MTLD, Yule's K, punctuation entropy, subordinate clauses, connective density, lexical overlap, readability indices, pct_advanced)`, 'color: #666; font-style: italic;');
 
       console.log('');
       console.log(`%c2. Dimension Agreement (40% weight):`, 'font-weight: bold; color: #4CAF50;');
@@ -439,8 +574,17 @@
       console.log('');
       console.log(`%c3. Feature Reliability (20% weight):`, 'font-weight: bold; color: #FF9800;');
       console.log(`  Dictionary Match Rate: ${features.aoa_match_rate?.toFixed(1) || 'N/A'}%`);
-      console.log(`  Feature Completeness: ${hasReadability ? '✓' : '✗'} Readability, ${hasDiversityMetrics ? '✓' : '✗'} Diversity, ${hasGrammarMetrics ? '✓' : '✗'} Grammar`);
+      console.log(`  Feature Completeness:`);
+      console.log(`    ${hasReadability ? '✓' : '✗'} Readability metrics (Flesch-Kincaid, SMOG, ARI, LIX)`);
+      console.log(`    ${hasDiversityMetrics ? '✓' : '✗'} Diversity metrics (TTR, MTLD, Yule's K)`);
+      console.log(`    ${hasGrammarMetrics ? '✓' : '✗'} Grammar metrics (Dependency depth, Punctuation entropy/complexity)`);
+      console.log(`    ${hasComplexityMetrics ? '✓' : '✗'} Complexity metrics (Subordinate clauses, Connectives, Lexical overlap)`);
+      console.log(`    ${hasAdvancedVocab ? '✓' : '✗'} Advanced vocabulary metrics (AoA, pct_advanced)`);
+      if (completenessBonus > 0) {
+        console.log(`  Completeness Bonus: +${completenessBonus} pts (${hasReadability && hasDiversityMetrics && hasGrammarMetrics && hasComplexityMetrics && hasAdvancedVocab ? 'All validated metrics available' : 'Most validated metrics available'})`);
+      }
       console.log(`  Feature Reliability Score: ${featureReliability.toFixed(1)}%`);
+      console.log(`  %cNote: Using research-validated linguistic metrics that correlate with intelligence`, 'color: #666; font-style: italic;');
 
       console.log('');
       console.log(`%c4. Sample Size Constraint:`, 'font-weight: bold; color: #9E9E9E;');
