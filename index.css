@@ -400,10 +400,26 @@ body {
   border: 1px solid #eec566;
 }
 
+.related-project-title-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.related-project-title-icon {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .related-project-section .section-title {
   font-family: 'Cinzel', serif;
   color: #eec566;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   font-size: 36px;
   -webkit-text-stroke: 0.2px #000000;
   text-shadow:
@@ -660,6 +676,20 @@ body {
 
   .related-project-description {
     font-size: 16px;
+  }
+
+  .related-project-title-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .related-project-title-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .related-project-section .section-title {
+    font-size: 28px;
   }
 }
 
