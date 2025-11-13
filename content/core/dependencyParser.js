@@ -14,7 +14,7 @@ class SpacyDependencyParser {
 
   /**
    * Improved dependency depth approximation based on real Python results
-   * Calibrated on 15 test samples with known dependency depths
+   * Calibrated against Python's spaCy dependency parsing results
    */
   async computeDependencyDepth(text) {
     // Enhanced features for better approximation
@@ -48,7 +48,7 @@ class SpacyDependencyParser {
     const prepCount = (text.match(prepositions) || []).length;
     const prepDensity = prepCount / sentences.length;
 
-    // Calibrated coefficients based on Python real dependency depths (15 samples)
+    // Calibrated coefficients based on Python real dependency depths
     // Linear regression approximation matching Python's spaCy results
     const base = 1.795;
     const punctCoef = 0.15;

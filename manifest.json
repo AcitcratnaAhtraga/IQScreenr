@@ -102,6 +102,8 @@
       "resources": [
         "content/data/aoa_dictionary.json",
         "content/data/dependency_depth_calibration.json",
+        "content/data/metaphor_patterns.json",
+        "content/data/population_norms.json",
         "icons/Variants/Fullsize/IqGuessrT.png",
         "icons/Variants/Fullsize/IqGuessrTrspW.png"
       ],

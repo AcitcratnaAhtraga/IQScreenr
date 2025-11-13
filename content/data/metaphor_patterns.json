@@ -1,0 +1,464 @@
+{
+  "metaphor_patterns": {
+    "nature_water": [
+      "river", "riverbed", "flow", "water", "stream", "current", "tide", "wave", "ocean", "sea",
+      "flood", "torrent", "cascade", "drip", "drop", "puddle", "pond", "lake", "well", "spring",
+      "fountain", "brook", "creek", "rapids", "whirlpool", "eddy", "surge", "rush", "pour",
+      "drain", "leak", "spill", "overflow", "ebb", "recede", "trickle", "gush", "splash"
+    ],
+    "nature_earth": [
+      "foundation", "ground", "earth", "soil", "bedrock", "base", "root", "roots", "anchor",
+      "grounding", "settle", "settled", "stable", "stability", "solid", "solidity", "firm",
+      "firmly", "grounded", "planted", "embedded", "deep", "depth", "shallow", "surface",
+      "crust", "layer", "strata", "stratum", "mountain", "hill", "valley", "peak", "summit",
+      "cliff", "precipice", "edge", "brink", "abyss", "chasm", "canyon", "ravine", "gorge"
+    ],
+    "nature_growth": [
+      "grow", "growth", "growing", "sprout", "bloom", "blossom", "flower", "flourish", "thrive",
+      "wither", "fade", "decay", "rot", "wilt", "shrivel", "seed", "seedling", "sapling", "tree",
+      "branch", "branches", "trunk", "bark", "leaves", "foliage", "fruit", "harvest", "reap",
+      "sow", "cultivate", "nurture", "nourish", "feed", "fertile", "fertility", "barren",
+      "blossoming", "budding", "maturing", "ripening", "germination", "photosynthesis"
+    ],
+    "nature_weather": [
+      "storm", "tempest", "hurricane", "tornado", "cyclone", "gale", "wind", "breeze", "gust",
+      "rain", "rainfall", "downpour", "deluge", "drizzle", "shower", "cloud", "clouds", "cloudy",
+      "thunder", "lightning", "bolt", "flash", "thunderstorm", "blizzard", "snow", "snowfall",
+      "hail", "frost", "ice", "freeze", "frozen", "thaw", "melt", "sunshine", "sunlight", "ray",
+      "beam", "dawn", "dusk", "twilight", "sunrise", "sunset", "horizon", "sky", "heavens"
+    ],
+    "journey_path": [
+      "path", "pathway", "road", "route", "trail", "track", "way", "journey", "voyage", "trip",
+      "travel", "trek", "pilgrimage", "quest", "expedition", "adventure", "odyssey", "wander",
+      "roam", "roaming", "stroll", "walk", "stride", "step", "steps", "footstep", "footsteps",
+      "march", "pace", "stride", "stroll", "wander", "meander", "zigzag", "detour", "shortcut",
+      "crossroads", "junction", "intersection", "fork", "branch", "divergence", "convergence",
+      "destination", "goal", "endpoint", "finish", "finish line", "milestone", "landmark"
+    ],
+    "journey_movement": [
+      "move", "movement", "motion", "momentum", "forward", "backward", "advance", "retreat",
+      "progress", "progression", "regress", "regression", "stagnate", "stagnation", "stall",
+      "accelerate", "acceleration", "decelerate", "slow", "speed", "velocity", "pace", "rate",
+      "rush", "hurry", "hasten", "dash", "sprint", "race", "run", "running", "jog", "walk",
+      "crawl", "creep", "slide", "glide", "soar", "fly", "flight", "leap", "jump", "bound",
+      "spring", "bounce", "hop", "skip", "stumble", "trip", "fall", "tumble", "plunge", "dive"
+    ],
+    "building_construction": [
+      "build", "building", "construct", "construction", "structure", "framework", "foundation",
+      "base", "basis", "cornerstone", "pillar", "pillars", "column", "columns", "beam", "beams",
+      "support", "supports", "scaffold", "scaffolding", "scaffold", "frame", "skeleton",
+      "architecture", "architectural", "design", "blueprint", "plan", "plans", "draft", "drafts",
+      "erect", "erection", "raise", "raising", "lift", "lifting", "assemble", "assembly",
+      "piece", "pieces", "component", "components", "part", "parts", "element", "elements",
+      "brick", "bricks", "stone", "stones", "mortar", "cement", "concrete", "steel", "iron"
+    ],
+    "building_rooms": [
+      "room", "rooms", "chamber", "chambers", "hall", "halls", "corridor", "corridors",
+      "passage", "passages", "doorway", "doorways", "entrance", "entrances", "exit", "exits",
+      "gate", "gates", "gateway", "gateways", "threshold", "thresholds", "door", "doors",
+      "window", "windows", "wall", "walls", "ceiling", "ceilings", "floor", "floors",
+      "roof", "roofs", "attic", "attics", "basement", "basements", "cellar", "cellars"
+    ],
+    "body_anatomy": [
+      "heart", "hearts", "soul", "souls", "spirit", "spirits", "mind", "minds", "brain", "brains",
+      "head", "heads", "shoulder", "shoulders", "back", "backs", "spine", "spines", "backbone",
+      "backbones", "bone", "bones", "skeleton", "skeletons", "muscle", "muscles", "flesh",
+      "blood", "vein", "veins", "artery", "arteries", "pulse", "pulses", "beat", "beats",
+      "breath", "breaths", "breathe", "breathing", "lung", "lungs", "chest", "chests",
+      "stomach", "stomachs", "gut", "guts", "nerve", "nerves", "nervous", "nervousness"
+    ],
+    "body_senses": [
+      "see", "seeing", "sight", "vision", "visual", "eye", "eyes", "gaze", "gazes", "stare",
+      "stares", "glance", "glances", "look", "looks", "view", "views", "observe", "observes",
+      "watch", "watches", "perceive", "perceives", "perception", "perceptions", "insight",
+      "insights", "foresight", "hindsight", "oversight", "oversights", "blind", "blindness",
+      "hear", "hearing", "listen", "listens", "sound", "sounds", "voice", "voices", "echo",
+      "echoes", "resonate", "resonates", "resonance", "silence", "silent", "quiet", "quietness"
+    ],
+    "light_dark": [
+      "light", "lights", "bright", "brightness", "brighten", "illuminate", "illumination",
+      "illuminated", "shine", "shines", "shining", "shone", "glow", "glows", "glowing",
+      "gleam", "gleams", "gleaming", "glimmer", "glimmers", "glimmering", "sparkle", "sparkles",
+      "sparkling", "twinkle", "twinkles", "twinkling", "flash", "flashes", "flashing",
+      "beam", "beams", "ray", "rays", "radiate", "radiates", "radiation", "radiant",
+      "dark", "darkness", "darken", "shadow", "shadows", "shade", "shades", "dim", "dimness",
+      "gloom", "gloomy", "gloominess", "obscure", "obscures", "obscurity", "obscured",
+      "black", "blackness", "pitch", "pitch-black", "void", "voids", "abyss", "abysses"
+    ],
+    "fire_heat": [
+      "fire", "fires", "flame", "flames", "flaming", "burn", "burns", "burning", "burned",
+      "burnt", "ignite", "ignites", "ignition", "spark", "sparks", "sparking", "kindle",
+      "kindles", "kindling", "fuel", "fuels", "fueled", "stoke", "stokes", "stoking",
+      "heat", "heats", "heating", "heated", "hot", "hotter", "hottest", "warm", "warmer",
+      "warmest", "warmth", "warmth", "scorch", "scorches", "scorching", "scorched", "sear",
+      "sears", "searing", "seared", "blaze", "blazes", "blazing", "inferno", "infernos",
+      "ember", "embers", "ash", "ashes", "smoke", "smokes", "smoking", "smoky", "extinguish"
+    ],
+    "container_vessel": [
+      "container", "containers", "vessel", "vessels", "receptacle", "receptacles", "holder",
+      "holders", "holder", "holders", "box", "boxes", "case", "cases", "crate", "crates",
+      "cage", "cages", "cage", "cages", "cage", "cages", "cage", "cages", "cage", "cages",
+      "basket", "baskets", "bag", "bags", "sack", "sacks", "pouch", "pouches", "pocket",
+      "pockets", "drawer", "drawers", "cabinet", "cabinets", "shelf", "shelves", "shelving",
+      "cup", "cups", "bowl", "bowls", "dish", "dishes", "plate", "plates", "tray", "trays"
+    ],
+    "food_nourishment": [
+      "feed", "feeds", "feeding", "fed", "nourish", "nourishes", "nourishing", "nourished",
+      "nourishment", "nurture", "nurtures", "nurturing", "nurtured", "sustain", "sustains",
+      "sustaining", "sustained", "sustenance", "sustain", "sustains", "sustaining", "sustained",
+      "hunger", "hungry", "hunger", "thirst", "thirsty", "thirst", "appetite", "appetites",
+      "crave", "craves", "craving", "craved", "devour", "devours", "devouring", "devoured",
+      "consume", "consumes", "consuming", "consumed", "consumption", "digest", "digests",
+      "digesting", "digested", "digestion", "absorb", "absorbs", "absorbing", "absorbed"
+    ],
+    "war_battle": [
+      "battle", "battles", "war", "wars", "warfare", "fight", "fights", "fighting", "fought",
+      "combat", "combats", "conflict", "conflicts", "struggle", "struggles", "struggling",
+      "struggled", "attack", "attacks", "attacking", "attacked", "assault", "assaults",
+      "assaulting", "assaulted", "strike", "strikes", "striking", "struck", "hit", "hits",
+      "hitting", "blow", "blows", "punch", "punches", "punching", "punched", "defend",
+      "defends", "defending", "defended", "defense", "defences", "shield", "shields",
+      "shielding", "shielded", "armor", "armour", "armors", "armours", "weapon", "weapons"
+    ],
+    "war_strategy": [
+      "strategy", "strategies", "strategic", "tactic", "tactics", "tactical", "plan", "plans",
+      "planning", "planned", "scheme", "schemes", "scheming", "schemed", "plot", "plots",
+      "plotting", "plotted", "maneuver", "maneuvers", "manoeuvre", "manoeuvres", "move",
+      "moves", "moves", "moves", "moves", "moves", "moves", "moves", "moves", "moves", "moves",
+      "campaign", "campaigns", "mission", "missions", "objective", "objectives", "target",
+      "targets", "targeting", "targeted", "aim", "aims", "aiming", "aimed", "goal", "goals"
+    ],
+    "machine_mechanism": [
+      "machine", "machines", "mechanism", "mechanisms", "device", "devices", "tool", "tools",
+      "instrument", "instruments", "apparatus", "apparatuses", "apparatus", "equipment",
+      "gear", "gears", "cog", "cogs", "wheel", "wheels", "gear", "gears", "engine", "engines",
+      "motor", "motors", "drive", "drives", "driving", "drove", "driven", "power", "powers",
+      "powering", "powered", "force", "forces", "forcing", "forced", "energy", "energies",
+      "fuel", "fuels", "fueling", "fueled", "operate", "operates", "operating", "operated",
+      "operation", "operations", "function", "functions", "functioning", "functioned"
+    ],
+    "time_seasons": [
+      "spring", "springs", "summer", "summers", "autumn", "autumns", "fall", "falls",
+      "winter", "winters", "season", "seasons", "seasonal", "year", "years", "yearly",
+      "month", "months", "monthly", "week", "weeks", "weekly", "day", "days", "daily",
+      "hour", "hours", "hourly", "minute", "minutes", "second", "seconds", "moment",
+      "moments", "instant", "instants", "instantaneous", "eternity", "eternities", "eternal"
+    ],
+    "time_cycles": [
+      "cycle", "cycles", "cyclical", "circle", "circles", "circular", "round", "rounds",
+      "round", "rounds", "round", "rounds", "round", "rounds", "round", "rounds", "round",
+      "rounds", "round", "rounds", "round", "rounds", "round", "rounds", "round", "rounds",
+      "loop", "loops", "spiral", "spirals", "spiraling", "spiraled", "revolve", "revolves",
+      "revolving", "revolved", "revolution", "revolutions", "rotate", "rotates", "rotating",
+      "rotated", "rotation", "rotations", "spin", "spins", "spinning", "spun", "turn",
+      "turns", "turning", "turned", "twist", "twists", "twisting", "twisted"
+    ],
+    "textile_fabric": [
+      "fabric", "fabrics", "cloth", "cloths", "textile", "textiles", "weave", "weaves",
+      "weaving", "wove", "woven", "weaving", "thread", "threads", "threading", "threaded",
+      "yarn", "yarns", "string", "strings", "cord", "cords", "rope", "ropes", "cable",
+      "cables", "wire", "wires", "knot", "knots", "knotting", "knotted", "tie", "ties",
+      "tying", "tied", "bind", "binds", "binding", "bound", "bond", "bonds", "bonding",
+      "bonded", "link", "links", "linking", "linked", "connect", "connects", "connecting",
+      "connected", "connection", "connections", "intertwine", "intertwines", "intertwining"
+    ],
+    "animal_behavior": [
+      "hunt", "hunts", "hunting", "hunted", "hunter", "hunters", "prey", "preys", "predator",
+      "predators", "predatory", "chase", "chases", "chasing", "chased", "pursue", "pursues",
+      "pursuing", "pursued", "pursuit", "pursuits", "stalk", "stalks", "stalking", "stalked",
+      "pounce", "pounces", "pouncing", "pounced", "leap", "leaps", "leaping", "leaped",
+      "leapt", "spring", "springs", "springing", "sprang", "sprung", "lunge", "lunges",
+      "lunging", "lunged", "dive", "dives", "diving", "dove", "dived", "soar", "soars",
+      "soaring", "soared", "swoop", "swoops", "swooping", "swooped", "glide", "glides"
+    ],
+    "music_sound": [
+      "music", "musical", "melody", "melodies", "melodic", "harmony", "harmonies", "harmonic",
+      "rhythm", "rhythms", "rhythmic", "beat", "beats", "beating", "beat", "tempo", "tempos",
+      "tune", "tunes", "tuning", "tuned", "song", "songs", "sing", "sings", "singing", "sang",
+      "sung", "singer", "singers", "voice", "voices", "vocal", "vocals", "sound", "sounds",
+      "sounding", "sounded", "tone", "tones", "tonal", "note", "notes", "chord", "chords",
+      "chordal", "key", "keys", "scale", "scales", "pitch", "pitches", "pitch", "pitches",
+      "resonate", "resonates", "resonating", "resonated", "resonance", "echo", "echoes"
+    ],
+    "abstract_concepts": [
+      "concept", "concepts", "conceptual", "idea", "ideas", "notion", "notions", "thought",
+      "thoughts", "thinking", "think", "thinks", "thinker", "thinkers", "reason", "reasons",
+      "reasoning", "reasoned", "rational", "rationality", "logic", "logics", "logical",
+      "philosophy", "philosophies", "philosophical", "philosopher", "philosophers", "theory",
+      "theories", "theoretical", "theorist", "theorists", "principle", "principles",
+      "fundamental", "fundamentals", "basis", "bases", "foundation", "foundations", "base",
+      "bases", "ground", "grounds", "grounding", "grounded", "root", "roots", "rooted"
+    ],
+    "shape_form": [
+      "shape", "shapes", "shaping", "shaped", "form", "forms", "forming", "formed", "mold",
+      "molds", "molding", "molded", "mould", "moulds", "moulding", "moulded", "sculpt",
+      "sculpts", "sculpting", "sculpted", "sculpture", "sculptures", "carve", "carves",
+      "carving", "carved", "chisel", "chisels", "chiseling", "chiseled", "chiselled",
+      "design", "designs", "designing", "designed", "designer", "designers", "pattern",
+      "patterns", "patterning", "patterned", "structure", "structures", "structuring",
+      "structured", "framework", "frameworks", "frame", "frames", "framing", "framed"
+    ],
+    "color_visual": [
+      "color", "colors", "colour", "colours", "colored", "coloured", "hue", "hues", "shade",
+      "shades", "shading", "shaded", "tint", "tints", "tinting", "tinted", "tone", "tones",
+      "toning", "toned", "paint", "paints", "painting", "painted", "paintbrush", "paintbrushes",
+      "brush", "brushes", "brushing", "brushed", "canvas", "canvases", "palette", "palettes",
+      "pigment", "pigments", "dye", "dyes", "dying", "dyed", "stain", "stains", "staining",
+      "stained", "bright", "brighter", "brightest", "brightness", "dark", "darker", "darkest",
+      "darkness", "light", "lighter", "lightest", "lightness", "vivid", "vividness"
+    ],
+    "metaphor_indicators": [
+      "like", "as", "similar to", "akin to", "resemble", "resembles", "resembling", "resembled",
+      "resemblance", "metaphor", "metaphors", "metaphorical", "metaphorically", "analogy",
+      "analogies", "analogous", "analogously", "compare", "compares", "comparing", "compared",
+      "comparison", "comparisons", "symbol", "symbols", "symbolic", "symbolically", "symbolize",
+      "symbolizes", "symbolizing", "symbolized", "represent", "represents", "representing",
+      "represented", "representation", "representations", "embody", "embodies", "embodying",
+      "embodied", "embodiment", "embodiments", "personify", "personifies", "personifying",
+      "personified", "personification", "personifications"
+    ],
+    "transformation_change": [
+      "transform", "transforms", "transforming", "transformed", "transformation", "transformations",
+      "change", "changes", "changing", "changed", "shift", "shifts", "shifting", "shifted",
+      "alter", "alters", "altering", "altered", "alteration", "alterations", "modify", "modifies",
+      "modifying", "modified", "modification", "modifications", "adapt", "adapts", "adapting",
+      "adapted", "adaptation", "adaptations", "evolve", "evolves", "evolving", "evolved",
+      "evolution", "evolutions", "develop", "develops", "developing", "developed", "development",
+      "developments", "grow", "grows", "growing", "grew", "grown", "growth", "mature", "matures",
+      "maturing", "matured", "maturity", "ripen", "ripens", "ripening", "ripened", "ripeness"
+    ],
+    "connection_bond": [
+      "connect", "connects", "connecting", "connected", "connection", "connections", "link",
+      "links", "linking", "linked", "linkage", "linkages", "bond", "bonds", "bonding", "bonded",
+      "tie", "ties", "tying", "tied", "bind", "binds", "binding", "bound", "attach", "attaches",
+      "attaching", "attached", "attachment", "attachments", "join", "joins", "joining", "joined",
+      "joint", "joints", "unite", "unites", "uniting", "united", "unity", "unities", "merge",
+      "merges", "merging", "merged", "merger", "mergers", "fuse", "fuses", "fusing", "fused",
+      "fusion", "fusions", "blend", "blends", "blending", "blended", "weave", "weaves"
+    ],
+    "separation_division": [
+      "separate", "separates", "separating", "separated", "separation", "separations", "divide",
+      "divides", "dividing", "divided", "division", "divisions", "split", "splits", "splitting",
+      "split", "break", "breaks", "breaking", "broke", "broken", "breakdown", "breakdowns",
+      "fracture", "fractures", "fracturing", "fractured", "crack", "cracks", "cracking", "cracked",
+      "shatter", "shatters", "shattering", "shattered", "fragment", "fragments", "fragmenting",
+      "fragmented", "fragmentation", "fragmentations", "disconnect", "disconnects", "disconnecting",
+      "disconnected", "disconnection", "disconnections", "detach", "detaches", "detaching",
+      "detached", "detachment", "detachments", "isolate", "isolates", "isolating", "isolated"
+    ],
+    "weight_balance": [
+      "weight", "weights", "weighing", "weighed", "heavy", "heavier", "heaviest", "heaviness",
+      "light", "lighter", "lightest", "lightness", "balance", "balances", "balancing", "balanced",
+      "imbalance", "imbalances", "unbalanced", "scale", "scales", "scaling", "scaled", "tip",
+      "tips", "tipping", "tipped", "tilt", "tilts", "tilting", "tilted", "lean", "leans",
+      "leaning", "leaned", "slant", "slants", "slanting", "slanted", "slope", "slopes", "sloping",
+      "sloped", "incline", "inclines", "inclining", "inclined", "decline", "declines", "declining",
+      "declined", "level", "levels", "leveling", "levelled", "leveled", "even", "evens", "evening",
+      "evened", "uneven", "unevenness", "steady", "steadier", "steadiest", "steadiness", "stable"
+    ],
+    "depth_surface": [
+      "deep", "deeper", "deepest", "depth", "depths", "shallow", "shallower", "shallowest",
+      "shallowness", "surface", "surfaces", "surfacing", "surfaced", "superficial", "superficiality",
+      "profound", "profundity", "profoundness", "shallow", "shallows", "shallow", "shallows",
+      "bottom", "bottoms", "bottoming", "bottomed", "base", "bases", "basement", "basements",
+      "foundation", "foundations", "root", "roots", "rooted", "rooting", "core", "cores",
+      "center", "centers", "centre", "centres", "central", "periphery", "peripheries", "peripheral",
+      "edge", "edges", "edging", "edged", "border", "borders", "bordering", "bordered", "boundary",
+      "boundaries", "margin", "margins", "marginal", "fringe", "fringes", "fringing", "fringed"
+    ],
+    "speed_pace": [
+      "speed", "speeds", "speeding", "sped", "pace", "paces", "pacing", "paced", "rate", "rates",
+      "rating", "rated", "tempo", "tempos", "rhythm", "rhythms", "rhythmic", "fast", "faster",
+      "fastest", "rapid", "rapider", "rapidest", "rapidity", "quick", "quicker", "quickest",
+      "quickness", "swift", "swifter", "swiftest", "swiftness", "slow", "slower", "slowest",
+      "slowness", "gradual", "gradually", "gradualness", "sudden", "suddenly", "suddenness",
+      "instant", "instantly", "instantaneous", "instantaneousness", "immediate", "immediately",
+      "immediacy", "hurry", "hurries", "hurrying", "hurried", "rush", "rushes", "rushing", "rushed"
+    ],
+    "size_scale": [
+      "size", "sizes", "sizing", "sized", "scale", "scales", "scaling", "scaled", "magnitude",
+      "magnitudes", "dimension", "dimensions", "dimensional", "large", "larger", "largest",
+      "largeness", "small", "smaller", "smallest", "smallness", "big", "bigger", "biggest",
+      "bigness", "huge", "huger", "hugest", "hugeness", "enormous", "enormity", "tiny",
+      "tinier", "tiniest", "tininess", "miniature", "miniatures", "massive", "massiveness",
+      "immense", "immensity", "vast", "vaster", "vastest", "vastness", "gigantic", "giant",
+      "giants", "giant", "giants", "dwarf", "dwarfs", "dwarves", "dwarfed", "expand", "expands"
+    ],
+    "strength_power": [
+      "strength", "strengths", "strong", "stronger", "strongest", "strongly", "power", "powers",
+      "powering", "powered", "powerful", "powerfully", "powerfulness", "force", "forces",
+      "forcing", "forced", "forceful", "forcefully", "forcefulness", "might", "mights", "mighty",
+      "mightier", "mightiest", "mightily", "potent", "potency", "potently", "potentness",
+      "weak", "weaker", "weakest", "weakness", "weaknesses", "feeble", "feebler", "feeblest",
+      "feebleness", "frail", "frailer", "frailest", "frailty", "fragile", "fragility", "delicate",
+      "delicacy", "delicately", "delicateness", "tough", "tougher", "toughest", "toughness",
+      "durable", "durability", "durably", "durableness", "endure", "endures", "enduring", "endured"
+    ],
+    "direction_orientation": [
+      "direction", "directions", "directional", "orient", "orients", "orienting", "oriented",
+      "orientation", "orientations", "north", "south", "east", "west", "up", "down", "left",
+      "right", "forward", "backward", "backwards", "ahead", "behind", "before", "after",
+      "beside", "besides", "next", "near", "nearer", "nearest", "nearness", "far", "farther",
+      "farthest", "further", "furthest", "distance", "distances", "distant", "distance", "close",
+      "closer", "closest", "closeness", "proximity", "proximities", "adjacent", "adjacency",
+      "remote", "remoter", "remotest", "remoteness", "distant", "distantly", "distance"
+    ],
+    "emotion_feeling": [
+      "emotion", "emotions", "emotional", "emotionally", "feeling", "feelings", "feel", "feels",
+      "feeling", "felt", "sentiment", "sentiments", "sentimental", "sentimentally", "passion",
+      "passions", "passionate", "passionately", "passionateness", "desire", "desires", "desiring",
+      "desired", "desirable", "desirability", "love", "loves", "loving", "loved", "lovable",
+      "lovability", "hate", "hates", "hating", "hated", "hateful", "hatefully", "hatefulness",
+      "anger", "angers", "angry", "angrier", "angriest", "angrily", "angriness", "fear",
+      "fears", "fearing", "feared", "fearful", "fearfully", "fearfulness", "joy", "joys",
+      "joyful", "joyfully", "joyfulness", "sad", "sadder", "saddest", "sadness", "sadly"
+    ],
+    "knowledge_wisdom": [
+      "knowledge", "knowledges", "know", "knows", "knowing", "knew", "known", "knowable",
+      "knowability", "understand", "understands", "understanding", "understood", "understandable",
+      "understandability", "comprehend", "comprehends", "comprehending", "comprehended",
+      "comprehension", "comprehensions", "comprehensible", "comprehensibility", "learn", "learns",
+      "learning", "learned", "learnt", "learnable", "learnability", "study", "studies", "studying",
+      "studied", "studious", "studiously", "studiousness", "wisdom", "wisdoms", "wise", "wiser",
+      "wisest", "wisely", "wiseness", "insight", "insights", "insightful", "insightfully",
+      "insightfulness", "enlighten", "enlightens", "enlightening", "enlightened", "enlightenment"
+    ],
+    "vision_sight": [
+      "vision", "visions", "visual", "visually", "visualize", "visualizes", "visualizing",
+      "visualized", "visualization", "visualizations", "see", "sees", "seeing", "saw", "seen",
+      "sight", "sights", "sighting", "sighted", "sightless", "sightlessness", "view", "views",
+      "viewing", "viewed", "viewer", "viewers", "viewpoint", "viewpoints", "perspective",
+      "perspectives", "perceive", "perceives", "perceiving", "perceived", "perception",
+      "perceptions", "perceptive", "perceptively", "perceptiveness", "observe", "observes",
+      "observing", "observed", "observation", "observations", "observant", "observantly",
+      "observance", "watch", "watches", "watching", "watched", "watcher", "watchers"
+    ],
+    "metaphor_phrases": [
+      "like a", "as if", "as though", "similar to", "akin to", "resembles", "reminds of",
+      "brings to mind", "calls to mind", "evokes", "suggests", "implies", "hints at",
+      "points to", "indicates", "signifies", "represents", "stands for", "symbolizes",
+      "embodies", "personifies", "mirrors", "reflects", "echoes", "resonates with",
+      "parallels", "corresponds to", "equates to", "is comparable to", "can be compared to",
+      "is analogous to", "is like", "is as", "works like", "functions as", "acts as",
+      "serves as", "operates as", "behaves like", "moves like", "flows like", "grows like",
+      "develops like", "evolves like", "changes like", "transforms like", "shifts like"
+    ]
+  },
+  "abstract_concept_patterns": {
+    "cognitive_processes": [
+      "thought", "thoughts", "thinking", "think", "thinks", "thinker", "thinkers", "reason",
+      "reasons", "reasoning", "reasoned", "rational", "rationality", "rationalize", "rationalizes",
+      "rationalizing", "rationalized", "logic", "logics", "logical", "logically", "logicality",
+      "analyze", "analyzes", "analyzing", "analyzed", "analysis", "analyses", "analytical",
+      "analytically", "synthesize", "synthesizes", "synthesizing", "synthesized", "synthesis",
+      "syntheses", "synthetic", "synthetically", "comprehend", "comprehends", "comprehending",
+      "comprehended", "comprehension", "comprehensions", "comprehensible", "comprehensibility",
+      "understand", "understands", "understanding", "understood", "understandable", "understandability"
+    ],
+    "systems_frameworks": [
+      "system", "systems", "systematic", "systematically", "systematicity", "framework",
+      "frameworks", "structure", "structures", "structuring", "structured", "structural",
+      "structurally", "pattern", "patterns", "patterning", "patterned", "model", "models",
+      "modeling", "modelled", "modeled", "paradigm", "paradigms", "paradigmatic", "paradigmatically",
+      "schema", "schemata", "schemas", "schematic", "schematically", "template", "templates",
+      "blueprint", "blueprints", "design", "designs", "designing", "designed", "designer",
+      "designers", "architecture", "architectures", "architectural", "architecturally", "architect",
+      "architects", "construct", "constructs", "constructing", "constructed", "construction",
+      "constructions", "constructive", "constructively", "constructiveness"
+    ],
+    "processes_mechanisms": [
+      "process", "processes", "processing", "processed", "procedure", "procedures", "procedural",
+      "procedurally", "mechanism", "mechanisms", "mechanical", "mechanically", "mechanics",
+      "function", "functions", "functioning", "functioned", "functional", "functionally",
+      "functionality", "operation", "operations", "operational", "operationally", "operate",
+      "operates", "operating", "operated", "method", "methods", "methodical", "methodically",
+      "methodology", "methodologies", "methodological", "methodologically", "approach", "approaches",
+      "approaching", "approached", "technique", "techniques", "technical", "technically",
+      "technology", "technologies", "technological", "technologically", "strategy", "strategies",
+      "strategic", "strategically", "strategist", "strategists"
+    ],
+    "principles_fundamentals": [
+      "principle", "principles", "principal", "principally", "fundamental", "fundamentals",
+      "fundamentally", "fundamentality", "basis", "bases", "basic", "basically", "basics",
+      "foundation", "foundations", "foundational", "foundationally", "base", "bases", "basing",
+      "based", "ground", "grounds", "grounding", "grounded", "groundless", "groundlessness",
+      "root", "roots", "rooting", "rooted", "rootless", "rootlessness", "core", "cores",
+      "coring", "cored", "cornerstone", "cornerstones", "essence", "essences", "essential",
+      "essentially", "essentiality", "essentialness", "element", "elements", "elemental",
+      "elementally", "component", "components", "constituent", "constituents", "ingredient",
+      "ingredients", "factor", "factors", "factoring", "factored", "aspect", "aspects", "aspectual"
+    ],
+    "concepts_ideas": [
+      "concept", "concepts", "conceptual", "conceptually", "conceptuality", "conceptualize",
+      "conceptualizes", "conceptualizing", "conceptualized", "conceptualization", "conceptualizations",
+      "idea", "ideas", "ideal", "ideals", "ideally", "ideality", "idealism", "idealist",
+      "idealists", "idealistic", "idealistically", "notion", "notions", "notional", "notionally",
+      "theory", "theories", "theoretical", "theoretically", "theoretician", "theoreticians",
+      "theorist", "theorists", "theorize", "theorizes", "theorizing", "theorized", "theorization",
+      "theorizations", "hypothesis", "hypotheses", "hypothetical", "hypothetically", "hypothesize",
+      "hypothesizes", "hypothesizing", "hypothesized", "philosophy", "philosophies", "philosophical",
+      "philosophically", "philosopher", "philosophers", "philosophize", "philosophizes", "philosophizing",
+      "philosophized", "doctrine", "doctrines", "doctrinal", "doctrinally", "dogma", "dogmas",
+      "dogmatic", "dogmatically", "dogmatism", "belief", "beliefs", "believe", "believes",
+      "believing", "believed", "believer", "believers", "believable", "believability"
+    ],
+    "awareness_consciousness": [
+      "aware", "awareness", "awarenesses", "unaware", "unawareness", "conscious", "consciousness",
+      "consciousnesses", "unconscious", "unconsciousness", "consciousness", "consciousnesses",
+      "mindful", "mindfulness", "mindfulnesses", "mindless", "mindlessness", "perceive",
+      "perceives", "perceiving", "perceived", "perception", "perceptions", "perceptive",
+      "perceptively", "perceptiveness", "perceptivity", "perceiver", "perceivers", "notice",
+      "notices", "noticing", "noticed", "noticeable", "noticeably", "noticeability", "observe",
+      "observes", "observing", "observed", "observation", "observations", "observant", "observantly",
+      "observance", "observances", "recognize", "recognizes", "recognizing", "recognized",
+      "recognition", "recognitions", "recognizable", "recognizably", "recognizability", "realize",
+      "realizes", "realizing", "realized", "realization", "realizations", "realizable", "realizability"
+    ],
+    "reflection_introspection": [
+      "reflect", "reflects", "reflecting", "reflected", "reflection", "reflections", "reflective",
+      "reflectively", "reflectiveness", "reflectivity", "introspect", "introspects", "introspecting",
+      "introspected", "introspection", "introspections", "introspective", "introspectively",
+      "introspectiveness", "contemplate", "contemplates", "contemplating", "contemplated",
+      "contemplation", "contemplations", "contemplative", "contemplatively", "contemplativeness",
+      "meditate", "meditates", "meditating", "meditated", "meditation", "meditations", "meditative",
+      "meditatively", "meditativeness", "ponder", "ponders", "pondering", "pondered", "ponderous",
+      "ponderously", "ponderousness", "consider", "considers", "considering", "considered",
+      "consideration", "considerations", "considerate", "considerately", "considerateness",
+      "contemplate", "contemplates", "contemplating", "contemplated", "contemplation", "contemplations"
+    ],
+    "momentum_cycles": [
+      "momentum", "momenta", "momentums", "momentous", "momentously", "momentousness", "spiral",
+      "spirals", "spiraling", "spiraled", "spiralled", "spiralling", "spiralled", "cycle",
+      "cycles", "cycling", "cycled", "cyclical", "cyclically", "cyclicality", "circular",
+      "circularly", "circularity", "circularness", "loop", "loops", "looping", "looped",
+      "circuit", "circuits", "circuitous", "circuitously", "circuitousness", "revolve",
+      "revolves", "revolving", "revolved", "revolution", "revolutions", "revolutionary",
+      "revolutionarily", "revolutionariness", "rotate", "rotates", "rotating", "rotated",
+      "rotation", "rotations", "rotational", "rotationally", "spin", "spins", "spinning",
+      "spun", "turn", "turns", "turning", "turned", "twist", "twists", "twisting", "twisted"
+    ],
+    "reinforcement_feedback": [
+      "reinforce", "reinforces", "reinforcing", "reinforced", "reinforcement", "reinforcements",
+      "reinforcer", "reinforcers", "strengthen", "strengthens", "strengthening", "strengthened",
+      "strengthening", "strengthenings", "strength", "strengths", "strong", "stronger", "strongest",
+      "strongly", "strongness", "fortify", "fortifies", "fortifying", "fortified", "fortification",
+      "fortifications", "fortifier", "fortifiers", "bolster", "bolsters", "bolstering", "bolstered",
+      "bolstering", "bolsterings", "support", "supports", "supporting", "supported", "supportive",
+      "supportively", "supportiveness", "supporter", "supporters", "feedback", "feedbacks",
+      "feed", "feeds", "feeding", "fed", "feed", "feeds", "feeding", "fed", "nourish", "nourishes"
+    ],
+    "establishment_development": [
+      "establish", "establishes", "establishing", "established", "establishment", "establishments",
+      "establisher", "establishers", "found", "founds", "founding", "founded", "founder",
+      "founders", "foundation", "foundations", "foundational", "foundationally", "create",
+      "creates", "creating", "created", "creation", "creations", "creative", "creatively",
+      "creativeness", "creativity", "creator", "creators", "build", "builds", "building", "built",
+      "builder", "builders", "building", "buildings", "construct", "constructs", "constructing",
+      "constructed", "construction", "constructions", "constructive", "constructively", "develop",
+      "develops", "developing", "developed", "development", "developments", "developmental",
+      "developmentally", "developer", "developers", "form", "forms", "forming", "formed",
+      "formation", "formations", "formative", "formatively", "form", "forms", "forming", "formed"
+    ]
+  }
+}
+

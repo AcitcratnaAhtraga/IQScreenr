@@ -571,6 +571,34 @@
     });
   }
 
+  // Handle messages from popup (e.g., clear cache)
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'clearAllCaches') {
+      // Clear in-memory caches
+      const iqCache = window.IQCache;
+      if (iqCache && typeof iqCache.clearCache === 'function') {
+        iqCache.clearCache();
+      }
+
+      // Clear game manager cache if available
+      const gameManager = getGameManager();
+      if (gameManager && gameManager.clearCache && typeof gameManager.clearCache === 'function') {
+        gameManager.clearCache();
+      }
+
+      // Clear any cached IQ results on tweet elements
+      const allTweets = document.querySelectorAll('article[data-testid="tweet"], article[role="article"]');
+      allTweets.forEach(tweet => {
+        delete tweet._iqResult;
+        tweet.removeAttribute('data-iq-analyzed');
+        tweet.removeAttribute('data-iq-processing');
+      });
+
+      sendResponse({ success: true });
+      return true; // Keep channel open for async response
+    }
+  });
+
   // Wait a moment for all modules to load, then start
   // Modules are loaded synchronously via manifest, but we give a small delay
   // to ensure all window.* global objects are set up

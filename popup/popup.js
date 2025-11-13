@@ -1587,6 +1587,122 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // Handle clear cache button
+  document.getElementById('clearCache').addEventListener('click', () => {
+    const confirmationMessage = 
+      `⚠️ CLEAR ALL CACHE DATA?\n\n` +
+      `This will permanently delete:\n` +
+      `• All cached IQ scores for Twitter users\n` +
+      `• All IqGuessr game guesses and revealed scores\n` +
+      `• Your average IQ calculation history\n` +
+      `• All cached tweet analysis data\n\n` +
+      `⚠️ WARNING: This action cannot be undone!\n` +
+      `All cached data will need to be recalculated.\n\n` +
+      `Are you sure you want to continue?`;
+
+    if (confirm(confirmationMessage)) {
+      // Show loading status
+      showStatus('Clearing cache...', 'info');
+
+      // Clear IQ cache (if available)
+      if (typeof window !== 'undefined' && window.IQCache && typeof window.IQCache.clearCache === 'function') {
+        window.IQCache.clearCache();
+      }
+
+      // Clear all cache-related storage keys
+      Promise.all([
+        // Get all local storage keys
+        new Promise((resolve) => chrome.storage.local.get(null, resolve)),
+        // Get all sync storage keys (for game cache)
+        new Promise((resolve) => chrome.storage.sync.get(null, resolve))
+      ]).then(([localItems, syncItems]) => {
+        const keysToRemove = [];
+
+        // Collect all cache-related keys from local storage
+        for (const key of Object.keys(localItems)) {
+          if (
+            key.startsWith('iq_cache_') ||           // IQ cache
+            key.startsWith('iq_guess_') ||          // Game guess cache
+            key.startsWith('iq_revealed_') ||       // Revealed IQ cache
+            key.startsWith('iq_revealed_iq_') ||    // Revealed IQ result cache
+            key === 'user_iq_history' ||            // User average IQ history
+            key.startsWith('user_iq_')              // User IQ related data
+          ) {
+            keysToRemove.push(key);
+          }
+        }
+
+        // Collect cache-related keys from sync storage
+        for (const key of Object.keys(syncItems)) {
+          if (
+            key.startsWith('iq_guess_') ||
+            key.startsWith('iq_revealed_') ||
+            key.startsWith('iq_revealed_iq_')
+          ) {
+            keysToRemove.push(key);
+          }
+        }
+
+        // Remove all cache keys
+        if (keysToRemove.length > 0) {
+          // Remove from local storage
+          const localKeys = keysToRemove.filter(key => 
+            key.startsWith('iq_cache_') ||
+            key.startsWith('iq_guess_') ||
+            key.startsWith('iq_revealed_') ||
+            key.startsWith('iq_revealed_iq_') ||
+            key === 'user_iq_history' ||
+            key.startsWith('user_iq_')
+          );
+          
+          if (localKeys.length > 0) {
+            chrome.storage.local.remove(localKeys, () => {
+              if (chrome.runtime.lastError) {
+                console.error('Error clearing local cache:', chrome.runtime.lastError);
+              }
+            });
+          }
+
+          // Remove from sync storage
+          const syncKeys = keysToRemove.filter(key =>
+            key.startsWith('iq_guess_') ||
+            key.startsWith('iq_revealed_') ||
+            key.startsWith('iq_revealed_iq_')
+          );
+
+          if (syncKeys.length > 0) {
+            chrome.storage.sync.remove(syncKeys, () => {
+              if (chrome.runtime.lastError) {
+                console.error('Error clearing sync cache:', chrome.runtime.lastError);
+              }
+            });
+          }
+        }
+
+        // Send message to content script to clear in-memory caches
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {
+              type: 'clearAllCaches'
+            }).catch(() => {
+              // Ignore errors (tab might not have content script loaded)
+            });
+          }
+        });
+
+        // Update average IQ badge if it exists
+        if (typeof updateAverageIQBadge === 'function') {
+          updateAverageIQBadge();
+        }
+
+        showStatus(`Cache cleared successfully (${keysToRemove.length} entries removed)`, 'success');
+      }).catch((error) => {
+        console.error('Error clearing cache:', error);
+        showStatus('Error clearing cache', 'error');
+      });
+    }
+  });
+
   // Listen for IqGuessr score updates from content script
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'updateIQGuessrScore') {
