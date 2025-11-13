@@ -402,24 +402,16 @@ body {
 
 .related-project-title-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 8px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
 }
 
-.related-project-title-icon {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-
-.related-project-section .section-title {
+.related-project-title-line {
   font-family: 'Cinzel', serif;
   color: #eec566;
-  margin-bottom: 0;
   font-size: 36px;
   -webkit-text-stroke: 0.2px #000000;
   text-shadow:
@@ -428,6 +420,15 @@ body {
     -1px 1px 0 #000000,
     1px 1px 0 #000000,
     0px -3px 2px #7f241b;
+  line-height: 1.2;
+}
+
+.related-project-title-icon {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  flex-shrink: 0;
+  margin-top: 8px;
 }
 
 .related-project-description {
@@ -678,18 +679,13 @@ body {
     font-size: 16px;
   }
 
-  .related-project-title-container {
-    flex-direction: column;
-    gap: 12px;
+  .related-project-title-line {
+    font-size: 28px;
   }
 
   .related-project-title-icon {
-    width: 60px;
-    height: 60px;
-  }
-
-  .related-project-section .section-title {
-    font-size: 28px;
+    width: 80px;
+    height: 80px;
   }
 }
 
