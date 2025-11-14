@@ -57,3 +57,6 @@ build/
 .env.local
 .env.*.local
 
+# Packaging script output
+package-extension.sh
+
