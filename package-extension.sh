@@ -3,6 +3,44 @@
 
 echo "📦 Packaging IqScreenr extension..."
 
+# Function to increment version by 0.0.1 (patch version)
+increment_version() {
+    local version=$1
+    IFS='.' read -ra VERSION_PARTS <<< "$version"
+    local major=${VERSION_PARTS[0]}
+    local minor=${VERSION_PARTS[1]}
+    local patch=${VERSION_PARTS[2]}
+    
+    # Increment patch version
+    patch=$((patch + 1))
+    
+    echo "${major}.${minor}.${patch}"
+}
+
+# Read current version from manifest.json
+CURRENT_VERSION=$(grep -o '"version": "[^"]*"' manifest.json | cut -d'"' -f4)
+echo "Current version: $CURRENT_VERSION"
+
+# Increment version
+NEW_VERSION=$(increment_version "$CURRENT_VERSION")
+echo "New version: $NEW_VERSION"
+
+# Update manifest.json
+echo "Updating manifest.json..."
+sed -i "s/\"version\": \"$CURRENT_VERSION\"/\"version\": \"$NEW_VERSION\"/" manifest.json
+
+# Update popup/popup.html
+echo "Updating popup/popup.html..."
+sed -i "s/Version $CURRENT_VERSION/Version $NEW_VERSION/g" popup/popup.html
+
+# Update index.html (both JSON-LD and footer)
+echo "Updating index.html..."
+sed -i "s/\"softwareVersion\": \"$CURRENT_VERSION\"/\"softwareVersion\": \"$NEW_VERSION\"/" index.html
+sed -i "s/Version $CURRENT_VERSION/Version $NEW_VERSION/g" index.html
+
+echo "✅ Version updated to $NEW_VERSION"
+echo ""
+
 # Create a temporary directory
 TEMP_DIR="iqscreenr-package"
 ZIP_FILE="IqScreenr.zip"
