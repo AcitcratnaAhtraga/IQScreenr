@@ -2105,7 +2105,7 @@ class ComprehensiveIQEstimatorUltimate {
       if (runOnScore > 15 && avgWords > 20) {
         // For very obvious run-ons, cap the sentence length bonus
         // Don't reward length if it's just a run-on
-        const lengthBonus = (avgWords - baseline) * 6.0;
+        const lengthBonus = (avgWords - popMean) * 6.0;
         if (lengthBonus > 30) { // Only penalize if there's a significant bonus
           iq -= (lengthBonus - 30) * 0.5; // Reduce excessive length bonus
         }
