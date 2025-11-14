@@ -53,10 +53,12 @@
       // This fixes the issue where badges get stuck on first page load
       checkForStuckBadges(processedTweets); // Run immediately
       setTimeout(() => checkForStuckBadges(processedTweets), 500); // Check after 500ms
+      setTimeout(() => checkForStuckBadges(processedTweets), 1000); // Check after 1s
       setTimeout(() => checkForStuckBadges(processedTweets), 1500); // Check after 1.5s
-      setTimeout(() => checkForStuckBadges(processedTweets), 3000); // Check after 3s
-      // Then check every 3 seconds thereafter
-      setInterval(() => checkForStuckBadges(processedTweets), 3000);
+      setTimeout(() => checkForStuckBadges(processedTweets), 2500); // Check after 2.5s
+      setTimeout(() => checkForStuckBadges(processedTweets), 3500); // Check after 3.5s
+      // Then check every 2 seconds thereafter (more frequent)
+      setInterval(() => checkForStuckBadges(processedTweets), 2000);
     }
 
     // Performance optimization: Debounce and batch processing

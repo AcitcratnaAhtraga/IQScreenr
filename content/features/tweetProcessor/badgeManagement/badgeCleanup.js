@@ -54,10 +54,26 @@
               return false; // Give it time to process
             } else {
               const processingTime = Date.now() - parseInt(processingStart, 10);
-              // On notification page, be more aggressive - if processing for more than 2 seconds, reprocess
-              if (processingTime > 2000) {
+              // On notification page, be more aggressive - if processing for more than 1.5 seconds, reprocess
+              if (processingTime > 1500) {
                 return true;
               }
+            }
+          }
+          
+          // Also check if badge has been loading for a while (even without processing flag)
+          // This catches cases where processing flag was removed but badge never updated
+          const badgeCreatedAt = badge.getAttribute('data-created-at');
+          if (badgeCreatedAt) {
+            try {
+              const createdTime = new Date(badgeCreatedAt).getTime();
+              const age = Date.now() - createdTime;
+              // If badge has been loading for more than 3 seconds, it's stuck
+              if (age > 3000) {
+                return true;
+              }
+            } catch (e) {
+              // Ignore date parsing errors
             }
           }
         }

@@ -178,34 +178,83 @@
     }
 
     // Check if this is the current user's post
-    const tweetHandle = getTweetHandle(tweetElement);
+    const isNotificationsPage = window.location.href.includes('/notifications');
     let isUserPost = false;
-    if (tweetHandle) {
-      const normalizedTweetHandle = tweetHandle.toLowerCase().trim().replace(/^@/, '');
-
-      // Try multiple methods to get user handle
-      let currentUserHandle = await getCurrentUserHandle();
-
-      // Fallback: If on a tweet page and URL handle matches tweet handle, it's likely our tweet
-      if (!currentUserHandle) {
-        const pathname = window.location.pathname;
-        const urlMatch = pathname.match(/^\/([a-zA-Z0-9_]+)\/status\//);
-        if (urlMatch) {
-          const urlHandle = urlMatch[1].toLowerCase();
-          if (urlHandle === normalizedTweetHandle) {
-            // URL handle matches tweet handle - this is likely our own tweet
-            currentUserHandle = urlHandle;
-          }
-        }
-      }
-
-      const normalizedUserHandle = currentUserHandle ? currentUserHandle.toLowerCase().trim().replace(/^@/, '') : null;
-
-      if (normalizedUserHandle && normalizedTweetHandle === normalizedUserHandle) {
+    
+    // SPECIAL HANDLING FOR NOTIFICATIONS PAGE:
+    // On notifications page, if notification text contains "your post", "you", etc.,
+    // the tweet being shown is YOUR tweet, not the person who performed the action
+    if (isNotificationsPage) {
+      const allSpans = Array.from(tweetElement.querySelectorAll('span'));
+      const allDivs = Array.from(tweetElement.querySelectorAll('div'));
+      const allTextElements = [...allSpans, ...allDivs];
+      
+      const notificationText = allTextElements.find(element => {
+        const text = (element.textContent || '').toLowerCase();
+        return text.includes('liked your post') ||
+               text.includes('replied to you') ||
+               text.includes('quoted your post') ||
+               text.includes('reposted your post') ||
+               (text.includes('your post') && !text.includes('their post')) ||
+               (text.includes('replied') && text.includes('you')) ||
+               (text.includes('quoted') && text.includes('your'));
+      });
+      
+      if (notificationText) {
+        // This is a notification about YOUR tweet - treat it as user's own post
         isUserPost = true;
         // If filtering user's posts is disabled, don't filter
         if (settings.filterUserPosts !== true) {
           return false; // Don't filter current user's content
+        }
+      }
+    }
+    
+    // If not already identified as user's post, check by handle
+    if (!isUserPost) {
+      const tweetHandle = getTweetHandle(tweetElement);
+      if (tweetHandle) {
+        const normalizedTweetHandle = tweetHandle.toLowerCase().trim().replace(/^@/, '');
+
+        // Try multiple methods to get user handle
+        let currentUserHandle = await getCurrentUserHandle();
+
+        // Fallback 1: If on a tweet page and URL handle matches tweet handle, it's likely our tweet
+        if (!currentUserHandle) {
+          const pathname = window.location.pathname;
+          const urlMatch = pathname.match(/^\/([a-zA-Z0-9_]+)\/status\//);
+          if (urlMatch) {
+            const urlHandle = urlMatch[1].toLowerCase();
+            if (urlHandle === normalizedTweetHandle) {
+              // URL handle matches tweet handle - this is likely our own tweet
+              currentUserHandle = urlHandle;
+            }
+          }
+        }
+
+        // Fallback 2: On notifications page or when getCurrentUserHandle fails, check stored handle directly
+        // This is important because getCurrentUserHandle() might not work on notifications page
+        if (!currentUserHandle) {
+          // Try to get handle from storage and compare directly with tweet handle
+          const storedHandle = await new Promise((resolve) => {
+            chrome.storage.sync.get(['twitterHandle', 'userHandle', 'handle'], (result) => {
+              const handle = result.twitterHandle || result.userHandle || result.handle;
+              resolve(handle ? handle.toLowerCase().trim().replace(/^@/, '') : null);
+            });
+          });
+          if (storedHandle && storedHandle === normalizedTweetHandle) {
+            currentUserHandle = storedHandle;
+          }
+        }
+
+        const normalizedUserHandle = currentUserHandle ? currentUserHandle.toLowerCase().trim().replace(/^@/, '') : null;
+
+        if (normalizedUserHandle && normalizedTweetHandle === normalizedUserHandle) {
+          isUserPost = true;
+          // If filtering user's posts is disabled, don't filter
+          if (settings.filterUserPosts !== true) {
+            return false; // Don't filter current user's content
+          }
         }
       }
     }
@@ -974,14 +1023,29 @@
       // Trigger IQ badge calculation
       const tweetProcessor = window.TweetProcessor;
       if (tweetProcessor && tweetProcessor.processTweet) {
+        // On notifications page, ensure badge placement is handled correctly
+        const isNotificationsPage = window.location.href.includes('/notifications');
+        
         requestAnimationFrame(() => {
-          tweetProcessor.processTweet(tweetElement).then(() => {
-            // Ensure manually-revealed flag is still set to prevent re-filtering
-            tweetElement.setAttribute('data-iq-manually-revealed', 'true');
-            actualTweetElement.setAttribute('data-iq-manually-revealed', 'true');
-          }).catch(() => {
-            // Silently fail
-          });
+          // Use a small delay on notifications page to ensure DOM is ready
+          const processDelay = isNotificationsPage ? 100 : 0;
+          
+          setTimeout(() => {
+            tweetProcessor.processTweet(tweetElement).then(() => {
+              // Ensure manually-revealed flag is still set to prevent re-filtering
+              tweetElement.setAttribute('data-iq-manually-revealed', 'true');
+              actualTweetElement.setAttribute('data-iq-manually-revealed', 'true');
+              
+              // On notifications page, also trigger processVisibleTweets to ensure badge is placed correctly
+              if (isNotificationsPage && tweetProcessor.processVisibleTweets) {
+                setTimeout(() => {
+                  tweetProcessor.processVisibleTweets();
+                }, 200);
+              }
+            }).catch(() => {
+              // Silently fail
+            });
+          }, processDelay);
         });
       }
       return;
