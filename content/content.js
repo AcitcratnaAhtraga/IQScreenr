@@ -561,14 +561,31 @@
       applyIQGuessrModeOnLoad();
     }
 
-    // Also process on scroll (for lazy-loaded content) - with minimal delay
+    // Performance optimization: Throttled scroll handler with requestIdleCallback
     let scrollTimeout;
+    let scrollRafScheduled = false;
     window.addEventListener('scroll', () => {
       clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        processVisibleTweets();
-      }, 100);
-    });
+      
+      // Use requestAnimationFrame for immediate visual updates, then debounce processing
+      if (!scrollRafScheduled) {
+        scrollRafScheduled = true;
+        requestAnimationFrame(() => {
+          scrollRafScheduled = false;
+          
+          // Use requestIdleCallback for non-critical tweet processing
+          const processOnScroll = () => {
+            processVisibleTweets();
+          };
+          
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(processOnScroll, { timeout: 200 });
+          } else {
+            scrollTimeout = setTimeout(processOnScroll, 100);
+          }
+        });
+      }
+    }, { passive: true });
   }
 
   // Handle messages from popup (e.g., clear cache)

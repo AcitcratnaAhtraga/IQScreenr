@@ -35,6 +35,7 @@
 
   /**
    * Setup MutationObserver to watch for new tweets
+   * PERFORMANCE OPTIMIZED: Debounced callbacks, batched processing, early filtering
    *
    * @param {Set} processedTweets - Set of processed tweets
    * @returns {MutationObserver} - The observer instance
@@ -58,10 +59,103 @@
       setInterval(() => checkForStuckBadges(processedTweets), 3000);
     }
 
-    const observer = new MutationObserver((mutations) => {
-      const potentialTweets = [];
-      const isNotificationsPageCheck = window.location.href.includes('/notifications');
+    // Performance optimization: Debounce and batch processing
+    let pendingTweets = new Set();
+    let processingTimeout = null;
+    let rafScheduled = false;
 
+    const processPendingTweets = () => {
+      if (pendingTweets.size === 0) {
+        rafScheduled = false;
+        return;
+      }
+
+      const tweetsToProcess = Array.from(pendingTweets);
+      pendingTweets.clear();
+      rafScheduled = false;
+
+      // Use requestIdleCallback for non-critical processing if available
+      const scheduleProcessing = (callback) => {
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(callback, { timeout: 100 });
+        } else {
+          requestAnimationFrame(callback);
+        }
+      };
+
+      scheduleProcessing(() => {
+        // Check if IqFiltr is available to skip removed/muted tweets
+        const getIqFiltr = () => window.IqFiltr || {};
+        const { shouldSkipTweet } = getIqFiltr();
+        const isNotificationsPageCheck = window.location.href.includes('/notifications');
+
+        const validTweets = [];
+        for (const tweet of tweetsToProcess) {
+          // Early filtering - skip if already processed
+          if (tweet.hasAttribute('data-iq-analyzed') ||
+              tweet.hasAttribute('data-iq-processing') ||
+              tweet.querySelector('.iq-badge')) {
+            continue;
+          }
+
+          // Skip tweets that were previously removed or muted
+          if (shouldSkipTweet && shouldSkipTweet(tweet)) {
+            continue;
+          }
+
+          // Skip follow notifications
+          if (isNotificationsPageCheck && isFollowNotification && isFollowNotification(tweet)) {
+            const hasTweetContent = tweet.querySelector('div[data-testid="tweetText"]') ||
+                                    tweet.querySelector('div[lang]');
+            if (!hasTweetContent) {
+              continue; // Skip follow notifications
+            }
+          }
+
+          // Skip Community Notes notifications
+          if (isNotificationsPageCheck && isCommunityNoteNotification(tweet)) {
+            continue; // Skip Community Notes notifications
+          }
+
+          validTweets.push(tweet);
+        }
+
+        // Batch badge insertions
+        if (validTweets.length > 0 && addLoadingBadgeToTweet) {
+          validTweets.forEach((tweet) => {
+            addLoadingBadgeToTweet(tweet);
+          });
+        }
+
+        // Process visible tweets (batched)
+        if (validTweets.length > 0 && processVisibleTweets) {
+          processVisibleTweets();
+        }
+      });
+    };
+
+    const observer = new MutationObserver((mutations) => {
+      // Performance optimization: Early exit if no relevant mutations
+      let hasArticleNodes = false;
+      for (let i = 0; i < mutations.length && !hasArticleNodes; i++) {
+        const mutation = mutations[i];
+        if (mutation.addedNodes.length === 0) continue;
+        
+        for (let j = 0; j < mutation.addedNodes.length; j++) {
+          const node = mutation.addedNodes[j];
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.tagName === 'ARTICLE' || (node.querySelector && node.querySelector('article'))) {
+              hasArticleNodes = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!hasArticleNodes) return;
+
+      // Collect potential tweets efficiently
+      const potentialTweets = [];
       for (let i = 0; i < mutations.length; i++) {
         const mutation = mutations[i];
         for (let j = 0; j < mutation.addedNodes.length; j++) {
@@ -69,12 +163,17 @@
           if (node.nodeType === Node.ELEMENT_NODE) {
             if (node.tagName === 'ARTICLE') {
               potentialTweets.push(node);
-            }
-            if (node.querySelector) {
-              const articles = node.querySelectorAll('article');
-              if (articles.length > 0) {
-                for (let k = 0; k < articles.length; k++) {
-                  potentialTweets.push(articles[k]);
+            } else if (node.querySelector) {
+              // Use querySelector for first match instead of querySelectorAll when possible
+              const firstArticle = node.querySelector('article');
+              if (firstArticle) {
+                potentialTweets.push(firstArticle);
+                // Only query all if we need more (rare case)
+                const allArticles = node.querySelectorAll('article');
+                if (allArticles.length > 1) {
+                  for (let k = 1; k < allArticles.length; k++) {
+                    potentialTweets.push(allArticles[k]);
+                  }
                 }
               }
             }
@@ -83,48 +182,22 @@
       }
 
       if (potentialTweets.length > 0) {
-        setTimeout(() => {
-          // Check if IqFiltr is available to skip removed/muted tweets
-          const getIqFiltr = () => window.IqFiltr || {};
-          const { shouldSkipTweet } = getIqFiltr();
+        // Add to pending set (deduplicates automatically)
+        potentialTweets.forEach(tweet => pendingTweets.add(tweet));
 
-          potentialTweets.forEach((tweet) => {
-            if (tweet.hasAttribute('data-iq-analyzed') ||
-                tweet.hasAttribute('data-iq-processing') ||
-                tweet.querySelector('.iq-badge')) {
-              return;
-            }
+        // Debounce processing - clear existing timeout
+        if (processingTimeout) {
+          clearTimeout(processingTimeout);
+        }
 
-            // Skip tweets that were previously removed or muted
-            if (shouldSkipTweet && shouldSkipTweet(tweet)) {
-              return;
-            }
-
-            // Skip follow notifications
-            if (isNotificationsPageCheck && isFollowNotification && isFollowNotification(tweet)) {
-              const hasTweetContent = tweet.querySelector('div[data-testid="tweetText"]') ||
-                                      tweet.querySelector('div[lang]');
-              if (!hasTweetContent) {
-                return; // Skip follow notifications
-              }
-            }
-
-            // Skip Community Notes notifications
-            if (isNotificationsPageCheck && isCommunityNoteNotification(tweet)) {
-              return; // Skip Community Notes notifications
-            }
-
-            if (addLoadingBadgeToTweet) {
-              addLoadingBadgeToTweet(tweet);
-            }
-          });
-        }, 0);
-      }
-
-      if (potentialTweets.length > 0 && processVisibleTweets) {
-        setTimeout(() => {
-          processVisibleTweets();
-        }, 0);
+        // Schedule processing with debouncing
+        processingTimeout = setTimeout(() => {
+          processingTimeout = null;
+          if (!rafScheduled) {
+            rafScheduled = true;
+            requestAnimationFrame(processPendingTweets);
+          }
+        }, 16); // ~60fps debounce
       }
     });
 

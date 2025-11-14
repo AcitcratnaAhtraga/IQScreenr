@@ -42,6 +42,10 @@ class ComprehensiveIQEstimatorUltimate {
     this.aoaDictionaryLoadFailed = false; // Track if loading has definitively failed
     this.aoaDictionaryPath = options.aoaDictionaryPath || 'content/data/aoa_dictionary.json';
     
+    // Performance optimization: Cache lookup results to avoid repeated dictionary searches
+    this._aoaLookupCache = new Map(); // Cache normalized word -> AoA value
+    this._aoaLookupCacheMaxSize = 10000; // Limit cache size to prevent memory issues
+    
     // Metaphor patterns database
     this.metaphorPatterns = null;
     this.metaphorPatternsLoaded = false;
@@ -476,6 +480,7 @@ class ComprehensiveIQEstimatorUltimate {
 
   /**
    * Look up AoA for a word with multiple fallback strategies
+   * PERFORMANCE OPTIMIZED: Uses lookup cache to avoid repeated searches
    */
   _lookupAoA(word) {
     if (!this.aoaDictionary) return null;
@@ -484,32 +489,50 @@ class ComprehensiveIQEstimatorUltimate {
     const cleaned = word.toLowerCase().replace(/[^\w]/g, '');
     if (cleaned.length <= 1) return null;
 
+    // Performance optimization: Check cache first
+    if (this._aoaLookupCache && this._aoaLookupCache.has(cleaned)) {
+      return this._aoaLookupCache.get(cleaned);
+    }
+
+    let result = null;
+
     // Strategy 1: Direct match (lowercase, no punctuation)
     if (this.aoaDictionary[cleaned] !== undefined) {
-      return this.aoaDictionary[cleaned];
-    }
+      result = this.aoaDictionary[cleaned];
+    } else {
+      // Strategy 2: Try stemmed version
+      const normalized = this._normalizeWord(word);
+      if (normalized !== cleaned && this.aoaDictionary[normalized] !== undefined) {
+        result = this.aoaDictionary[normalized];
+      } else {
+        // Strategy 3: Try common word variations (plural/singular, -ing, -ed)
+        const variations = this._getWordVariations(cleaned);
+        for (const variant of variations) {
+          if (this.aoaDictionary[variant] !== undefined) {
+            result = this.aoaDictionary[variant];
+            break;
+          }
+        }
 
-    // Strategy 2: Try stemmed version
-    const normalized = this._normalizeWord(word);
-    if (normalized !== cleaned && this.aoaDictionary[normalized] !== undefined) {
-      return this.aoaDictionary[normalized];
-    }
-
-    // Strategy 3: Try common word variations (plural/singular, -ing, -ed)
-    const variations = this._getWordVariations(cleaned);
-    for (const variant of variations) {
-      if (this.aoaDictionary[variant] !== undefined) {
-        return this.aoaDictionary[variant];
+        // Strategy 4: Fuzzy matching (80% letter match) - only if no direct match found
+        if (!result) {
+          result = this._fuzzyMatch(word);
+        }
       }
     }
 
-    // Strategy 4: Fuzzy matching (80% letter match)
-    const fuzzyMatch = this._fuzzyMatch(word);
-    if (fuzzyMatch !== null) {
-      return fuzzyMatch;
+    // Cache result (even if null) to avoid repeated lookups
+    if (this._aoaLookupCache) {
+      if (this._aoaLookupCache.size >= this._aoaLookupCacheMaxSize) {
+        // Remove oldest 20% of entries (simple FIFO)
+        const entriesToRemove = Math.floor(this._aoaLookupCacheMaxSize * 0.2);
+        const keysToRemove = Array.from(this._aoaLookupCache.keys()).slice(0, entriesToRemove);
+        keysToRemove.forEach(key => this._aoaLookupCache.delete(key));
+      }
+      this._aoaLookupCache.set(cleaned, result);
     }
 
-    return null;
+    return result;
   }
 
   /**

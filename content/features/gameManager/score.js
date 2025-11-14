@@ -82,8 +82,6 @@
 
       const newScore = currentScore + points;
 
-      console.log('[IqGuessr] Updating score:', { currentScore, points, newScore });
-
       // Set new score
       if (storage && storage.isExtensionContextValid && storage.isExtensionContextValid()) {
         await storage.setStorage({ iqGuessrScore: newScore }, 'sync');

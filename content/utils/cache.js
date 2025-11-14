@@ -118,49 +118,102 @@ function cacheIQ(handle, result, metadata = {}) {
   // Store in memory cache
   iqCache.set(key, cacheEntry);
 
-  // Store in persistent storage
-  const cacheData = {};
-  cacheData[CACHE_KEY_PREFIX + key] = cacheEntry;
-  chrome.storage.local.set(cacheData, () => {});
+  // Performance optimization: Batch storage writes to reduce I/O overhead
+  // Use debounced batch write instead of immediate write
+  if (!cacheIQ._pendingWrites) {
+    cacheIQ._pendingWrites = new Map();
+    cacheIQ._writeTimeout = null;
+  }
+
+  cacheIQ._pendingWrites.set(CACHE_KEY_PREFIX + key, cacheEntry);
+
+  // Debounce storage writes (batch multiple writes together)
+  if (cacheIQ._writeTimeout) {
+    clearTimeout(cacheIQ._writeTimeout);
+  }
+
+  cacheIQ._writeTimeout = setTimeout(() => {
+    const cacheData = {};
+    cacheIQ._pendingWrites.forEach((value, storageKey) => {
+      cacheData[storageKey] = value;
+    });
+    cacheIQ._pendingWrites.clear();
+    cacheIQ._writeTimeout = null;
+    
+    // Batch write all pending entries
+    chrome.storage.local.set(cacheData, () => {});
+  }, 100); // Batch writes within 100ms window
 }
 
 /**
  * Load IQ cache from local storage
+ * PERFORMANCE OPTIMIZED: Async loading, batched processing, non-blocking
  * Handles migration from old format (text-based keys) to new format (handle-based keys)
  * Old entries are loaded for backward compatibility but will be replaced as new entries are cached
  */
 function loadCache() {
-  chrome.storage.local.get(null, (items) => {
-    let loadedCount = 0;
-    for (const [key, value] of Object.entries(items)) {
-      if (key.startsWith(CACHE_KEY_PREFIX)) {
-        const cacheKey = key.replace(CACHE_KEY_PREFIX, '');
+  // Performance optimization: Use requestIdleCallback for non-critical cache loading
+  const loadCacheAsync = () => {
+    chrome.storage.local.get(null, (items) => {
+      // Performance optimization: Process in batches to avoid blocking
+      const entries = Object.entries(items).filter(([key]) => key.startsWith(CACHE_KEY_PREFIX));
+      const BATCH_SIZE = 50;
+      let index = 0;
 
-        // Handle migration: old format used text hashes as keys
-        // New format uses handles as keys
-        // We'll load old entries but they'll be gradually replaced
-        if (value && typeof value === 'object' && value.result !== undefined) {
-          // New format or migrated format with metadata
-          const handle = value.metadata?.handle;
-          if (handle) {
-            // Already using handle-based key, store directly
-            const normalizedHandle = generateCacheKey(handle);
-            if (normalizedHandle) {
-              iqCache.set(normalizedHandle, value);
+      const processBatch = () => {
+        const batch = entries.slice(index, index + BATCH_SIZE);
+        
+        for (const [key, value] of batch) {
+          const cacheKey = key.replace(CACHE_KEY_PREFIX, '');
+
+          // Handle migration: old format used text hashes as keys
+          // New format uses handles as keys
+          // We'll load old entries but they'll be gradually replaced
+          if (value && typeof value === 'object' && value.result !== undefined) {
+            // New format or migrated format with metadata
+            const handle = value.metadata?.handle;
+            if (handle) {
+              // Already using handle-based key, store directly
+              const normalizedHandle = generateCacheKey(handle);
+              if (normalizedHandle) {
+                iqCache.set(normalizedHandle, value);
+              }
+            } else {
+              // Old format entry: try to extract handle from metadata if present
+              // Otherwise store with old key (will be migrated on next cache write)
+              iqCache.set(cacheKey, value);
             }
           } else {
-            // Old format entry: try to extract handle from metadata if present
-            // Otherwise store with old key (will be migrated on next cache write)
+            // Old format: store as-is for backward compatibility
             iqCache.set(cacheKey, value);
           }
-        } else {
-          // Old format: store as-is for backward compatibility
-          iqCache.set(cacheKey, value);
         }
-        loadedCount++;
+
+        index += BATCH_SIZE;
+        
+        // Process next batch if available
+        if (index < entries.length) {
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(processBatch, { timeout: 100 });
+          } else {
+            setTimeout(processBatch, 0);
+          }
+        }
+      };
+
+      // Start processing batches
+      if (entries.length > 0) {
+        processBatch();
       }
-    }
-  });
+    });
+  };
+
+  // Load cache asynchronously to avoid blocking initialization
+  if (typeof requestIdleCallback !== 'undefined') {
+    requestIdleCallback(loadCacheAsync, { timeout: 500 });
+  } else {
+    setTimeout(loadCacheAsync, 0);
+  }
 }
 
 /**

@@ -12,6 +12,7 @@
 
   /**
    * Process all visible tweets on the page
+   * PERFORMANCE OPTIMIZED: Cached selectors, batched DOM operations, early exits
    *
    * @param {Set} processedTweets - Set of processed tweets
    */
@@ -21,6 +22,8 @@
     const { processTweet } = getTweetProcessor();
     const isNotificationsPage = window.location.href.includes('/notifications');
 
+    // Performance optimization: Cache selector results
+    // Use IntersectionObserver-friendly approach when possible
     const tweetSelectors = [
       'article[data-testid="tweet"]',
       'article[role="article"]',
@@ -28,9 +31,22 @@
     ];
 
     let tweets = [];
-    for (const selector of tweetSelectors) {
-      tweets = document.querySelectorAll(selector);
-      if (tweets.length > 0) break;
+    // Try cached selector first (most common case)
+    const cachedSelector = processVisibleTweets._cachedSelector || tweetSelectors[0];
+    tweets = document.querySelectorAll(cachedSelector);
+    
+    if (tweets.length === 0) {
+      // Try other selectors
+      for (const selector of tweetSelectors) {
+        if (selector === cachedSelector) continue;
+        tweets = document.querySelectorAll(selector);
+        if (tweets.length > 0) {
+          processVisibleTweets._cachedSelector = selector;
+          break;
+        }
+      }
+    } else {
+      processVisibleTweets._cachedSelector = cachedSelector;
     }
 
     if (tweets.length === 0) {
@@ -142,38 +158,56 @@
     });
 
     if (settings.showIQBadge && addLoadingBadgeToTweet) {
-      // Batch badge insertions to prevent scroll jumping
+      // Performance optimization: Batch badge insertions using DocumentFragment
       // Save scroll position before inserting any badges
       const scrollBeforeBadges = window.scrollY;
 
-      // Insert all badges synchronously to minimize layout shifts
+      // Pre-filter tweets that need badges (reduce DOM queries)
       const badgesToInsert = [];
-      newTweets.forEach((tweet) => {
-        // Only add badge if tweet doesn't already have one and isn't already analyzed
-        if (!tweet.querySelector('.iq-badge')) {
-          let actualTweet = tweet;
+      const nestedTweetCache = new WeakMap(); // Cache nested tweet lookups
+      
+      for (const tweet of newTweets) {
+        // Early exit: skip if already has badge
+        if (tweet.querySelector('.iq-badge')) continue;
+        
+        let actualTweet = tweet;
+        // Use cached nested tweet lookup if available
+        if (!nestedTweetCache.has(tweet)) {
           const nestedTweet = tweet.querySelector('article[data-testid="tweet"]') ||
                               tweet.querySelector('article[role="article"]');
           if (nestedTweet && nestedTweet !== tweet) {
             actualTweet = nestedTweet;
           }
-          // Don't add badge if tweet is already analyzed (shouldn't happen, but be safe)
-          if (!actualTweet.hasAttribute('data-iq-analyzed')) {
-            badgesToInsert.push(tweet);
-          }
+          nestedTweetCache.set(tweet, actualTweet);
+        } else {
+          actualTweet = nestedTweetCache.get(tweet);
         }
-      });
-
-      // Insert all badges at once (but skip removed/muted tweets)
-      badgesToInsert.forEach((tweet) => {
-        // Double-check that tweet wasn't removed/muted before adding badge
-        if (!shouldSkipTweet || !shouldSkipTweet(tweet)) {
-          addLoadingBadgeToTweet(tweet);
+        
+        // Don't add badge if tweet is already analyzed
+        if (!actualTweet.hasAttribute('data-iq-analyzed')) {
+          badgesToInsert.push(tweet);
         }
-      });
+      }
 
-      // Restore scroll position after all badges are inserted
+      // Batch insert badges (skip removed/muted tweets)
       if (badgesToInsert.length > 0) {
+        // Use requestIdleCallback for badge insertion if available
+        const insertBadges = () => {
+          badgesToInsert.forEach((tweet) => {
+            // Double-check that tweet wasn't removed/muted before adding badge
+            if (!shouldSkipTweet || !shouldSkipTweet(tweet)) {
+              addLoadingBadgeToTweet(tweet);
+            }
+          });
+        };
+
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(insertBadges, { timeout: 50 });
+        } else {
+          requestAnimationFrame(insertBadges);
+        }
+
+        // Restore scroll position after all badges are inserted
         requestAnimationFrame(() => {
           const scrollAfterBadges = window.scrollY;
           if (Math.abs(scrollAfterBadges - scrollBeforeBadges) > 5) {
@@ -187,12 +221,38 @@
       }
     }
 
-    if (processTweet) {
-      setTimeout(() => {
-        newTweets.forEach((tweet) => {
-          processTweet(tweet);
-        });
-      }, 0);
+    // Performance optimization: Batch tweet processing with requestIdleCallback
+    if (processTweet && newTweets.length > 0) {
+      const processTweets = () => {
+        // Process tweets in batches to avoid blocking
+        const BATCH_SIZE = 5;
+        let index = 0;
+        
+        const processBatch = () => {
+          const batch = newTweets.slice(index, index + BATCH_SIZE);
+          batch.forEach((tweet) => {
+            processTweet(tweet);
+          });
+          index += BATCH_SIZE;
+          
+          if (index < newTweets.length) {
+            // Schedule next batch
+            if (typeof requestIdleCallback !== 'undefined') {
+              requestIdleCallback(processBatch, { timeout: 100 });
+            } else {
+              setTimeout(processBatch, 0);
+            }
+          }
+        };
+        
+        processBatch();
+      };
+
+      if (typeof requestIdleCallback !== 'undefined') {
+        requestIdleCallback(processTweets, { timeout: 100 });
+      } else {
+        requestAnimationFrame(processTweets);
+      }
     }
   }
 
