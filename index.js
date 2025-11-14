@@ -7,6 +7,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const installButton = document.getElementById('installButton');
   const installInstructions = document.getElementById('installInstructions');
   const downloadLink = document.getElementById('downloadLink');
+  const mobileNotice = document.getElementById('mobileNotice');
+
+  // Detect mobile devices
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   (window.innerWidth <= 768 && window.matchMedia('(pointer: coarse)').matches);
+
+  // Show mobile notice if on mobile device
+  if (isMobile) {
+    mobileNotice.style.display = 'block';
+  }
 
   // Check if Chrome extension APIs are available (for future Chrome Web Store integration)
   const isChrome = typeof chrome !== 'undefined' && chrome.runtime;

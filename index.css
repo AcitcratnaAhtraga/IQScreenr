@@ -35,6 +35,7 @@ body {
 
 .logo-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 12px;
@@ -124,6 +125,58 @@ body {
   margin-top: 16px;
   font-size: 14px;
   color: #6b7280;
+}
+
+/* Mobile Notice Banner */
+.mobile-notice {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 30px auto;
+  max-width: 700px;
+  animation: slideDown 0.4s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-notice-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.mobile-notice-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.mobile-notice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.mobile-notice-text strong {
+  font-size: 18px;
+  color: #856404;
+  font-weight: 600;
+}
+
+.mobile-notice-text span {
+  font-size: 15px;
+  color: #856404;
+  line-height: 1.5;
 }
 
 /* Installation Instructions */
@@ -689,6 +742,19 @@ body {
     width: 80px;
     height: 80px;
   }
+
+  .mobile-notice-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .mobile-notice-icon {
+    align-self: center;
+  }
+
+  .mobile-notice-text {
+    text-align: center;
+  }
 }
 
 /* Dark mode support */
@@ -835,6 +901,19 @@ body {
   .steps-list code {
     background: #2a2a2a;
     color: #f9fafb;
+  }
+
+  .mobile-notice {
+    background: #3d2e00;
+    border-color: #ffc107;
+  }
+
+  .mobile-notice-text strong {
+    color: #ffc107;
+  }
+
+  .mobile-notice-text span {
+    color: #d1d5db;
   }
 }
 
