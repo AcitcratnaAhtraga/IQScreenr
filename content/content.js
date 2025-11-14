@@ -542,11 +542,24 @@
     }
 
     // Process existing tweets immediately to show loading badges as fast as possible
+    const isNotificationsPage = window.location.href.includes('/notifications');
+    
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         // Process immediately - badges should appear as soon as page loads
         processVisibleTweets();
         setupObserver();
+        
+        // On notification page, also process after a short delay to catch tweets that render late
+        if (isNotificationsPage) {
+          setTimeout(() => {
+            processVisibleTweets();
+          }, 500);
+          setTimeout(() => {
+            processVisibleTweets();
+          }, 1500);
+        }
+        
         // Realtime feature is disabled - do not initialize
         // setupRealtimeComposeObserver();
 
@@ -557,6 +570,17 @@
       // Page already loaded - process immediately
       processVisibleTweets();
       setupObserver();
+      
+      // On notification page, also process after a short delay to catch tweets that render late
+      if (isNotificationsPage) {
+        setTimeout(() => {
+          processVisibleTweets();
+        }, 500);
+        setTimeout(() => {
+          processVisibleTweets();
+        }, 1500);
+      }
+      
       // Realtime feature is disabled - do not initialize
       // setupRealtimeComposeObserver();
 

@@ -25,20 +25,22 @@
       const isReallyStuck = !hasScore && !hasInvalid;
 
       // Check if badge is stuck and has a parent (meaning it's in the DOM)
-      // We don't need to wait 5 seconds - if it's stuck, reprocess it
       if (isReallyStuck && badge.parentElement) {
         const tweetElement = badge.closest('article[data-testid="tweet"]') ||
                             badge.closest('article[role="article"]') ||
                             badge.closest('article');
         if (tweetElement) {
           // Check if tweet is marked as processing - if so, it might still be processing
-          // But if it's been more than 3 seconds, force reprocess
           const isProcessing = tweetElement.hasAttribute('data-iq-processing');
           const isAnalyzed = tweetElement.hasAttribute('data-iq-analyzed');
 
           // If it's marked as analyzed but still has a loading badge, it's stuck
-          // If it's processing for too long (we'll check time via a data attribute)
-          if (isAnalyzed || (!isProcessing && !isAnalyzed)) {
+          if (isAnalyzed) {
+            return true;
+          }
+
+          // If it's not processing and not analyzed, it's stuck (should be processing)
+          if (!isProcessing && !isAnalyzed) {
             return true;
           }
 
@@ -52,8 +54,8 @@
               return false; // Give it time to process
             } else {
               const processingTime = Date.now() - parseInt(processingStart, 10);
-              // If processing for more than 5 seconds, it's stuck
-              if (processingTime > 5000) {
+              // On notification page, be more aggressive - if processing for more than 2 seconds, reprocess
+              if (processingTime > 2000) {
                 return true;
               }
             }

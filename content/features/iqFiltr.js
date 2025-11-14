@@ -931,6 +931,62 @@
       return;
     }
 
+    // If there's no badge at all (tweet was muted before IQ was calculated), trigger processing
+    if (!isBadgeLoading && !hasBadgeWithScore && allBadges.length === 0 && tweetId) {
+      // Clear any flags that might prevent processing
+      actualTweetElement.removeAttribute('data-iq-processing');
+      actualTweetElement.removeAttribute('data-iq-processing-start');
+      tweetElement.removeAttribute('data-iq-processing');
+      tweetElement.removeAttribute('data-iq-processing-start');
+      
+      // Clear analyzed flag AFTER clearing other flags
+      actualTweetElement.removeAttribute('data-iq-analyzed');
+      tweetElement.removeAttribute('data-iq-analyzed');
+      
+      // Check if shouldSkipTweet would prevent processing
+      const getIqFiltr = () => window.IqFiltr || {};
+      const { shouldSkipTweet: shouldSkipTweetCheck } = getIqFiltr();
+      if (shouldSkipTweetCheck) {
+        const shouldSkipActual = shouldSkipTweetCheck(actualTweetElement);
+        const shouldSkipOuter = tweetElement !== actualTweetElement ? shouldSkipTweetCheck(tweetElement) : false;
+        
+        if (shouldSkipActual || shouldSkipOuter) {
+          // Clear the flags that might cause shouldSkipTweet to return true
+          actualTweetElement.removeAttribute('data-iq-filtered');
+          actualTweetElement.removeAttribute('data-iq-muted');
+          actualTweetElement.removeAttribute('data-iq-removed');
+          tweetElement.removeAttribute('data-iq-filtered');
+          tweetElement.removeAttribute('data-iq-muted');
+          tweetElement.removeAttribute('data-iq-removed');
+          
+          // Also remove from mutedTweetIds set if it exists there
+          if (tweetId && mutedTweetIds && mutedTweetIds.has(tweetId)) {
+            mutedTweetIds.delete(tweetId);
+          }
+        }
+      }
+
+      // Ensure manually-revealed flag is set on both elements to prevent re-filtering
+      // This must be set BEFORE processTweet so checkAndFilter respects it
+      tweetElement.setAttribute('data-iq-manually-revealed', 'true');
+      actualTweetElement.setAttribute('data-iq-manually-revealed', 'true');
+
+      // Trigger IQ badge calculation
+      const tweetProcessor = window.TweetProcessor;
+      if (tweetProcessor && tweetProcessor.processTweet) {
+        requestAnimationFrame(() => {
+          tweetProcessor.processTweet(tweetElement).then(() => {
+            // Ensure manually-revealed flag is still set to prevent re-filtering
+            tweetElement.setAttribute('data-iq-manually-revealed', 'true');
+            actualTweetElement.setAttribute('data-iq-manually-revealed', 'true');
+          }).catch(() => {
+            // Silently fail
+          });
+        });
+      }
+      return;
+    }
+
     // If badge is loading, check if IQ was already calculated and cached
     if (isBadgeLoading && existingBadge && tweetId) {
       const gameManager = window.GameManager || {};
