@@ -62,9 +62,22 @@ body {
 
 /* Hero Section */
 .hero-section {
-  text-align: center;
   padding: 60px 20px;
   margin-bottom: 60px;
+}
+
+.hero-container {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.hero-content {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
 }
 
 .hero-title {
@@ -81,6 +94,30 @@ body {
   max-width: 800px;
   margin: 0 auto 40px;
   line-height: 1.7;
+}
+
+/* Screenshots Column */
+.hero-screenshots {
+  flex: 0 0 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 20px;
+}
+
+.screenshot-image {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e5e7eb;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.screenshot-image:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 .download-section {
@@ -695,6 +732,20 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 1024px) {
+  .hero-container {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .hero-screenshots {
+    flex: 1;
+    position: static;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 768px) {
   .hero-title {
     font-size: 32px;
@@ -702,6 +753,10 @@ body {
 
   .hero-description {
     font-size: 16px;
+  }
+
+  .hero-screenshots {
+    max-width: 100%;
   }
 
   .features-grid {
@@ -783,6 +838,10 @@ body {
 
   .hero-description {
     color: #d1d5db;
+  }
+
+  .screenshot-image {
+    border-color: #2a2a2a;
   }
 
   .section-title {

@@ -216,49 +216,58 @@
 
     <!-- Hero Section -->
     <section class="hero-section" aria-label="Hero section">
-      <div class="hero-content">
-        <h2 class="hero-title">Analyze Tweet Intelligence in Real-Time</h2>
-        <p class="hero-description">
-          IqScreenr analyzes tweet text using a research-based estimator trained on graded samples. 
-          It evaluates tweets across four key dimensions: Vocabulary Sophistication, Lexical Diversity, 
-          Sentence Complexity, and Grammatical Precision.
-        </p>
-        
-        <!-- Mobile Notice Banner -->
-        <div id="mobileNotice" class="mobile-notice" style="display: none;">
-          <div class="mobile-notice-content">
-            <span class="mobile-notice-icon">📱</span>
-            <div class="mobile-notice-text">
-              <strong>Browser Extension Only</strong>
-              <span>IqScreenr is currently only available for desktop browsers (Chrome, Edge, Brave). We're working on mobile support!</span>
+      <div class="hero-container">
+        <div class="hero-content">
+          <h2 class="hero-title">Analyze Tweet Intelligence in Real-Time</h2>
+          <p class="hero-description">
+            IqScreenr analyzes tweet text using a research-based estimator trained on graded samples. 
+            It evaluates tweets across four key dimensions: Vocabulary Sophistication, Lexical Diversity, 
+            Sentence Complexity, and Grammatical Precision.
+          </p>
+          
+          <!-- Mobile Notice Banner -->
+          <div id="mobileNotice" class="mobile-notice" style="display: none;">
+            <div class="mobile-notice-content">
+              <span class="mobile-notice-icon">📱</span>
+              <div class="mobile-notice-text">
+                <strong>Browser Extension Only</strong>
+                <span>IqScreenr is currently only available for desktop browsers (Chrome, Edge, Brave). We're working on mobile support!</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Download/Install Button -->
-        <div class="download-section">
-          <button id="installButton" class="install-button">
-            <span class="button-icon">⬇️</span>
-            <span class="button-text">Install Extension</span>
-          </button>
-          <p class="install-note">Works on Chrome, Edge, Brave, and other Chromium browsers</p>
-        </div>
+          <!-- Download/Install Button -->
+          <div class="download-section">
+            <button id="installButton" class="install-button">
+              <span class="button-icon">⬇️</span>
+              <span class="button-text">Install Extension</span>
+            </button>
+            <p class="install-note">Works on Chrome, Edge, Brave, and other Chromium browsers</p>
+          </div>
 
-        <!-- Installation Instructions (Hidden by default) -->
-        <div id="installInstructions" class="install-instructions" style="display: none;">
-          <h3>Installation Steps:</h3>
-          <ol class="steps-list">
-            <li>Click the "Download Extension" button below to download the extension</li>
-            <li>Extract the ZIP's files into a folder on your computer</li>
-            <li>Open Chrome and go to <code>chrome://extensions/</code></li>
-            <li>Enable "Developer mode" (toggle in top-right corner)</li>
-            <li>Click "Load unpacked" and select the extracted folder</li>
-            <li>Done! Visit Twitter/X to see IQ badges on tweets. Click the extension icon in your toolbar to access settings and customize features like badge visibility, IQ range filters, and more.</li>
-          </ol>
-          <a id="downloadLink" href="IqScreenr.zip" download="IqScreenr.zip" class="download-button">
-            <span class="button-icon">📦</span>
-            <span class="button-text">Download Extension (ZIP)</span>
-          </a>
+          <!-- Installation Instructions (Hidden by default) -->
+          <div id="installInstructions" class="install-instructions" style="display: none;">
+            <h3>Installation Steps:</h3>
+            <ol class="steps-list">
+              <li>Click the "Download Extension" button below to download the extension</li>
+              <li>Extract the ZIP's files into a folder on your computer</li>
+              <li>Open Chrome and go to <code>chrome://extensions/</code></li>
+              <li>Enable "Developer mode" (toggle in top-right corner)</li>
+              <li>Click "Load unpacked" and select the extracted folder</li>
+              <li>Done! Visit Twitter/X to see IQ badges on tweets. Click the extension icon in your toolbar to access settings and customize features like badge visibility, IQ range filters, and more.</li>
+            </ol>
+            <a id="downloadLink" href="IqScreenr.zip" download="IqScreenr.zip" class="download-button">
+              <span class="button-icon">📦</span>
+              <span class="button-text">Download Extension (ZIP)</span>
+            </a>
+          </div>
+        </div>
+        
+        <!-- Right Column with Screenshots -->
+        <div class="hero-screenshots">
+          <img src="assets/X1.png" alt="IqScreenr extension showing IQ badges on Twitter/X tweets" class="screenshot-image">
+          <img src="assets/X2.png" alt="IqScreenr extension analyzing tweet intelligence with IQ scores" class="screenshot-image">
+          <img src="assets/X3.png" alt="IqScreenr extension displaying real-time IQ analysis on Twitter/X" class="screenshot-image">
         </div>
       </div>
     </section>
