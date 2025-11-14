@@ -170,6 +170,13 @@
       return false;
     }
 
+    // Don't filter tweets that were manually revealed by the user
+    // Check both the tweet element and its parent (for nested structures)
+    if (tweetElement.hasAttribute('data-iq-manually-revealed') ||
+        (tweetElement.parentElement && tweetElement.parentElement.hasAttribute('data-iq-manually-revealed'))) {
+      return false;
+    }
+
     // Check if this is the current user's post
     const tweetHandle = getTweetHandle(tweetElement);
     let isUserPost = false;
@@ -807,23 +814,30 @@
    * Reveal a muted tweet
    * @param {HTMLElement} tweetElement - The muted tweet element
    */
-  function revealMutedTweet(tweetElement) {
+  async function revealMutedTweet(tweetElement) {
+    console.log('[IqFiltr] revealMutedTweet called', tweetElement);
+    
     if (!tweetElement) {
+      console.log('[IqFiltr] revealMutedTweet: No tweet element provided');
       return;
     }
 
     // If already revealed, don't do anything
     if (tweetElement.hasAttribute('data-iq-manually-revealed')) {
+      console.log('[IqFiltr] revealMutedTweet: Tweet already manually revealed');
       return;
     }
 
     // If not muted, nothing to reveal
     if (!tweetElement.hasAttribute('data-iq-muted')) {
+      console.log('[IqFiltr] revealMutedTweet: Tweet not muted');
       return;
     }
 
     // Remove from muted set if manually revealed
     const tweetId = getTweetIdFromElement(tweetElement);
+    console.log('[IqFiltr] revealMutedTweet: Tweet ID:', tweetId);
+    
     if (tweetId) {
       mutedTweetIds.delete(tweetId);
     }
@@ -855,6 +869,529 @@
         placeholder._hiddenAvatar.removeAttribute('data-iq-hidden-avatar');
       }
       placeholder.remove();
+    }
+
+    // After revealing, check if IQ badge needs to be calculated or restored
+    // Find the actual tweet element (handle nested structures)
+    const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                        tweetElement.querySelector('article[role="article"]');
+    const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+    console.log('[IqFiltr] revealMutedTweet: Actual tweet element:', actualTweetElement);
+
+    // Check if IQ result is stored on the element itself (might have been calculated but not cached)
+    const iqResultOnElement = actualTweetElement._iqResult || tweetElement._iqResult;
+    console.log('[IqFiltr] revealMutedTweet: IQ result on element:', iqResultOnElement);
+
+    // Check if badge exists and its state - check ALL badges in both actualTweetElement and tweetElement
+    const allBadgesInActual = actualTweetElement.querySelectorAll('.iq-badge');
+    const allBadgesInOuter = tweetElement !== actualTweetElement ? tweetElement.querySelectorAll('.iq-badge') : [];
+    const allBadges = Array.from(new Set([...allBadgesInActual, ...allBadgesInOuter]));
+    console.log('[IqFiltr] revealMutedTweet: Found badges:', allBadges.length, Array.from(allBadges).map(b => ({
+      type: b.classList.contains('iq-badge-realtime') ? 'realtime' : 
+            b.classList.contains('iq-badge-loading') ? 'loading' : 'regular',
+      hasScore: b.hasAttribute('data-iq-score'),
+      hasGuess: b.hasAttribute('data-iq-guess'),
+      isLoading: b.hasAttribute('data-iq-loading'),
+      score: b.getAttribute('data-iq-score'),
+      display: b.style.getPropertyValue('display'),
+      height: b.style.getPropertyValue('height'),
+      maxHeight: b.style.getPropertyValue('max-height')
+    })));
+    
+    // Find badges with scores and loading badges
+    const badgesWithScore = Array.from(allBadges).filter(b => 
+      b.hasAttribute('data-iq-score') || b.hasAttribute('data-iq-guess')
+    );
+    const loadingBadges = Array.from(allBadges).filter(b => 
+      b.hasAttribute('data-iq-loading') || b.classList.contains('iq-badge-loading')
+    );
+    
+    const existingBadge = badgesWithScore.length > 0 ? badgesWithScore[0] : 
+                          loadingBadges.length > 0 ? loadingBadges[0] : 
+                          allBadges.length > 0 ? allBadges[0] : null;
+    
+    const hasBadgeWithScore = badgesWithScore.length > 0;
+    const isBadgeLoading = loadingBadges.length > 0;
+    
+    console.log('[IqFiltr] revealMutedTweet: Badge summary - total:', allBadges.length, 
+                'withScore:', badgesWithScore.length, 'loading:', loadingBadges.length,
+                'hasScore:', hasBadgeWithScore, 'isLoading:', isBadgeLoading);
+    
+    // Remove duplicate loading badges if we have a badge with score
+    if (hasBadgeWithScore && loadingBadges.length > 0) {
+      console.log('[IqFiltr] revealMutedTweet: Removing', loadingBadges.length, 'duplicate loading badges');
+      loadingBadges.forEach(badge => {
+        if (badge.parentElement) {
+          badge.remove();
+        }
+      });
+    }
+
+    // If badge already has a score or guess, make sure it's visible
+    if (hasBadgeWithScore) {
+      console.log('[IqFiltr] revealMutedTweet: Badge already has score, ensuring visibility');
+      // Restore badge visibility if it was hidden
+      if (existingBadge) {
+        const currentDisplay = existingBadge.style.getPropertyValue('display');
+        const computedDisplay = window.getComputedStyle(existingBadge).display;
+        const computedHeight = window.getComputedStyle(existingBadge).height;
+        const computedMaxHeight = window.getComputedStyle(existingBadge).maxHeight;
+        console.log('[IqFiltr] revealMutedTweet: Badge display - inline:', currentDisplay, 'computed:', computedDisplay, 'height:', computedHeight, 'maxHeight:', computedMaxHeight);
+        
+        // Check if badge is hidden (either inline style, computed style, or height constraints)
+        if (currentDisplay === 'none' || computedDisplay === 'none' || computedHeight === '0px' || computedMaxHeight === '0px') {
+          console.log('[IqFiltr] revealMutedTweet: Badge is hidden, restoring visibility');
+          // Remove all hiding styles - need to use setProperty with empty string to override !important
+          existingBadge.style.setProperty('display', 'inline-flex', 'important');
+          existingBadge.style.setProperty('height', '', 'important');
+          existingBadge.style.setProperty('max-height', '', 'important');
+          existingBadge.style.setProperty('min-height', '', 'important');
+          
+          // Also restore all badges with scores
+          badgesWithScore.forEach(badge => {
+            badge.style.setProperty('display', 'inline-flex', 'important');
+            badge.style.setProperty('height', '', 'important');
+            badge.style.setProperty('max-height', '', 'important');
+            badge.style.setProperty('min-height', '', 'important');
+          });
+          
+          console.log('[IqFiltr] revealMutedTweet: Badge visibility restored for', badgesWithScore.length, 'badges');
+        }
+      }
+      return;
+    }
+
+    // If badge is loading, check if IQ was already calculated and cached
+    if (isBadgeLoading && existingBadge && tweetId) {
+      console.log('[IqFiltr] revealMutedTweet: Badge is loading, checking for cached IQ result');
+      const gameManager = window.GameManager || {};
+      console.log('[IqFiltr] revealMutedTweet: GameManager:', gameManager, 'has getCachedRevealedIQResult:', !!gameManager.getCachedRevealedIQResult);
+      
+      // Also check if there's a badge with score that we might have missed
+      if (badgesWithScore.length > 0) {
+        console.log('[IqFiltr] revealMutedTweet: Found', badgesWithScore.length, 'badges with score, removing loading badges');
+        loadingBadges.forEach(badge => {
+          if (badge.parentElement) {
+            badge.remove();
+          }
+        });
+        // Restore visibility of badges with scores
+        badgesWithScore.forEach(badge => {
+          badge.style.setProperty('display', 'inline-flex', 'important');
+          badge.style.setProperty('height', '', 'important');
+          badge.style.setProperty('max-height', '', 'important');
+          badge.style.setProperty('min-height', '', 'important');
+        });
+        return;
+      }
+      
+      // First check if IQ result is on the element itself (calculated but not cached)
+      if (iqResultOnElement && iqResultOnElement.iq !== undefined && iqResultOnElement.iq !== null) {
+        console.log('[IqFiltr] revealMutedTweet: Found IQ result on element, IQ:', iqResultOnElement.iq);
+        // Use the IQ result from the element
+        const { handleNestedStructure } = window.NestedTweetHandler || {};
+        let outerElement = null;
+        let hasNestedStructure = false;
+        if (handleNestedStructure) {
+          const nestedResult = handleNestedStructure(tweetElement);
+          outerElement = nestedResult.outerElement;
+          hasNestedStructure = nestedResult.hasNestedStructure;
+        }
+
+        const isNotificationsPage = window.location.href.includes('/notifications');
+        const { extractTweetText } = window.TextExtraction || {};
+        const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+
+        // Convert IQ result format
+        const iq = iqResultOnElement.iq;
+        const result = iqResultOnElement.result || {};
+        const confidence = iqResultOnElement.confidence;
+
+        // Update the loading badge with IQ from element
+        const { updateBadgeWithIQ } = window.BadgeUpdate || {};
+        if (updateBadgeWithIQ && existingBadge) {
+          console.log('[IqFiltr] revealMutedTweet: Calling updateBadgeWithIQ with IQ from element');
+          try {
+            await updateBadgeWithIQ(
+              existingBadge,
+              actualTweetElement,
+              outerElement,
+              hasNestedStructure,
+              isNotificationsPage,
+              iq,
+              result,
+              confidence,
+              tweetText,
+              tweetId
+            );
+            console.log('[IqFiltr] revealMutedTweet: updateBadgeWithIQ completed successfully');
+          } catch (error) {
+            console.error('[IqFiltr] revealMutedTweet: Error calling updateBadgeWithIQ:', error);
+          }
+        }
+        return;
+      }
+      
+      if (gameManager.getCachedRevealedIQResult) {
+        // Check for cached IQ result
+        console.log('[IqFiltr] revealMutedTweet: Looking up cached IQ for tweetId:', tweetId);
+        const cachedIQResult = await gameManager.getCachedRevealedIQResult(tweetId);
+        console.log('[IqFiltr] revealMutedTweet: Cached IQ result:', cachedIQResult);
+        
+        // Also check revealed status
+        if (gameManager.getCachedRevealedIQ) {
+          const cachedRevealed = await gameManager.getCachedRevealedIQ(tweetId);
+          console.log('[IqFiltr] revealMutedTweet: Cached revealed status:', cachedRevealed);
+        }
+        
+        if (cachedIQResult && cachedIQResult.iq) {
+          console.log('[IqFiltr] revealMutedTweet: Found cached IQ, updating badge with IQ:', cachedIQResult.iq);
+          
+          // IQ was already calculated - update the loading badge with cached result
+          const { handleNestedStructure } = window.NestedTweetHandler || {};
+          let outerElement = null;
+          let hasNestedStructure = false;
+          if (handleNestedStructure) {
+            const nestedResult = handleNestedStructure(tweetElement);
+            outerElement = nestedResult.outerElement;
+            hasNestedStructure = nestedResult.hasNestedStructure;
+            console.log('[IqFiltr] revealMutedTweet: Nested structure - outerElement:', outerElement, 'hasNestedStructure:', hasNestedStructure);
+          }
+
+          const isNotificationsPage = window.location.href.includes('/notifications');
+          const { extractTweetText } = window.TextExtraction || {};
+          const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+
+          // Convert cached IQ format to expected format
+          const cachedIQ = {
+            iq_estimate: cachedIQResult.iq,
+            confidence: cachedIQResult.confidence,
+            ...(cachedIQResult.result || {})
+          };
+          console.log('[IqFiltr] revealMutedTweet: Converted cached IQ:', cachedIQ);
+
+          // Update the loading badge with cached IQ
+          const { updateBadgeWithIQ } = window.BadgeUpdate || {};
+          console.log('[IqFiltr] revealMutedTweet: BadgeUpdate:', window.BadgeUpdate, 'has updateBadgeWithIQ:', !!updateBadgeWithIQ);
+          
+          if (updateBadgeWithIQ) {
+            console.log('[IqFiltr] revealMutedTweet: Calling updateBadgeWithIQ');
+            try {
+              await updateBadgeWithIQ(
+                existingBadge,
+                actualTweetElement,
+                outerElement,
+                hasNestedStructure,
+                isNotificationsPage,
+                cachedIQ.iq_estimate,
+                cachedIQ,
+                cachedIQ.confidence,
+                tweetText,
+                tweetId
+              );
+              console.log('[IqFiltr] revealMutedTweet: updateBadgeWithIQ completed successfully');
+            } catch (error) {
+              console.error('[IqFiltr] revealMutedTweet: Error calling updateBadgeWithIQ:', error);
+            }
+          } else {
+            console.warn('[IqFiltr] revealMutedTweet: updateBadgeWithIQ not available');
+          }
+          return;
+        } else {
+          console.log('[IqFiltr] revealMutedTweet: No cached IQ result found or IQ is missing');
+          
+          // Double-check if there's a badge with score we might have missed (maybe realtime badge)
+          // Search more broadly - check the entire tweetElement tree, not just actualTweetElement
+          const allBadgesRecheck = tweetElement.querySelectorAll('.iq-badge');
+          const badgesWithScoreRecheck = Array.from(allBadgesRecheck).filter(b => 
+            b.hasAttribute('data-iq-score') || b.hasAttribute('data-iq-guess')
+          );
+          
+          console.log('[IqFiltr] revealMutedTweet: Recheck found', allBadgesRecheck.length, 'total badges,', badgesWithScoreRecheck.length, 'with score');
+          
+          if (badgesWithScoreRecheck.length > 0) {
+            console.log('[IqFiltr] revealMutedTweet: Found', badgesWithScoreRecheck.length, 'badges with score on recheck, restoring visibility');
+            badgesWithScoreRecheck.forEach(badge => {
+              badge.style.setProperty('display', 'inline-flex', 'important');
+              badge.style.setProperty('height', '', 'important');
+              badge.style.setProperty('max-height', '', 'important');
+              badge.style.setProperty('min-height', '', 'important');
+            });
+            // Remove loading badges
+            loadingBadges.forEach(badge => {
+              if (badge.parentElement) {
+                badge.remove();
+              }
+            });
+            return;
+          }
+          
+          // Also check if there's a badge with score in the parent containers
+          // (might be in a different part of the DOM structure)
+          let parentElement = tweetElement.parentElement;
+          let depth = 0;
+          while (parentElement && depth < 3) {
+            const parentBadges = parentElement.querySelectorAll('.iq-badge');
+            const parentBadgesWithScore = Array.from(parentBadges).filter(b => 
+              b.hasAttribute('data-iq-score') || b.hasAttribute('data-iq-guess')
+            );
+            
+            if (parentBadgesWithScore.length > 0) {
+              console.log('[IqFiltr] revealMutedTweet: Found', parentBadgesWithScore.length, 'badges with score in parent container, restoring visibility');
+              parentBadgesWithScore.forEach(badge => {
+                badge.style.setProperty('display', 'inline-flex', 'important');
+                badge.style.setProperty('height', '', 'important');
+                badge.style.setProperty('max-height', '', 'important');
+                badge.style.setProperty('min-height', '', 'important');
+              });
+              // Remove loading badges
+              loadingBadges.forEach(badge => {
+                if (badge.parentElement) {
+                  badge.remove();
+                }
+              });
+              return;
+            }
+            parentElement = parentElement.parentElement;
+            depth++;
+          }
+          
+          // No cached IQ found - trigger processing to calculate it
+          console.log('[IqFiltr] revealMutedTweet: No cached IQ and no badge with score, triggering IQ calculation');
+          
+          // Log current state before clearing flags
+          console.log('[IqFiltr] revealMutedTweet: Before clearing flags - actualTweetElement analyzed:', actualTweetElement.hasAttribute('data-iq-analyzed'),
+                      'processing:', actualTweetElement.hasAttribute('data-iq-processing'),
+                      'tweetElement analyzed:', tweetElement.hasAttribute('data-iq-analyzed'),
+                      'processing:', tweetElement.hasAttribute('data-iq-processing'));
+          
+          // Clear any flags that might prevent processing
+          // IMPORTANT: Clear data-iq-analyzed LAST, after clearing other flags
+          // This ensures processTweet doesn't return early
+          actualTweetElement.removeAttribute('data-iq-processing');
+          actualTweetElement.removeAttribute('data-iq-processing-start');
+          tweetElement.removeAttribute('data-iq-processing');
+          tweetElement.removeAttribute('data-iq-processing-start');
+          
+          // Clear analyzed flag AFTER clearing other flags
+          actualTweetElement.removeAttribute('data-iq-analyzed');
+          tweetElement.removeAttribute('data-iq-analyzed');
+          
+          console.log('[IqFiltr] revealMutedTweet: After clearing flags - actualTweetElement analyzed:', actualTweetElement.hasAttribute('data-iq-analyzed'),
+                      'processing:', actualTweetElement.hasAttribute('data-iq-processing'));
+          
+          // Check if shouldSkipTweet would prevent processing
+          const getIqFiltr = () => window.IqFiltr || {};
+          const { shouldSkipTweet: shouldSkipTweetCheck } = getIqFiltr();
+          if (shouldSkipTweetCheck) {
+            const shouldSkipActual = shouldSkipTweetCheck(actualTweetElement);
+            const shouldSkipOuter = tweetElement !== actualTweetElement ? shouldSkipTweetCheck(tweetElement) : false;
+            console.log('[IqFiltr] revealMutedTweet: shouldSkipTweet check - actualTweetElement:', shouldSkipActual, 'tweetElement:', shouldSkipOuter);
+            
+            if (shouldSkipActual || shouldSkipOuter) {
+              console.log('[IqFiltr] revealMutedTweet: shouldSkipTweet returned true, clearing flags and removing from mutedTweetIds to allow processing');
+              // Clear the flags that might cause shouldSkipTweet to return true
+              actualTweetElement.removeAttribute('data-iq-filtered');
+              actualTweetElement.removeAttribute('data-iq-muted');
+              actualTweetElement.removeAttribute('data-iq-removed');
+              tweetElement.removeAttribute('data-iq-filtered');
+              tweetElement.removeAttribute('data-iq-muted');
+              tweetElement.removeAttribute('data-iq-removed');
+              
+              // Also remove from mutedTweetIds set if it exists there
+              if (tweetId && mutedTweetIds && mutedTweetIds.has(tweetId)) {
+                mutedTweetIds.delete(tweetId);
+                console.log('[IqFiltr] revealMutedTweet: Removed tweetId from mutedTweetIds set');
+              }
+            }
+          }
+
+          // Ensure manually-revealed flag is set on both elements to prevent re-filtering
+          // This must be set BEFORE processTweet so checkAndFilter respects it
+          tweetElement.setAttribute('data-iq-manually-revealed', 'true');
+          actualTweetElement.setAttribute('data-iq-manually-revealed', 'true');
+          console.log('[IqFiltr] revealMutedTweet: Set data-iq-manually-revealed flag on both elements to prevent re-filtering');
+
+          // Trigger IQ badge calculation
+          const tweetProcessor = window.TweetProcessor;
+          if (tweetProcessor && tweetProcessor.processTweet) {
+            // Log badges before processTweet
+            const badgesBeforeProcess = tweetElement.querySelectorAll('.iq-badge');
+            console.log('[IqFiltr] revealMutedTweet: Badges before processTweet:', badgesBeforeProcess.length, Array.from(badgesBeforeProcess).map(b => ({
+              type: b.classList.contains('iq-badge-realtime') ? 'realtime' : 
+                    b.classList.contains('iq-badge-loading') ? 'loading' : 'regular',
+              hasScore: b.hasAttribute('data-iq-score'),
+              isLoading: b.hasAttribute('data-iq-loading'),
+              score: b.getAttribute('data-iq-score')
+            })));
+            
+            requestAnimationFrame(() => {
+              console.log('[IqFiltr] revealMutedTweet: Calling processTweet for loading badge');
+              tweetProcessor.processTweet(tweetElement).then(() => {
+                console.log('[IqFiltr] revealMutedTweet: processTweet completed');
+                
+                // Ensure manually-revealed flag is still set to prevent re-filtering
+                tweetElement.setAttribute('data-iq-manually-revealed', 'true');
+                actualTweetElement.setAttribute('data-iq-manually-revealed', 'true');
+                console.log('[IqFiltr] revealMutedTweet: Ensured data-iq-manually-revealed flag is still set after processTweet');
+                
+                // Check immediately after processTweet
+                const badgesImmediatelyAfter = tweetElement.querySelectorAll('.iq-badge');
+                console.log('[IqFiltr] revealMutedTweet: Badges immediately after processTweet:', badgesImmediatelyAfter.length, Array.from(badgesImmediatelyAfter).map(b => ({
+                  type: b.classList.contains('iq-badge-realtime') ? 'realtime' : 
+                        b.classList.contains('iq-badge-loading') ? 'loading' : 'regular',
+                  hasScore: b.hasAttribute('data-iq-score'),
+                  isLoading: b.hasAttribute('data-iq-loading'),
+                  score: b.getAttribute('data-iq-score')
+                })));
+                
+                // Check if tweet is now analyzed
+                console.log('[IqFiltr] revealMutedTweet: After processTweet - actualTweetElement analyzed:', actualTweetElement.hasAttribute('data-iq-analyzed'),
+                            'processing:', actualTweetElement.hasAttribute('data-iq-processing'));
+                
+                // After processing, check again if a badge with score was created
+                // Use a retry mechanism with increasing delays
+                let retryCount = 0;
+                const maxRetries = 5;
+                const checkInterval = 500; // Start with 500ms
+                
+                const checkForBadgeWithScore = () => {
+                  retryCount++;
+                  console.log(`[IqFiltr] revealMutedTweet: Checking badges (attempt ${retryCount}/${maxRetries}) ${retryCount * checkInterval}ms after processTweet`);
+                  
+                  const badgesAfterProcess = tweetElement.querySelectorAll('.iq-badge');
+                  console.log('[IqFiltr] revealMutedTweet: Badges found:', badgesAfterProcess.length, Array.from(badgesAfterProcess).map(b => ({
+                    type: b.classList.contains('iq-badge-realtime') ? 'realtime' : 
+                          b.classList.contains('iq-badge-loading') ? 'loading' : 'regular',
+                    hasScore: b.hasAttribute('data-iq-score'),
+                    isLoading: b.hasAttribute('data-iq-loading'),
+                    score: b.getAttribute('data-iq-score')
+                  })));
+                  
+                  // Check if IQ result is on the element
+                  const iqResultAfterProcess = actualTweetElement._iqResult || tweetElement._iqResult;
+                  console.log('[IqFiltr] revealMutedTweet: IQ result on element:', iqResultAfterProcess);
+                  
+                  const badgesWithScoreAfterProcess = Array.from(badgesAfterProcess).filter(b => 
+                    (b.hasAttribute('data-iq-score') || b.hasAttribute('data-iq-guess')) &&
+                    (!b.hasAttribute('data-iq-loading') && !b.classList.contains('iq-badge-loading'))
+                  );
+                  
+                  console.log('[IqFiltr] revealMutedTweet: Badges with score:', badgesWithScoreAfterProcess.length);
+                  
+                  if (badgesWithScoreAfterProcess.length > 0) {
+                    console.log('[IqFiltr] revealMutedTweet: Found', badgesWithScoreAfterProcess.length, 'badges with score, removing loading badges');
+                    // Remove loading badges
+                    const loadingBadgesAfterProcess = Array.from(badgesAfterProcess).filter(b => 
+                      b.hasAttribute('data-iq-loading') || b.classList.contains('iq-badge-loading')
+                    );
+                    console.log('[IqFiltr] revealMutedTweet: Removing', loadingBadgesAfterProcess.length, 'loading badges');
+                    loadingBadgesAfterProcess.forEach(badge => {
+                      if (badge.parentElement) {
+                        badge.remove();
+                      }
+                    });
+                  } else if (iqResultAfterProcess && iqResultAfterProcess.iq !== undefined && iqResultAfterProcess.iq !== null) {
+                    // IQ was calculated but badge wasn't updated - update it manually
+                    console.log('[IqFiltr] revealMutedTweet: IQ result found on element but badge not updated, updating badge manually');
+                    const { handleNestedStructure } = window.NestedTweetHandler || {};
+                    let outerElement = null;
+                    let hasNestedStructure = false;
+                    if (handleNestedStructure) {
+                      const nestedResult = handleNestedStructure(tweetElement);
+                      outerElement = nestedResult.outerElement;
+                      hasNestedStructure = nestedResult.hasNestedStructure;
+                    }
+                    
+                    const isNotificationsPage = window.location.href.includes('/notifications');
+                    const { extractTweetText } = window.TextExtraction || {};
+                    const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+                    
+                    const loadingBadgeAfterProcess = Array.from(badgesAfterProcess).find(b => 
+                      b.hasAttribute('data-iq-loading') || b.classList.contains('iq-badge-loading')
+                    );
+                    
+                    if (loadingBadgeAfterProcess) {
+                      const { updateBadgeWithIQ } = window.BadgeUpdate || {};
+                      if (updateBadgeWithIQ) {
+                        updateBadgeWithIQ(
+                          loadingBadgeAfterProcess,
+                          actualTweetElement,
+                          outerElement,
+                          hasNestedStructure,
+                          isNotificationsPage,
+                          iqResultAfterProcess.iq,
+                          iqResultAfterProcess.result || {},
+                          iqResultAfterProcess.confidence,
+                          tweetText,
+                          tweetId
+                        ).catch(err => console.error('[IqFiltr] revealMutedTweet: Error updating badge:', err));
+                      }
+                    }
+                  } else if (retryCount < maxRetries) {
+                    // Retry after delay
+                    setTimeout(checkForBadgeWithScore, checkInterval);
+                  } else {
+                    console.log('[IqFiltr] revealMutedTweet: Max retries reached, IQ calculation may have failed or is still in progress');
+                  }
+                };
+                
+                // Start checking after initial delay
+                setTimeout(checkForBadgeWithScore, checkInterval);
+              }).catch((error) => {
+                console.error('[IqFiltr] revealMutedTweet: Error in processTweet:', error);
+              });
+            });
+          }
+        }
+      } else {
+        console.warn('[IqFiltr] revealMutedTweet: GameManager.getCachedRevealedIQResult not available');
+        // Fallback: trigger processing
+        console.log('[IqFiltr] revealMutedTweet: GameManager not available, triggering IQ calculation');
+        actualTweetElement.removeAttribute('data-iq-analyzed');
+        actualTweetElement.removeAttribute('data-iq-processing');
+        actualTweetElement.removeAttribute('data-iq-processing-start');
+        tweetElement.removeAttribute('data-iq-analyzed');
+        tweetElement.removeAttribute('data-iq-processing');
+        tweetElement.removeAttribute('data-iq-processing-start');
+
+        const tweetProcessor = window.TweetProcessor;
+        if (tweetProcessor && tweetProcessor.processTweet) {
+          requestAnimationFrame(() => {
+            tweetProcessor.processTweet(tweetElement).catch((error) => {
+              console.error('[IqFiltr] revealMutedTweet: Error in processTweet:', error);
+            });
+          });
+        }
+      }
+      return;
+    }
+
+    // No badge or badge without score/loading state - trigger IQ calculation
+    console.log('[IqFiltr] revealMutedTweet: No badge or badge without score/loading, triggering IQ calculation');
+    
+    // Clear any flags that might prevent processing
+    actualTweetElement.removeAttribute('data-iq-analyzed');
+    actualTweetElement.removeAttribute('data-iq-processing');
+    actualTweetElement.removeAttribute('data-iq-processing-start');
+    tweetElement.removeAttribute('data-iq-analyzed');
+    tweetElement.removeAttribute('data-iq-processing');
+    tweetElement.removeAttribute('data-iq-processing-start');
+
+    // Trigger IQ badge calculation
+    const tweetProcessor = window.TweetProcessor;
+    console.log('[IqFiltr] revealMutedTweet: TweetProcessor:', tweetProcessor, 'has processTweet:', !!(tweetProcessor && tweetProcessor.processTweet));
+    
+    if (tweetProcessor && tweetProcessor.processTweet) {
+      // Use requestAnimationFrame to ensure DOM is updated before processing
+      requestAnimationFrame(() => {
+        console.log('[IqFiltr] revealMutedTweet: Calling processTweet');
+        tweetProcessor.processTweet(tweetElement).catch((error) => {
+          console.error('[IqFiltr] revealMutedTweet: Error in processTweet:', error);
+        });
+      });
+    } else {
+      console.warn('[IqFiltr] revealMutedTweet: TweetProcessor.processTweet not available');
     }
   }
 
