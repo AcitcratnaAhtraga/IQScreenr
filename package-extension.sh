@@ -13,7 +13,8 @@ if [ -d "$TEMP_DIR" ]; then
 fi
 
 if [ -f "$ZIP_FILE" ]; then
-    rm "$ZIP_FILE"
+    echo "Removing existing $ZIP_FILE..."
+    rm -f "$ZIP_FILE"
 fi
 
 # Create package directory
@@ -47,9 +48,10 @@ find "$TEMP_DIR" -name "*.py" -delete
 find "$TEMP_DIR" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
 find "$TEMP_DIR" -name "*.md" -not -name "README.md" -delete 2>/dev/null || true
 
-# Create ZIP file
+# Create ZIP file (will overwrite if exists)
 echo "Creating ZIP file..."
 cd "$TEMP_DIR"
+rm -f "../$ZIP_FILE"  # Ensure it's removed before creating
 zip -r "../$ZIP_FILE" . -q
 cd ..
 
