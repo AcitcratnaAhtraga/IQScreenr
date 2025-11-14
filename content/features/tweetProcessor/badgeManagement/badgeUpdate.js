@@ -269,11 +269,13 @@
     }
 
     loadingBadge.removeAttribute('data-iq-loading');
-    loadingBadge.setAttribute('data-iq-score', iq);
+    // Round IQ to integer for display (never show decimals)
+    const roundedIQ = Math.round(iq);
+    loadingBadge.setAttribute('data-iq-score', roundedIQ);
     loadingBadge.style.setProperty('cursor', 'help', 'important');
 
     loadingBadge._animationData = {
-      finalIQ: iq,
+      finalIQ: roundedIQ,
       iqColor: iqColor
     };
 
@@ -316,7 +318,7 @@
       }
     }
 
-    animateCountUp(loadingBadge, iq, iqColor);
+    animateCountUp(loadingBadge, roundedIQ, iqColor);
 
     // Immediately after starting animation, ensure position is correct for notification pages
     if (isNotificationsPage && correctPosition) {

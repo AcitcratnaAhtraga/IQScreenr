@@ -23,7 +23,9 @@
 
     const badge = document.createElement('span');
     badge.className = 'iq-badge';
-    badge.setAttribute('data-iq-score', iq);
+    // Round IQ to integer for display (never show decimals)
+    const roundedIQ = Math.round(iq);
+    badge.setAttribute('data-iq-score', roundedIQ);
 
     const confidence = estimationResult.confidence ? Math.round(estimationResult.confidence) : null;
     if (confidence !== null) {
@@ -31,7 +33,7 @@
     }
 
     badge._debugData = {
-      iq: iq,
+      iq: iq, // Keep original decimal for debug info
       result: estimationResult,
       text: tweetText,
       timestamp: new Date().toISOString()
@@ -43,7 +45,7 @@
     // Use confidence color if setting is enabled, otherwise use IQ color
     const iqColor = (settings.useConfidenceForColor && confidence !== null)
       ? getConfidenceColor(confidence)
-      : getIQColor(iq);
+      : getIQColor(roundedIQ);
 
     // Set CSS variables instead of inline styles - CSS handles all styling
     badge.style.setProperty('--iq-badge-bg-color', iqColor);
@@ -54,7 +56,7 @@
         <div class="iq-badge-inner">
           <div class="iq-badge-front">
             <span class="iq-label">IQ</span>
-            <span class="iq-score">${iq}</span>
+            <span class="iq-score">${roundedIQ}</span>
           </div>
           <div class="iq-badge-back">
             <span class="iq-label">%</span>
@@ -68,7 +70,7 @@
     } else {
       badge.innerHTML = `
         <span class="iq-label">IQ</span>
-        <span class="iq-score">${iq}</span>
+        <span class="iq-score">${roundedIQ}</span>
       `;
     }
 
