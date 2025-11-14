@@ -76,10 +76,10 @@
             badge.style.setProperty('display', 'none', 'important');
           }
         });
-        // Restart realtime monitoring if needed
-        if (realtimeManager && realtimeManager.setupRealtimeComposeObserver) {
-          realtimeManager.setupRealtimeComposeObserver();
-        }
+        // Realtime feature is disabled - do not restart monitoring
+        // if (realtimeManager && realtimeManager.setupRealtimeComposeObserver) {
+        //   realtimeManager.setupRealtimeComposeObserver();
+        // }
       } else {
         // Hide all realtime badges
         realtimeBadges.forEach(badge => {
@@ -520,14 +520,15 @@
       subtree: true
     });
 
-    if (!realtimeManager || !realtimeManager.setupRealtimeComposeObserver) {
-      console.error('RealtimeManager not available');
-      setTimeout(init, 100); // Retry after modules load
-      return;
-    }
+    // Realtime feature is disabled - no need to check for RealtimeManager
+    // if (!realtimeManager || !realtimeManager.setupRealtimeComposeObserver) {
+    //   console.error('RealtimeManager not available');
+    //   setTimeout(init, 100); // Retry after modules load
+    //   return;
+    // }
 
     const { processVisibleTweets, setupObserver } = tweetProcessor;
-    const { setupRealtimeComposeObserver } = realtimeManager;
+    // const { setupRealtimeComposeObserver } = realtimeManager; // Realtime feature disabled
     const settings = getSettings();
 
     // Set up settings listener to apply changes immediately
@@ -546,7 +547,8 @@
         // Process immediately - badges should appear as soon as page loads
         processVisibleTweets();
         setupObserver();
-        setupRealtimeComposeObserver();
+        // Realtime feature is disabled - do not initialize
+        // setupRealtimeComposeObserver();
 
         // Apply IQGuessr mode if enabled on page load
         applyIQGuessrModeOnLoad();
@@ -555,7 +557,8 @@
       // Page already loaded - process immediately
       processVisibleTweets();
       setupObserver();
-      setupRealtimeComposeObserver();
+      // Realtime feature is disabled - do not initialize
+      // setupRealtimeComposeObserver();
 
       // Apply IQGuessr mode if enabled on page load
       applyIQGuessrModeOnLoad();

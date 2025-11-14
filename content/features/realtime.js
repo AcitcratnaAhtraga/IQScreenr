@@ -424,8 +424,12 @@ async function updateRealtimeBadge(inputElement, badge, container) {
 
 /**
  * Setup real-time monitoring for an input element
+ * DISABLED: Realtime feature is completely disabled
  */
 function setupRealtimeMonitoring(inputElement) {
+  // Realtime feature is disabled - return immediately without doing anything
+  return;
+  
   const { createRealtimeBadge } = getBadgeManager();
   const { findTextInputs } = getTweetDetection();
   const settings = getSettings();
@@ -688,8 +692,12 @@ function setupRealtimeMonitoring(inputElement) {
 
 /**
  * Monitor for new compose boxes and setup real-time IQ tracking
+ * DISABLED: Realtime feature is completely disabled
  */
 function setupRealtimeComposeObserver() {
+  // Realtime feature is disabled - return immediately without doing anything
+  return null;
+  
   const { findTextInputs } = getTweetDetection();
   const settings = getSettings();
 

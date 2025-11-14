@@ -8,7 +8,7 @@
 
 const defaultSettings = {
   showIQBadge: true,
-  showRealtimeBadge: true,
+  showRealtimeBadge: false,
   minIQ: 60,
   maxIQ: 145,
   useConfidenceForColor: true, // Always enabled - badge colors always reflect confidence
