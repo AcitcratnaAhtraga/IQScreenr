@@ -415,6 +415,21 @@
           
           const { tweetElement, actualTweetElement, tweetId } = badgeData.get(loadingBadge);
           
+          // ANTI-CHEAT: Check if this tweet already has a cached revealed IQ
+          // If it does, keep it as a calculated badge instead of converting to guess badge
+          // This prevents users from toggling game mode on/off to see answers
+          const cachedRevealedIQ = gameManager.getCachedRevealedIQResult ? 
+            await gameManager.getCachedRevealedIQResult(tweetId) : null;
+          
+          if (cachedRevealedIQ && cachedRevealedIQ.iq) {
+            // Tweet already has calculated IQ - skip conversion, keep as calculated badge
+            // Mark as analyzed to prevent reprocessing
+            if (actualTweetElement) {
+              actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+            }
+            continue; // Skip converting this badge
+          }
+          
           // Convert badge (don't await - process in parallel)
           const conversionPromise = (async () => {
             try {
@@ -617,7 +632,8 @@
       }
 
       // Also handle calculated badges that already exist
-      // These should stay as calculated badges (don't convert to guess badges)
+      // ANTI-CHEAT: These should stay as calculated badges if they have cached revealed IQ
+      // This prevents users from toggling game mode on/off to see answers
       const calculatedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
       for (const calculatedBadge of calculatedBadges) {
         const tweetElement = calculatedBadge.closest('article[data-testid="tweet"]') ||
@@ -626,12 +642,29 @@
         if (tweetElement) {
           const tweetId = tweetElement.getAttribute('data-tweet-id');
           if (tweetId) {
-            const cachedGuess = await gameManager.getCachedGuess(tweetId);
-            if (cachedGuess && cachedGuess.guess !== undefined) {
-              // User has a cached guess, calculated badge should remain showing IQ score
-              debugLog('[Content] Keeping calculated badge with cached guess for tweet:', tweetId);
+            // ANTI-CHEAT: Check for cached revealed IQ first (prevents cheating)
+            const cachedRevealedIQ = gameManager.getCachedRevealedIQResult ? 
+              await gameManager.getCachedRevealedIQResult(tweetId) : null;
+            
+            if (cachedRevealedIQ && cachedRevealedIQ.iq) {
+              // Tweet has cached revealed IQ - keep as calculated badge (anti-cheat)
+              debugLog('[Content] Keeping calculated badge with cached revealed IQ for tweet:', tweetId);
+              // Mark as analyzed to prevent reprocessing
+              const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                                 tweetElement.querySelector('article[role="article"]');
+              const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+              if (actualTweetElement) {
+                actualTweetElement.setAttribute('data-iq-analyzed', 'true');
+              }
             } else {
-              // No cached guess but badge is already calculated - keep it as calculated
+              // Check for cached guess as fallback
+              const cachedGuess = await gameManager.getCachedGuess(tweetId);
+              if (cachedGuess && cachedGuess.guess !== undefined) {
+                // User has a cached guess, calculated badge should remain showing IQ score
+                debugLog('[Content] Keeping calculated badge with cached guess for tweet:', tweetId);
+              } else {
+                // No cached guess but badge is already calculated - keep it as calculated
+              }
             }
           }
         }

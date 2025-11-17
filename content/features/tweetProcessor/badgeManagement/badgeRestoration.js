@@ -127,7 +127,9 @@
     }
     
     // Create a promise for this restoration attempt
-    const restorationPromise = (async () => {
+    // CRITICAL: Create promise first, then assign it to avoid "before initialization" error
+    let restorationPromise;
+    restorationPromise = (async () => {
       try {
         actualTweetElement[restorationKey] = true;
         actualTweetElement[restorationPromiseKey] = restorationPromise;
