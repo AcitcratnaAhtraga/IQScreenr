@@ -458,24 +458,24 @@ input[type="range"]::-moz-range-thumb {
 .privacy-notice {
   margin-top: 12px;
   padding: 10px;
-  background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
-  border: 2px solid #eec566;
+  background: #eec566;
+  border: none;
   border-radius: 6px;
   display: flex;
   align-items: flex-start;
   gap: 8px;
   font-size: 12px;
-  color: #ffffff;
+  color: #000000;
 }
 
 .privacy-notice.data-notice {
-  background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
-  color: #eec566;
-  border-left: 3px solid #eec566;
+  background: #eec566;
+  color: #000000;
+  border-left: none;
 }
 
 .privacy-notice.data-notice .privacy-text strong {
-  color: #eec566;
+  color: #000000;
 }
 
 .privacy-icon {
@@ -488,7 +488,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 .privacy-text strong {
-  color: #eec566;
+  color: #000000;
 }
 
 .color-legend {
