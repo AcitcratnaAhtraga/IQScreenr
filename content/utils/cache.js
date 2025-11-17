@@ -185,11 +185,16 @@ function loadCache() {
         return; // Extension context invalidated
       }
       chrome.storage.local.get(null, (items) => {
+        const ErrorHandler = window.ErrorHandler || {};
+        if (chrome.runtime.lastError) {
+          ErrorHandler.handleError(chrome.runtime.lastError, {
+            context: 'IQCache.loadCache',
+            silent: true // Silent for extension context invalidation
+          });
+          return;
+        }
+        
         try {
-          if (chrome.runtime.lastError) {
-            // Extension context invalidated, silently ignore
-            return;
-          }
           // Performance optimization: Process in batches to avoid blocking
           const entries = Object.entries(items).filter(([key]) => key.startsWith(CACHE_KEY_PREFIX));
           const BATCH_SIZE = BATCH.CACHE_LOAD_SIZE || 50;

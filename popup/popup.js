@@ -398,7 +398,11 @@ document.addEventListener('DOMContentLoaded', () => {
           hideStatsTooltip();
         });
       } catch (error) {
-        console.warn('[IQGuessr] Error showing stats tooltip:', error);
+        const ErrorHandler = window.ErrorHandler || {};
+        ErrorHandler.handleError(error, {
+          context: 'Popup.attachStatsTooltipToScore',
+          silent: true // Non-critical UI feature
+        });
       }
     }
 
@@ -491,6 +495,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return date.toLocaleDateString();
       } catch (error) {
+        const ErrorHandler = window.ErrorHandler || {};
+        ErrorHandler.handleError(error, {
+          context: 'Popup.formatTimestamp',
+          defaultValue: 'Unknown',
+          silent: true
+        });
         return 'Unknown';
       }
     }
@@ -728,7 +738,11 @@ document.addEventListener('DOMContentLoaded', () => {
       updateSectionSpacing();
     }, 100);
   }).catch((error) => {
-    console.warn('[IqScreenr] Error loading settings:', error);
+    const ErrorHandler = window.ErrorHandler || {};
+    ErrorHandler.handleError(error, {
+      context: 'Popup.loadSettings',
+      silent: false
+    });
     // Fallback: try sync storage only
       chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'iqGuessrScore', 'enableIqFiltr', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterUserPosts', 'filterMode'], (result) => {
       document.getElementById('showIQBadge').checked = result.showIQBadge !== false;
@@ -867,8 +881,15 @@ document.addEventListener('DOMContentLoaded', () => {
           const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
           updateIQGuessrScore(score);
         }).catch((error) => {
-          chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-            updateIQGuessrScore(result.iqGuessrScore ?? 0);
+          const ErrorHandler = window.ErrorHandler || {};
+          ErrorHandler.handleError(error, {
+            context: 'Popup.updateIQGuessrScore',
+            onError: () => {
+              chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+                updateIQGuessrScore(result.iqGuessrScore ?? 0);
+              });
+            },
+            silent: true
           });
         });
       } else {
@@ -1582,9 +1603,15 @@ document.addEventListener('DOMContentLoaded', () => {
       countText.textContent = `(${averageData.count} tweets)`;
       badgeContainer.appendChild(countText);
     } catch (error) {
-      console.warn('[IqScreenr] Error updating average IQ badge:', error);
-      badgeContainer.style.display = 'block';
-      badgeContainer.innerHTML = '<span style="color: #6b7280; font-size: 12px;">Error loading average IQ</span>';
+      const ErrorHandler = window.ErrorHandler || {};
+      ErrorHandler.handleError(error, {
+        context: 'Popup.updateAverageIQBadge',
+        onError: () => {
+          badgeContainer.style.display = 'block';
+          badgeContainer.innerHTML = '<span style="color: #6b7280; font-size: 12px;">Error loading average IQ</span>';
+        },
+        silent: false
+      });
     }
   }
 
@@ -1761,8 +1788,12 @@ document.addEventListener('DOMContentLoaded', () => {
           if (tabs[0]) {
             chrome.tabs.sendMessage(tabs[0].id, {
               type: 'clearAllCaches'
-            }).catch(() => {
-              // Ignore errors (tab might not have content script loaded)
+            }).catch((error) => {
+              const ErrorHandler = window.ErrorHandler || {};
+              ErrorHandler.handleError(error, {
+                context: 'Popup.clearCache',
+                silent: true // Tab might not have content script loaded
+              });
             });
           }
         });
@@ -1774,8 +1805,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showStatus(`Cache cleared successfully (${keysToRemove.length} entries removed)`, 'success');
       }).catch((error) => {
-        console.error('Error clearing cache:', error);
-        showStatus('Error clearing cache', 'error');
+        const ErrorHandler = window.ErrorHandler || {};
+        ErrorHandler.handleError(error, {
+          context: 'Popup.clearCache',
+          onError: () => {
+            showStatus('Error clearing cache', 'error');
+          },
+          silent: false
+        });
       });
     }
   });
@@ -1813,9 +1850,16 @@ document.addEventListener('DOMContentLoaded', () => {
           ]).then(([syncResult, localResult]) => {
             const score = syncResult.iqGuessrScore ?? localResult.iqGuessrScore ?? 0;
             updateIQGuessrScore(score);
-          }).catch(() => {
-            chrome.storage.sync.get(['iqGuessrScore'], (result) => {
-              updateIQGuessrScore(result.iqGuessrScore ?? 0);
+          }).catch((error) => {
+            const ErrorHandler = window.ErrorHandler || {};
+            ErrorHandler.handleError(error, {
+              context: 'Popup.resetSettings',
+              onError: () => {
+                chrome.storage.sync.get(['iqGuessrScore'], (result) => {
+                  updateIQGuessrScore(result.iqGuessrScore ?? 0);
+                });
+              },
+              silent: true
             });
           });
         } else {

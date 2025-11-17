@@ -97,9 +97,12 @@
    *   - fromCache: Whether the result came from cache
    */
   async function estimateIQ(tweetText, handle, actualTweetElement, iqEstimator) {
-    const { removeUrlsFromText } = getTextExtraction();
-    const { getCachedIQ, cacheIQ } = getIQCache();
-    const gameManager = getGameManager();
+    const ErrorHandler = window.ErrorHandler || {};
+    
+    return ErrorHandler.safeAsync(async () => {
+      const { removeUrlsFromText } = getTextExtraction();
+      const { getCachedIQ, cacheIQ } = getIQCache();
+      const gameManager = getGameManager();
 
     // Extract metadata (privacy-compliant: no tweet text or URLs)
     const metadata = extractMetadata(actualTweetElement, tweetText);
@@ -155,8 +158,12 @@
           cacheIQ(handle, result, cacheMetadata);
         }
       } catch (estimateError) {
-        console.error(`[IQEstimation] ERROR in IQ estimation:`, estimateError?.message || estimateError);
-        throw estimateError;
+        const ErrorHandler = window.ErrorHandler || {};
+        ErrorHandler.handleError(estimateError, {
+          context: 'IQEstimation.estimateIQ.estimate',
+          silent: false
+        });
+        throw estimateError; // Re-throw to be caught by safeAsync wrapper
       }
     } else {
       fromCache = true;
@@ -185,8 +192,12 @@
             cacheIQ(handle, result, cacheMetadata);
           }
         } catch (estimateError) {
-          console.error(`[IQEstimation] ERROR in IQ estimation (recalc):`, estimateError?.message || estimateError);
-          throw estimateError;
+          const ErrorHandler = window.ErrorHandler || {};
+          ErrorHandler.handleError(estimateError, {
+            context: 'IQEstimation.estimateIQ.recalc',
+            silent: false
+          });
+          throw estimateError; // Re-throw to be caught by safeAsync wrapper
         }
       }
     }
@@ -195,6 +206,11 @@
       result,
       fromCache
     };
+    }, {
+      context: 'IQEstimation.estimateIQ',
+      defaultValue: { result: null, fromCache: false },
+      silent: false
+    });
   }
 
   /**
@@ -204,23 +220,31 @@
    * @returns {Promise<boolean>} Whether estimation should be skipped (true = skip)
    */
   async function shouldSkipEstimation(tweetId) {
-    const gameManager = getGameManager();
-    if (!gameManager || !gameManager.isGameModeEnabled || !gameManager.isGameModeEnabled()) {
+    const ErrorHandler = window.ErrorHandler || {};
+    
+    return ErrorHandler.safeAsync(async () => {
+      const gameManager = getGameManager();
+      if (!gameManager || !gameManager.isGameModeEnabled || !gameManager.isGameModeEnabled()) {
+        return false;
+      }
+
+      if (!tweetId) {
+        return false;
+      }
+
+      // In IQGuessr mode: only calculate if user already made a guess (cached guess exists)
+      const cachedGuess = await gameManager.getCachedGuess(tweetId);
+      if (!cachedGuess || cachedGuess.guess === undefined) {
+        // IQGuessr enabled but no guess yet - skip calculation
+        return true;
+      }
+
       return false;
-    }
-
-    if (!tweetId) {
-      return false;
-    }
-
-    // In IQGuessr mode: only calculate if user already made a guess (cached guess exists)
-    const cachedGuess = await gameManager.getCachedGuess(tweetId);
-    if (!cachedGuess || cachedGuess.guess === undefined) {
-      // IQGuessr enabled but no guess yet - skip calculation
-      return true;
-    }
-
-    return false;
+    }, {
+      context: 'IQEstimation.shouldSkipEstimation',
+      defaultValue: false,
+      silent: true
+    });
   }
 
   // Export for use in other modules

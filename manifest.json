@@ -30,6 +30,7 @@
         "content/utils/timerManager.js",
         "content/utils/observerManager.js",
         "content/utils/logger.js",
+        "content/utils/errorHandler.js",
         "content/utils/storageBatch.js",
         "content/utils/cache.js",
         "content/utils/badgeCleanup.js",

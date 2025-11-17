@@ -27,35 +27,43 @@
    * Get cached guess for a tweet ID (async)
    */
   async function getCachedGuess(tweetId) {
-    if (!tweetId) {
+    const ErrorHandler = window.ErrorHandler || {};
+    
+    return ErrorHandler.safeAsync(async () => {
+      if (!tweetId) {
+        return null;
+      }
+
+      const key = generateGuessCacheKey(tweetId);
+      if (!key) {
+        return null;
+      }
+
+      // Check memory cache first
+      if (persistentGuessCache.has(key)) {
+        return persistentGuessCache.get(key);
+      }
+
+      // Try to get from chrome storage
+      const storage = window.GameManagerStorage;
+      if (!storage || !storage.isExtensionContextValid()) {
+        return null;
+      }
+
+      const storageKey = GUESS_CACHE_PREFIX + key;
+      const result = await storage.getStorage([storageKey]);
+
+      if (result[storageKey]) {
+        persistentGuessCache.set(key, result[storageKey]);
+        return result[storageKey];
+      }
+
       return null;
-    }
-
-    const key = generateGuessCacheKey(tweetId);
-    if (!key) {
-      return null;
-    }
-
-    // Check memory cache first
-    if (persistentGuessCache.has(key)) {
-      return persistentGuessCache.get(key);
-    }
-
-    // Try to get from chrome storage
-    const storage = window.GameManagerStorage;
-    if (!storage || !storage.isExtensionContextValid()) {
-      return null;
-    }
-
-    const storageKey = GUESS_CACHE_PREFIX + key;
-    const result = await storage.getStorage([storageKey]);
-
-    if (result[storageKey]) {
-      persistentGuessCache.set(key, result[storageKey]);
-      return result[storageKey];
-    }
-
-    return null;
+    }, {
+      context: 'GameManagerCache.getCachedGuess',
+      defaultValue: null,
+      silent: true // Silent for cache misses
+    });
   }
 
   /**
@@ -105,12 +113,14 @@
    * Enforces size limits during loading
    */
   async function loadGuessCache() {
-    const storage = window.GameManagerStorage;
-    if (!storage || !storage.isExtensionContextValid()) {
-      return;
-    }
+    const ErrorHandler = window.ErrorHandler || {};
+    
+    return ErrorHandler.safeAsync(async () => {
+      const storage = window.GameManagerStorage;
+      if (!storage || !storage.isExtensionContextValid()) {
+        return;
+      }
 
-    try {
       const items = await storage.getStorage(null);
       const entries = [];
 
@@ -132,10 +142,11 @@
       for (const entry of entriesToLoad) {
         persistentGuessCache.set(entry.key, entry.value);
       }
-    } catch (error) {
-      const Logger = window.Logger || console;
-      Logger.warn('[IQGuessr] Error loading guess cache:', error);
-    }
+    }, {
+      context: 'GameManagerCache.loadGuessCache',
+      defaultValue: undefined,
+      silent: false
+    });
   }
 
   /**
@@ -167,24 +178,32 @@
    * Get cached revealed IQ status for a tweet ID (async)
    */
   async function getCachedRevealedIQ(tweetId) {
-    if (!tweetId) return null;
+    const ErrorHandler = window.ErrorHandler || {};
+    
+    return ErrorHandler.safeAsync(async () => {
+      if (!tweetId) return null;
 
-    const key = generateGuessCacheKey(tweetId);
-    if (!key) return null;
+      const key = generateGuessCacheKey(tweetId);
+      if (!key) return null;
 
-    const storage = window.GameManagerStorage;
-    if (!storage || !storage.isExtensionContextValid()) {
-      return null;
-    }
+      const storage = window.GameManagerStorage;
+      if (!storage || !storage.isExtensionContextValid()) {
+        return null;
+      }
 
-    const storageKey = REVEALED_CACHE_PREFIX + key;
-    const result = await storage.getStorage([storageKey]);
+      const storageKey = REVEALED_CACHE_PREFIX + key;
+      const result = await storage.getStorage([storageKey]);
 
-    if (result[storageKey] && result[storageKey].revealed) {
-      return true;
-    }
+      if (result[storageKey] && result[storageKey].revealed) {
+        return true;
+      }
 
-    return false;
+      return false;
+    }, {
+      context: 'GameManagerCache.getCachedRevealedIQ',
+      defaultValue: false,
+      silent: true
+    });
   }
 
   /**
@@ -211,24 +230,32 @@
    * This is a fallback when handle-based lookup fails
    */
   async function getCachedRevealedIQResult(tweetId) {
-    if (!tweetId) return null;
+    const ErrorHandler = window.ErrorHandler || {};
+    
+    return ErrorHandler.safeAsync(async () => {
+      if (!tweetId) return null;
 
-    const key = generateGuessCacheKey(tweetId);
-    if (!key) return null;
+      const key = generateGuessCacheKey(tweetId);
+      if (!key) return null;
 
-    const storage = window.GameManagerStorage;
-    if (!storage || !storage.isExtensionContextValid()) {
+      const storage = window.GameManagerStorage;
+      if (!storage || !storage.isExtensionContextValid()) {
+        return null;
+      }
+
+      const storageKey = REVEALED_IQ_CACHE_PREFIX + key;
+      const result = await storage.getStorage([storageKey]);
+
+      if (result[storageKey]) {
+        return result[storageKey];
+      }
+
       return null;
-    }
-
-    const storageKey = REVEALED_IQ_CACHE_PREFIX + key;
-    const result = await storage.getStorage([storageKey]);
-
-    if (result[storageKey]) {
-      return result[storageKey];
-    }
-
-    return null;
+    }, {
+      context: 'GameManagerCache.getCachedRevealedIQResult',
+      defaultValue: null,
+      silent: true
+    });
   }
 
   // Load cache on initialization

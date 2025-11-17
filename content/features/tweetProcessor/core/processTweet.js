@@ -537,11 +537,17 @@
         actualTweetElement.removeAttribute('data-iq-processing-start');
       }
     } catch (error) {
-      console.error(`[TweetProcessor] ERROR processing tweet:`, error?.message || error);
-      if (loadingBadge) {
-        loadingBadge.remove();
-      }
-      markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
+      const ErrorHandler = window.ErrorHandler || {};
+      ErrorHandler.handleError(error, {
+        context: 'TweetProcessor.processTweet',
+        onError: () => {
+          if (loadingBadge) {
+            loadingBadge.remove();
+          }
+          markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
+        },
+        silent: false
+      });
       actualTweetElement.removeAttribute('data-iq-processing');
       actualTweetElement.removeAttribute('data-iq-processing-start');
     }
