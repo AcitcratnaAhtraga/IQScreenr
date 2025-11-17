@@ -467,6 +467,8 @@
       // Update badge to show actual IQ
       const badgeManager = window.BadgeManager;
       if (badgeManager && badgeManager.animateCountUp) {
+        // Mark as guessed badge to maintain grey styling
+        badge.setAttribute('data-iq-guessed', roundedIQ.toString());
         badge.removeAttribute('data-iq-guess');
         badge.classList.remove('iq-badge-guess');
 

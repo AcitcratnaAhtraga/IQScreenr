@@ -57,16 +57,25 @@
       window.BadgeCreation.attachCreationContext(badge, 'guess');
     }
 
-    // Grey background
+    // Grey background with 100% border-radius
     badge.style.setProperty('background-color', '#9e9e9e', 'important');
     badge.style.setProperty('color', '#000000', 'important');
     badge.style.setProperty('cursor', 'pointer', 'important');
     badge.style.setProperty('display', 'inline-flex', 'important');
     badge.style.setProperty('visibility', 'visible', 'important');
     badge.style.setProperty('opacity', '1', 'important');
+    badge.style.setProperty('border-radius', '100%', 'important');
+
+    // Get badge icon from settings (default: fa-info)
+    const getSettings = () => window.Settings || {};
+    const settings = getSettings();
+    const badgeIcon = settings.badgeIcon || 'fa-info';
+    const getIconHelper = () => window.BadgeIconHelper || {};
+    const { getBadgeIconSVG } = getIconHelper();
+    const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
 
     badge.innerHTML = `
-      <span class="iq-label">IQ</span>
+      <span class="iq-icon">${iconSVG}</span>
       <span class="iq-score">...</span>
     `;
 

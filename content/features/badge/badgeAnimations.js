@@ -37,8 +37,20 @@ function triggerPulseAnimation(badge, iqColor) {
       }
       requestAnimationFrame(updateColor);
     } else {
-      // Remove inline color style to restore default CSS color (#71767A)
-      scoreElement.style.removeProperty('color');
+      // Check if this is a guess badge - restore black color, otherwise remove inline style
+      const isGuessBadge = badge.hasAttribute('data-iq-guessed') || 
+                          badge.hasAttribute('data-iq-guess') ||
+                          badge.classList.contains('iq-badge-guess');
+      if (isGuessBadge) {
+        // Restore black color for guess badges
+        scoreElement.style.setProperty('color', '#000000', 'important');
+        // Also ensure icon is black
+        const iconElements = badge.querySelectorAll('.iq-icon');
+        iconElements.forEach(el => el.style.setProperty('color', '#000000', 'important'));
+      } else {
+        // Remove inline color style to restore default CSS color (#71767A)
+        scoreElement.style.removeProperty('color');
+      }
       badge.classList.remove('iq-badge-pulse');
     }
   }
@@ -336,21 +348,50 @@ function animateCountUp(badge, finalIQ, iqColor) {
           freezeDetectionTime = now;
         }
 
-        const currentColor = interpolateRgbColor(
-          parseColor(loadingColor),
-          finalColorRgb,
-          easedProgress
-        );
-        // Only update CSS variable - no background fill (transparent styling)
-        badge.style.setProperty('--iq-badge-bg-color', currentColor);
+        // Check if this is a guess badge - maintain grey background during animation
+        const isGuessBadge = badge.hasAttribute('data-iq-guessed') || 
+                            badge.hasAttribute('data-iq-guess') ||
+                            badge.classList.contains('iq-badge-guess');
+        
+        if (isGuessBadge) {
+          // Maintain grey background and black text for guess badges during animation
+          badge.style.setProperty('background-color', '#9e9e9e', 'important');
+          badge.style.setProperty('color', '#000000', 'important');
+          badge.style.setProperty('border-radius', '100%', 'important');
+          // Ensure icon and score are black
+          const iconElements = badge.querySelectorAll('.iq-icon');
+          const scoreElements = badge.querySelectorAll('.iq-score');
+          iconElements.forEach(el => el.style.setProperty('color', '#000000', 'important'));
+          scoreElements.forEach(el => el.style.setProperty('color', '#000000', 'important'));
+        } else {
+          const currentColor = interpolateRgbColor(
+            parseColor(loadingColor),
+            finalColorRgb,
+            easedProgress
+          );
+          // Only update CSS variable - no background fill (transparent styling)
+          badge.style.setProperty('--iq-badge-bg-color', currentColor);
+        }
       } else if (isShowingSpinner) {
-        const currentColor = interpolateRgbColor(
-          parseColor(loadingColor),
-          finalColorRgb,
-          easedProgress
-        );
-        // Only update CSS variable - no background fill (transparent styling)
-        badge.style.setProperty('--iq-badge-bg-color', currentColor);
+        // Check if this is a guess badge - maintain grey background during spinner
+        const isGuessBadge = badge.hasAttribute('data-iq-guessed') || 
+                            badge.hasAttribute('data-iq-guess') ||
+                            badge.classList.contains('iq-badge-guess');
+        
+        if (isGuessBadge) {
+          // Maintain grey background and black text for guess badges during spinner
+          badge.style.setProperty('background-color', '#9e9e9e', 'important');
+          badge.style.setProperty('color', '#000000', 'important');
+          badge.style.setProperty('border-radius', '100%', 'important');
+        } else {
+          const currentColor = interpolateRgbColor(
+            parseColor(loadingColor),
+            finalColorRgb,
+            easedProgress
+          );
+          // Only update CSS variable - no background fill (transparent styling)
+          badge.style.setProperty('--iq-badge-bg-color', currentColor);
+        }
       }
 
       const hasReachedFinal = lastDisplayedIQ >= finalIQ;
@@ -383,10 +424,27 @@ function animateCountUp(badge, finalIQ, iqColor) {
             }
           }
         }
-        // Use CSS variable for final color - CSS handles styling
-        badge.style.setProperty('--iq-badge-bg-color', iqColor);
-        // Remove inline background-color style so CSS hover rules can work
-        badge.style.removeProperty('background-color');
+        // Check if this badge was originally a guess badge - maintain grey styling
+        const wasGuessBadge = badge.hasAttribute('data-iq-guessed') || 
+                              badge.hasAttribute('data-created-for-tweet-id');
+        
+        if (wasGuessBadge) {
+          // Maintain grey background and black text for guess badges
+          badge.style.setProperty('background-color', '#9e9e9e', 'important');
+          badge.style.setProperty('color', '#000000', 'important');
+          badge.style.setProperty('border-radius', '100%', 'important');
+          // Ensure icon and score are black
+          const iconElements = badge.querySelectorAll('.iq-icon');
+          const scoreElements = badge.querySelectorAll('.iq-score');
+          iconElements.forEach(el => el.style.setProperty('color', '#000000', 'important'));
+          scoreElements.forEach(el => el.style.setProperty('color', '#000000', 'important'));
+        } else {
+          // Use CSS variable for final color - CSS handles styling
+          badge.style.setProperty('--iq-badge-bg-color', iqColor);
+          // Remove inline background-color style so CSS hover rules can work
+          badge.style.removeProperty('background-color');
+        }
+        
         // Store original background color in CSS variable for hover inversion
         if (badge.classList.contains('iq-badge-flip')) {
           badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
