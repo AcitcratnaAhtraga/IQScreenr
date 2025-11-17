@@ -160,12 +160,61 @@
     // Check if there's already a badge to replace (including loading badges)
     const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
     
-    // CRITICAL: If badge already exists (including loading badge), don't create duplicate
-    // This prevents race conditions where restoreFromRevealedIQ is called multiple times
+    // CRITICAL: If badge already exists, UPDATE it instead of skipping
+    // This ensures cached badges are actually restored, not just marked as "restored"
     if (existingBadge) {
-      // Badge already exists, skip restoration to prevent duplicates
-      delete actualTweetElement[restorationKey];
-      return true;
+      // Check if it's already a calculated badge with the correct score
+      const existingScore = existingBadge.getAttribute('data-iq-score');
+      const existingConfidence = existingBadge.getAttribute('data-confidence');
+      
+      if (existingScore && parseInt(existingScore, 10) === iq && 
+          existingConfidence && parseInt(existingConfidence, 10) === confidence) {
+        // Badge already shows correct IQ - just mark as restored
+        delete actualTweetElement[restorationKey];
+        return true;
+      }
+      
+      // Badge exists but is loading or has wrong score - UPDATE it
+      // Store IQ result on element for reference
+      actualTweetElement._iqResult = {
+        iq: iq,
+        result: cachedIQ,
+        confidence: confidence,
+        text: tweetText
+      };
+
+      // Use updateBadgeWithIQ to update the existing badge
+      const { updateBadgeWithIQ } = getBadgeUpdate();
+      if (updateBadgeWithIQ) {
+        // Update the existing badge (whether it's loading or already calculated)
+        await updateBadgeWithIQ(
+          existingBadge,
+          actualTweetElement,
+          outerElement,
+          hasNestedStructure,
+          isNotificationsPage,
+          iq,
+          cachedIQ,
+          confidence,
+          tweetText,
+          tweetId
+        );
+        delete actualTweetElement[restorationKey];
+        return true;
+      } else {
+        // Fallback: replace badge directly
+        if (existingBadge.parentElement) {
+          existingBadge.remove();
+        }
+        const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+        const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
+        if (cachedGuess && cachedGuess.guess !== undefined) {
+          iqBadge.setAttribute('data-iq-compared', 'true');
+        }
+        placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+        delete actualTweetElement[restorationKey];
+        return true;
+      }
     }
 
     // Create a loading badge first, then animate it (matches normal flow)

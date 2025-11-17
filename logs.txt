@@ -1,0 +1,2121 @@
+vendor.79c2038a.js:10 WebGPU is experimental on this platform. See https://github.com/gpuweb/gpuweb/wiki/Implementation-Status#implementation-status
+vendor.79c2038a.js:10 Failed to create WebGPU Context Provider
+(anonymous) @ vendor.79c2038a.js:10
+Promise.then
+uw @ vendor.79c2038a.js:10
+uS @ vendor.79c2038a.js:10
+yR @ vendor.79c2038a.js:10
+(anonymous) @ vendor.79c2038a.js:10
+lS @ vendor.79c2038a.js:10
+vx @ vendor.79c2038a.js:10
+QT @ vendor.79c2038a.js:10
+hi @ vendor.79c2038a.js:10
+a @ main.19018e2a.js:40
+(anonymous) @ main.19018e2a.js:40
+Promise.then
+780218 @ main.19018e2a.js:40
+g @ 1990460910390161782:349
+Promise.then
+(anonymous) @ main.19018e2a.js:40
+Promise.then
+300823 @ main.19018e2a.js:40
+g @ 1990460910390161782:349
+(anonymous) @ main.19018e2a.js:49
+g.O @ 1990460910390161782:349
+(anonymous) @ main.19018e2a.js:49
+a @ 1990460910390161782:349
+(anonymous) @ main.19018e2a.js:1
+badgeStateTracker.js:212 [BadgeStateTracker] All Tweets in Viewport (0 tweets, Mode: Normal)
+badgeStateTracker.js:236 Summary: {total: 0, mode: 'Normal', badges: {…}, matches: 0, mismatches: 0}
+1990460910390161782:1 Blocked aria-hidden on an element because its descendant retained focus. The focus must not be hidden from assistive technology users. Avoid using aria-hidden on a focused element or its ancestor. Consider using the inert attribute instead, which will also prevent focus. For more details, see the aria-hidden section of the WAI-ARIA specification at https://w3c.github.io/aria/#aria-hidden.
+Element with focus: <a.css-175oi2r r-1pi2tsx r-13qz1uu r-o7ynqc r-6416eg r-1ny4l3l r-1loqt21>
+Ancestor with aria-hidden: <a.css-175oi2r r-1pi2tsx r-13qz1uu r-o7ynqc r-6416eg r-1ny4l3l r-1loqt21> <a href=​"/​romanhelmetguy" aria-hidden=​"true" role=​"link" tabindex=​"-1" class=​"css-175oi2r r-1pi2tsx r-13qz1uu r-o7ynqc r-6416eg r-1ny4l3l r-1loqt21" style=​"background-color:​ rgba(0, 0, 0, 0)​;​">​…​</a>​flex
+badgeStateTracker.js:212 [BadgeStateTracker] All Tweets in Viewport (1 tweets, Mode: Normal)
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (viewport-scan)
+badgeStateTracker.js:190 Tweet ID: unknown
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: null
+badgeStateTracker.js:194 Expected Badge Type: loading
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: null, handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: null, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'viewport-scan', tweetId: 'unknown', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: null, …}
+badgeStateTracker.js:236 Summary: {total: 1, mode: 'Normal', badges: {…}, matches: 0, mismatches: 1}
+badgeStateTracker.js:212 [BadgeStateTracker] All Tweets in Viewport (11 tweets, Mode: Normal)
+badgeStateTracker.js:212 [BadgeStateTracker] All Tweets in Viewport (13 tweets, Mode: Normal)
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (viewport-scan)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'viewport-scan', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990460910390161782
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.394Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990460910390161782
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.394Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990461294533812435
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990461294533812435
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.928Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990468167601168736
+badgeStateTracker.js:191 Handle: Niketas@dyingempires·54m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990468167601168736
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.928Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+shared~loader.AudioDock~loader.DashMenu~ondemand.Avcall~ondemand.CommandCenter~bundle.Account~bundle.ReaderMo.3479126a.js:1 The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio
+(anonymous) @ shared~loader.AudioDock~loader.DashMenu~ondemand.Avcall~ondemand.CommandCenter~bundle.Account~bundle.ReaderMo.3479126a.js:1
+(anonymous) @ textExtraction.js:649
+extractFullTextWithoutVisualExpansion @ textExtraction.js:451
+expandTweetText @ textExpansion.js:204
+processTweet @ processTweet.js:245
+await in processTweet
+(anonymous) @ processVisibleTweets.js:248
+processBatch @ processVisibleTweets.js:247
+processTweets @ processVisibleTweets.js:262
+requestIdleCallback
+processVisibleTweets @ processVisibleTweets.js:266
+wrappedProcessVisibleTweets @ index.js:34
+(anonymous) @ tweetObserver.js:134
+requestIdleCallback
+scheduleProcessing @ tweetObserver.js:82
+processPendingTweets @ tweetObserver.js:88
+requestAnimationFrame
+(anonymous) @ tweetObserver.js:200
+setTimeout
+(anonymous) @ tweetObserver.js:196
+childList
+ps @ vendor.79c2038a.js:86
+fs @ vendor.79c2038a.js:86
+ps @ vendor.79c2038a.js:86
+fs @ vendor.79c2038a.js:86
+ps @ vendor.79c2038a.js:86
+fs @ vendor.79c2038a.js:86
+ps @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+gs @ vendor.79c2038a.js:86
+vs @ vendor.79c2038a.js:86
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990469930848805310
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·47m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990469930848805310
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.929Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990461849339658661
+badgeStateTracker.js:191 Handle: Modern Caesar@ModernCeasar·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990461849339658661
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.929Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990462757280325921
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990462757280325921
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.929Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990462684135887267
+badgeStateTracker.js:191 Handle: R.McLaughlin@RaoulMcLaughlin·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: loading
+badgeStateTracker.js:195 Match: ✅
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', guessCache: null, revealedIQCache: null, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990462684135887267
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-invalid iq-badge-flip" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.930Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ help !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​ background-color:​ rgb(0, 0, 0)​ !important;​ color:​ rgb(158, 158, 158)​ !important;​" data-click-handler-attached=​"true" data-iq-invalid=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990471256349516046
+badgeStateTracker.js:191 Handle: Herald of Rome@HeraldOfRome·42m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990471256349516046
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.931Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990465789455904834
+badgeStateTracker.js:191 Handle: Into the Memory Hole@frogNscorpion·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990465789455904834
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.931Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990463478629368038
+badgeStateTracker.js:191 Handle: Woden The Wanderer@WodenWanderer·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990463478629368038
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.932Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (viewport-scan)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'viewport-scan', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990471200821121482
+badgeStateTracker.js:191 Handle: May Adams@mayxadams·42m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990471200821121482
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.933Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (viewport-scan)
+badgeStateTracker.js:190 Tweet ID: 1990461294533812435
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'viewport-scan', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:212 [BadgeStateTracker] All Tweets in Viewport (14 tweets, Mode: Normal)
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990461294533812435
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990469930848805310
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·47m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990461849339658661
+badgeStateTracker.js:191 Handle: Modern Caesar@ModernCeasar·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990460910390161782
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.394Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990461294533812435
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990461294533812435
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.928Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990468167601168736
+badgeStateTracker.js:191 Handle: Niketas@dyingempires·54m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990468167601168736
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.928Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990469930848805310
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·47m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990469930848805310
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.929Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990461849339658661
+badgeStateTracker.js:191 Handle: Modern Caesar@ModernCeasar·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990461849339658661
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.929Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990462757280325921
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990471256349516046
+badgeStateTracker.js:191 Handle: Herald of Rome@HeraldOfRome·42m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990463478629368038
+badgeStateTracker.js:191 Handle: Woden The Wanderer@WodenWanderer·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990468167601168736
+badgeStateTracker.js:191 Handle: Niketas@dyingempires·54m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990462757280325921
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990462757280325921
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.929Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990462684135887267
+badgeStateTracker.js:191 Handle: R.McLaughlin@RaoulMcLaughlin·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'invalid', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-invalid, iq-badge-flip', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: loading
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', guessCache: null, revealedIQCache: null, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990471256349516046
+badgeStateTracker.js:191 Handle: Herald of Rome@HeraldOfRome·42m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990471256349516046
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.931Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990465789455904834
+badgeStateTracker.js:191 Handle: Into the Memory Hole@frogNscorpion·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990465789455904834
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.931Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990463478629368038
+badgeStateTracker.js:191 Handle: Woden The Wanderer@WodenWanderer·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990463478629368038
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.932Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (viewport-scan)
+badgeStateTracker.js:190 Tweet ID: 1990461294533812435
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'viewport-scan', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990471200821121482
+badgeStateTracker.js:191 Handle: May Adams@mayxadams·42m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (viewport-scan)
+badgeStateTracker.js:190 Tweet ID: 1990468167601168736
+badgeStateTracker.js:191 Handle: Niketas@dyingempires·54m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'viewport-scan', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990471200821121482
+badgeStateTracker.js:191 Handle: May Adams@mayxadams·42m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990471200821121482
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​29.933Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990465173715620255
+badgeStateTracker.js:191 Handle: Dusty Thunder@dustythunder36·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990465173715620255
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​31.968Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990473145569194365
+badgeStateTracker.js:191 Handle: Gringo Investments@GringoInvesting·34m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990473145569194365
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:259 Badge Element: <span class=​"iq-badge iq-badge-loading" data-iq-loading=​"true" data-created-by=​"attachCreationContext" data-created-at=​"2025-11-17T18:​07:​31.969Z" style=​"--iq-badge-bg-color:​ rgb(129, 51, 51)​;​ cursor:​ wait !important;​ display:​ inline-flex !important;​ visibility:​ visible !important;​ opacity:​ 1 !important;​" data-click-handler-attached=​"true">​…​</span>​flex
+badgeStateTracker.js:260 Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990465789455904834
+badgeStateTracker.js:191 Handle: Into the Memory Hole@frogNscorpion·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (viewport-scan)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'viewport-scan', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990461294533812435
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990468167601168736
+badgeStateTracker.js:191 Handle: Niketas@dyingempires·54m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990469930848805310
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy·47m
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (before-restoration)
+badgeStateTracker.js:190 Tweet ID: 1990461849339658661
+badgeStateTracker.js:191 Handle: Modern Caesar@ModernCeasar·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'before-restoration', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+badgeStateTracker.js:190 Tweet ID: 1990460910390161782
+badgeStateTracker.js:191 Handle: Roman Helmet Guy@romanhelmetguy
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:189 [BadgeStateTracker] Tweet Badge State (process-start)
+badgeStateTracker.js:190 Tweet ID: 1990465173715620255
+badgeStateTracker.js:191 Handle: Dusty Thunder@dustythunder36·1h
+badgeStateTracker.js:192 Mode: Normal
+badgeStateTracker.js:193 Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+badgeStateTracker.js:194 Expected Badge Type: calculated
+badgeStateTracker.js:195 Match: ❌
+badgeStateTracker.js:196 Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+badgeStateTracker.js:197 Full State: {context: 'process-start', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+badgeStateTracker.js:254 [BadgeStateTracker] Badge State Change (existing-badge-found)
+badgeStateTracker.js:255 Tweet ID: 1990465173715620255
+badgeStateTracker.js:256 Mode: Normal
+badgeStateTracker.js:257 From: null
+badgeStateTracker.js:258 To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Badge Element: 
+ Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (process-start)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'process-start', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Badge State Change (existing-badge-found)
+ Tweet ID: 1990473145569194365
+ Mode: Normal
+ From: null
+ To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Badge Element: 
+ Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (process-start)
+ Tweet ID: 1990472480184545527
+ Handle: HenrickHenryHenryson@HenricanHenry·37m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'process-start', tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Badge State Change (existing-badge-found)
+ Tweet ID: 1990472480184545527
+ Mode: Normal
+ From: null
+ To: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Badge Element: 
+ Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (before-restoration)
+ Tweet ID: 1990472480184545527
+ Handle: HenrickHenryHenryson@HenricanHenry·37m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'before-restoration', tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-failed)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-failed', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Badge State Change (before-update-with-IQ)
+ Tweet ID: 1990468167601168736
+ Mode: Normal
+ From: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ To: null
+ Badge Element: 
+ Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-failed)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-failed', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Badge State Change (before-update-with-IQ)
+ Tweet ID: 1990465789455904834
+ Mode: Normal
+ From: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ To: null
+ Badge Element: 
+ Badge State: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-attempt)
+ Tweet ID: 1990472480184545527
+ Handle: HenrickHenryHenryson@HenricanHenry·37m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-attempt', tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'calculated', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-flip', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ✅
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990462684135887267
+ Handle: R.McLaughlin@RaoulMcLaughlin·1h
+ Mode: Normal
+ Current Badge: {type: 'invalid', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-invalid, iq-badge-flip', attributes: {…}, …}
+ Expected Badge Type: loading
+ Match: ❌
+ Cache Status: {tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', guessCache: null, revealedIQCache: null, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990460910390161782
+ Handle: Roman Helmet Guy@romanhelmetguy
+ Mode: Normal
+ Current Badge: {type: 'calculated', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-flip', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ✅
+ Cache Status: {tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990460910390161782', handle: 'Roman Helmet Guy@romanhelmetguy', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990461294533812435
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990461294533812435', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990469930848805310
+ Handle: Roman Helmet Guy@romanhelmetguy·47m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990469930848805310', handle: 'Roman Helmet Guy@romanhelmetguy·47m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990461849339658661
+ Handle: Modern Caesar@ModernCeasar·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990461849339658661', handle: 'Modern Caesar@ModernCeasar·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (updateBadgeWithIQ-start)
+ Tweet ID: 1990472480184545527
+ Handle: HenrickHenryHenryson@HenricanHenry·37m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'updateBadgeWithIQ-start', tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-update-with-IQ)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-update-with-IQ', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990468167601168736
+ Handle: Niketas@dyingempires·54m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990468167601168736', handle: 'Niketas@dyingempires·54m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-update-with-IQ)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-update-with-IQ', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990462684135887267
+ Handle: R.McLaughlin@RaoulMcLaughlin·1h
+ Mode: Normal
+ Current Badge: {type: 'invalid', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-invalid, iq-badge-flip', attributes: {…}, …}
+ Expected Badge Type: loading
+ Match: ❌
+ Cache Status: {tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', guessCache: null, revealedIQCache: null, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990462757280325921
+ Handle: Roman Helmet Guy@romanhelmetguy·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990462757280325921', handle: 'Roman Helmet Guy@romanhelmetguy·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (restoreFromRevealedIQ-success)
+ Tweet ID: 1990472480184545527
+ Handle: HenrickHenryHenryson@HenricanHenry·37m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'restoreFromRevealedIQ-success', tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990462684135887267
+ Handle: R.McLaughlin@RaoulMcLaughlin·1h
+ Mode: Normal
+ Current Badge: {type: 'invalid', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-invalid, iq-badge-flip', attributes: {…}, …}
+ Expected Badge Type: loading
+ Match: ❌
+ Cache Status: {tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', guessCache: null, revealedIQCache: null, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990462684135887267', handle: 'R.McLaughlin@RaoulMcLaughlin·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (after-restoration-success)
+ Tweet ID: 1990472480184545527
+ Handle: HenrickHenryHenryson@HenricanHenry·37m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'after-restoration-success', tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990471256349516046
+ Handle: Herald of Rome@HeraldOfRome·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990471256349516046', handle: 'Herald of Rome@HeraldOfRome·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ Summary: {total: 11, mode: 'Normal', badges: {…}, matches: 0, mismatches: 11}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990465789455904834
+ Handle: Into the Memory Hole@frogNscorpion·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990465789455904834', handle: 'Into the Memory Hole@frogNscorpion·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990463478629368038
+ Handle: Woden The Wanderer@WodenWanderer·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990463478629368038', handle: 'Woden The Wanderer@WodenWanderer·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990471200821121482
+ Handle: May Adams@mayxadams·42m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990471200821121482', handle: 'May Adams@mayxadams·42m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ Summary: {total: 13, mode: 'Normal', badges: {…}, matches: 0, mismatches: 13}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990465173715620255
+ Handle: Dusty Thunder@dustythunder36·1h
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990465173715620255', handle: 'Dusty Thunder@dustythunder36·1h', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990473145569194365
+ Handle: Gringo Investments@GringoInvesting·34m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990473145569194365', handle: 'Gringo Investments@GringoInvesting·34m', mode: 'Normal', currentBadge: {…}, …}
+ [BadgeStateTracker] Tweet Badge State (viewport-scan)
+ Tweet ID: 1990472480184545527
+ Handle: HenrickHenryHenryson@HenricanHenry·37m
+ Mode: Normal
+ Current Badge: {type: 'loading', visible: true, inDOM: true, classes: 'iq-badge, iq-badge-loading', attributes: {…}, …}
+ Expected Badge Type: calculated
+ Match: ❌
+ Cache Status: {tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', guessCache: null, revealedIQCache: {…}, iqCache: null}
+ Full State: {context: 'viewport-scan', tweetId: '1990472480184545527', handle: 'HenrickHenryHenryson@HenricanHenry·37m', mode: 'Normal', currentBadge: {…}, …}
+ Summary: {total: 14, mode: 'Normal', badges: {…}, matches: 0, mismatches: 14}

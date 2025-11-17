@@ -120,23 +120,31 @@
           existingBadge.classList.contains('iq-badge-loading')
         ) && !isGuessBadge;
 
-        if (isStuckInLoading) {
+        // CRITICAL: After mode switch, loading badges need to be processed even if marked as analyzed
+        // Check if this is a recently converted loading badge (created within last 5 seconds)
+        const badgeCreatedAt = existingBadge?.getAttribute('data-created-at');
+        const isRecentlyConverted = badgeCreatedAt && (Date.now() - new Date(badgeCreatedAt).getTime() < 5000);
+
+        if (isStuckInLoading || (isRecentlyConverted && isStuckInLoading)) {
           // Tweet is stuck in loading state - force reprocess
           actualTweet.removeAttribute('data-iq-analyzed');
+          actualTweet.removeAttribute('data-iq-processing');
+          actualTweet.removeAttribute('data-iq-processing-start');
           if (processedTweets && processedTweets.delete) {
             processedTweets.delete(actualTweet);
           }
-          if (existingBadge && existingBadge.parentElement) {
-            existingBadge.remove();
-          }
+          // Don't remove the badge - let it be processed
         } else if (!existingBadge && settings.showIQBadge) {
           // Badge was removed somehow - reprocess only if badges should be shown
           actualTweet.removeAttribute('data-iq-analyzed');
+          actualTweet.removeAttribute('data-iq-processing');
+          actualTweet.removeAttribute('data-iq-processing-start');
           if (processedTweets && processedTweets.delete) {
             processedTweets.delete(actualTweet);
           }
-        } else if (isValidCompletedBadge || existingBadge) {
+        } else if (isValidCompletedBadge || (existingBadge && !isStuckInLoading && !isRecentlyConverted)) {
           // Tweet has a valid badge (completed, invalid, or guess badge) - don't reprocess
+          // UNLESS it's a recently converted loading badge that needs processing
           return;
         }
       }

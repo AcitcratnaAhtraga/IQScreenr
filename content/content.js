@@ -228,7 +228,12 @@
           tracker.logAllTweetsInViewport();
         }
 
-        const guessBadges = document.querySelectorAll('.iq-badge-guess, [data-iq-guess="true"]');
+        const guessBadges = Array.from(document.querySelectorAll('.iq-badge-guess, [data-iq-guess="true"]'));
+        
+        // CRITICAL: Process all guess badges and ensure they're all removed before creating loading badges
+        // This prevents race conditions where some badges might still exist during reprocessing
+        const tweetsToReprocess = new Set();
+        
         guessBadges.forEach(guessBadge => {
           // Only convert badges that haven't been guessed yet
           if (!guessBadge.hasAttribute('data-iq-guessed') && !guessBadge.hasAttribute('data-iq-calculating')) {
@@ -237,7 +242,14 @@
                                 guessBadge.closest('article[role="article"]') ||
                                 guessBadge.closest('article');
 
+            if (!tweetElement) return;
+
             const tweetId = tweetElement?.getAttribute('data-tweet-id');
+            
+            // Find nested tweet if it exists
+            const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                               tweetElement.querySelector('article[role="article"]');
+            const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
 
             // Debug logging: Log badge conversion
             if (tracker.logBadgeStateChange && tweetElement) {
@@ -245,35 +257,66 @@
               tracker.logBadgeStateChange(guessBadge, fromState, null, 'mode-switch-to-loading');
             }
 
-            const loadingBadge = badgeManager.createLoadingBadge();
-            if (guessBadge.parentElement) {
-              guessBadge.parentElement.insertBefore(loadingBadge, guessBadge);
-              guessBadge.remove();
-            }
+            // CRITICAL: Remove ALL guess badges for this tweet first (prevent duplicates)
+            const allGuessBadges = [
+              ...actualTweetElement.querySelectorAll('.iq-badge-guess'),
+              ...actualTweetElement.querySelectorAll('[data-iq-guess="true"]'),
+              ...(nestedTweet && nestedTweet !== tweetElement ? [
+                ...tweetElement.querySelectorAll('.iq-badge-guess'),
+                ...tweetElement.querySelectorAll('[data-iq-guess="true"]')
+              ] : [])
+            ].filter((badge, index, self) => index === self.findIndex(b => b === badge));
 
-            // Debug logging: Log after conversion
-            if (tracker.logBadgeStateChange && loadingBadge && tweetElement) {
-              const toState = tracker.getBadgeState ? tracker.getBadgeState(loadingBadge) : null;
-              tracker.logBadgeStateChange(loadingBadge, null, toState, 'mode-switch-to-loading-complete');
-            }
+            // Remove all guess badges
+            allGuessBadges.forEach(badge => {
+              if (badge.parentElement) {
+                badge.remove();
+              }
+            });
 
-            // Mark the tweet for reprocessing if it exists
-            if (tweetElement) {
-              // Find nested tweet if it exists
-              const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
-                                 tweetElement.querySelector('article[role="article"]');
-              const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+            // Create loading badge only if one doesn't already exist
+            const existingLoadingBadge = actualTweetElement.querySelector('.iq-badge-loading, [data-iq-loading="true"]') ||
+                                        (nestedTweet && nestedTweet !== tweetElement ? 
+                                         tweetElement.querySelector('.iq-badge-loading, [data-iq-loading="true"]') : null);
+            
+            if (!existingLoadingBadge) {
+              const loadingBadge = badgeManager.createLoadingBadge();
               
-              actualTweetElement.removeAttribute('data-iq-analyzed');
-              actualTweetElement.removeAttribute('data-iq-processing');
-              actualTweetElement.removeAttribute('data-iq-processing-start');
+              // Find engagement bar for placement
+              const engagementBar = actualTweetElement.querySelector('[role="group"]');
+              if (engagementBar) {
+                const firstChild = engagementBar.firstElementChild;
+                if (firstChild) {
+                  engagementBar.insertBefore(loadingBadge, firstChild);
+                } else {
+                  engagementBar.appendChild(loadingBadge);
+                }
+              } else {
+                actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
+              }
 
-              // Remove from processed tweets Set to allow reprocessing
-              const tweetProcessorModule = getTweetProcessor();
-              if (tweetProcessorModule && tweetProcessorModule.processedTweets) {
-                tweetProcessorModule.processedTweets.delete(actualTweetElement);
+              // Debug logging: Log after conversion
+              if (tracker.logBadgeStateChange && loadingBadge && tweetElement) {
+                const toState = tracker.getBadgeState ? tracker.getBadgeState(loadingBadge) : null;
+                tracker.logBadgeStateChange(loadingBadge, null, toState, 'mode-switch-to-loading-complete');
               }
             }
+
+            // Mark the tweet for reprocessing
+            tweetsToReprocess.add(actualTweetElement);
+          }
+        });
+
+        // CRITICAL: Mark all tweets for reprocessing AFTER all conversions are complete
+        tweetsToReprocess.forEach(actualTweetElement => {
+          actualTweetElement.removeAttribute('data-iq-analyzed');
+          actualTweetElement.removeAttribute('data-iq-processing');
+          actualTweetElement.removeAttribute('data-iq-processing-start');
+
+          // Remove from processed tweets Set to allow reprocessing
+          const tweetProcessorModule = getTweetProcessor();
+          if (tweetProcessorModule && tweetProcessorModule.processedTweets) {
+            tweetProcessorModule.processedTweets.delete(actualTweetElement);
           }
         });
 

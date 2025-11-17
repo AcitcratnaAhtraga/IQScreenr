@@ -136,8 +136,12 @@
       return 'guess'; // Waiting for guess input
     } else {
       // In Normal mode:
-      // - If IQ cache exists: show calculated badge
+      // - If revealed IQ cache exists (tweet-ID-based): show calculated badge (highest priority)
+      // - If IQ cache exists (handle-based): show calculated badge
       // - Otherwise: show loading -> calculated
+      if (cacheStatus.revealedIQCache && cacheStatus.revealedIQCache.iq) {
+        return 'calculated';
+      }
       if (cacheStatus.iqCache && cacheStatus.iqCache.iq_estimate !== null) {
         return 'calculated';
       }

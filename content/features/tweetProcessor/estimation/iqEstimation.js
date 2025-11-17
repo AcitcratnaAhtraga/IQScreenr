@@ -99,6 +99,7 @@
   async function estimateIQ(tweetText, handle, actualTweetElement, iqEstimator) {
     const { removeUrlsFromText } = getTextExtraction();
     const { getCachedIQ, cacheIQ } = getIQCache();
+    const gameManager = getGameManager();
 
     // Extract metadata (privacy-compliant: no tweet text or URLs)
     const metadata = extractMetadata(actualTweetElement, tweetText);
@@ -109,9 +110,33 @@
       cleanedText = removeUrlsFromText(cleanedText);
     }
 
-    // Get cached result by handle (not by tweet text)
-    let result = handle ? getCachedIQ(handle) : null;
+    // CRITICAL: Check tweet-ID-based cache FIRST (highest priority, most accurate)
+    // This prevents unnecessary recalculation when we already have tweet-specific cached IQ
+    let result = null;
     let fromCache = false;
+    const tweetId = actualTweetElement?.getAttribute('data-tweet-id');
+    
+    if (tweetId && gameManager && gameManager.getCachedRevealedIQResult) {
+      const cachedIQResult = await gameManager.getCachedRevealedIQResult(tweetId);
+      if (cachedIQResult && cachedIQResult.iq) {
+        // Convert tweet-ID cache format to match expected format
+        result = {
+          iq_estimate: cachedIQResult.iq,
+          confidence: cachedIQResult.confidence,
+          is_valid: true,
+          ...(cachedIQResult.result || {})
+        };
+        fromCache = true;
+      }
+    }
+
+    // Fallback to handle-based cache if tweet-ID cache not found
+    if (!result && handle) {
+      result = getCachedIQ(handle);
+      if (result) {
+        fromCache = true;
+      }
+    }
 
     if (!result) {
       // Not in cache, calculate new result
