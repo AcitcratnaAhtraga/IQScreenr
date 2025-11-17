@@ -90,14 +90,24 @@
       return false;
     }
 
+    // CRITICAL: Prevent concurrent restoration attempts (race condition protection)
+    const restorationKey = `_iq-restoring-${tweetId}`;
+    if (actualTweetElement[restorationKey]) {
+      // Restoration already in progress, skip to prevent duplicates
+      return true;
+    }
+    actualTweetElement[restorationKey] = true;
+
     const gameManager = getGameManager();
     if (!gameManager || !gameManager.getCachedRevealedIQResult) {
+      delete actualTweetElement[restorationKey];
       return false;
     }
 
     // FIRST: Try to get IQ result directly by tweet ID (tweet-specific)
     const cachedIQResult = await gameManager.getCachedRevealedIQResult(tweetId);
     if (!cachedIQResult || !cachedIQResult.iq) {
+      delete actualTweetElement[restorationKey];
       return false;
     }
 
@@ -116,12 +126,14 @@
     // showing the handle-based cache result when IQGuessr is re-enabled.
 
     if (!cachedIQ || cachedIQ.iq_estimate === undefined) {
+      delete actualTweetElement[restorationKey];
       return false;
     }
 
     // We have revealed IQ and cached IQ - restore calculated badge directly
     const badgeManager = getBadgeManager();
     if (!badgeManager || !badgeManager.createIQBadge) {
+      delete actualTweetElement[restorationKey];
       return false;
     }
 
@@ -140,12 +152,21 @@
       const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);
       if (wasFiltered) {
         // Element was removed, stop restoration
+        delete actualTweetElement[restorationKey];
         return true;
       }
     }
 
-    // Check if there's already a badge to replace
+    // Check if there's already a badge to replace (including loading badges)
     const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
+    
+    // CRITICAL: If badge already exists (including loading badge), don't create duplicate
+    // This prevents race conditions where restoreFromRevealedIQ is called multiple times
+    if (existingBadge) {
+      // Badge already exists, skip restoration to prevent duplicates
+      delete actualTweetElement[restorationKey];
+      return true;
+    }
 
     // Create a loading badge first, then animate it (matches normal flow)
     const { createLoadingBadge } = badgeManager;
@@ -163,9 +184,7 @@
         text: tweetText
       };
       placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
-      if (existingBadge && existingBadge.parentElement) {
-        existingBadge.remove();
-      }
+      delete actualTweetElement[restorationKey];
       return true;
     }
 
@@ -173,11 +192,6 @@
 
     // Place the loading badge first
     placeRestoredBadge(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
-
-    // Remove existing badge if it exists
-    if (existingBadge && existingBadge.parentElement) {
-      existingBadge.remove();
-    }
 
     // Store IQ result on element for reference
     actualTweetElement._iqResult = {
@@ -204,6 +218,8 @@
           tweetText,
           tweetId
         );
+        // Clear restoration flag after update completes
+        delete actualTweetElement[restorationKey];
       });
     } else {
       // Fallback: create badge directly if updateBadgeWithIQ not available
@@ -216,6 +232,7 @@
         iqBadge.setAttribute('data-iq-compared', 'true');
       }
       placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+      delete actualTweetElement[restorationKey];
     }
 
     return true;
