@@ -73,6 +73,12 @@
       return;
     }
 
+    // Debug logging: Log tweet processing start
+    const tracker = window.BadgeStateTracker || {};
+    if (tracker.logTweetBadgeState) {
+      await tracker.logTweetBadgeState(tweetElement, 'process-start');
+    }
+
     const badgeManager = getBadgeManager();
     if (!badgeManager || !badgeManager.createLoadingBadge) {
       return;
@@ -139,6 +145,12 @@
 
     // Check for existing badges and handle duplicates
     const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
+
+    // Debug logging: Log existing badge state
+    if (tracker.logBadgeStateChange && existingBadge) {
+      const badgeState = tracker.getBadgeState ? tracker.getBadgeState(existingBadge) : null;
+      tracker.logBadgeStateChange(existingBadge, null, badgeState, 'existing-badge-found');
+    }
 
     // Check badge state
     const { checkBadgeState } = getTweetValidation();
@@ -237,10 +249,24 @@
     // This happens AFTER text expansion, so we check cache with the full expanded text
     const { tryRestoreBadge } = getBadgeRestoration();
     if (tryRestoreBadge) {
+      // Debug logging: Before restoration attempt
+      if (tracker.logTweetBadgeState) {
+        await tracker.logTweetBadgeState(tweetElement, 'before-restoration');
+      }
+      
       const restored = await tryRestoreBadge(actualTweetElement, outerElement, hasNestedStructure, tweetId, handle, isNotificationsPage, processedTweets, finalTweetText);
       if (restored) {
         // Badge was restored, processing complete
+        // Debug logging: After restoration
+        if (tracker.logTweetBadgeState) {
+          await tracker.logTweetBadgeState(tweetElement, 'after-restoration-success');
+        }
         return;
+      } else {
+        // Debug logging: Restoration failed
+        if (tracker.logTweetBadgeState) {
+          await tracker.logTweetBadgeState(tweetElement, 'after-restoration-failed');
+        }
       }
     }
 
@@ -316,10 +342,22 @@
     if (loadingBadge && settings.showIQBadge) {
       const gameManagerForConversion = getGameManager();
       if (gameManagerForConversion && gameManagerForConversion.isGameModeEnabled && gameManagerForConversion.isGameModeEnabled()) {
+        // Debug logging: Before guess badge conversion
+        if (tracker.logBadgeStateChange && loadingBadge) {
+          const fromState = tracker.getBadgeState ? tracker.getBadgeState(loadingBadge) : null;
+          tracker.logBadgeStateChange(loadingBadge, fromState, null, 'before-guess-conversion');
+        }
+        
         // No cached guess+IQ combo found earlier, proceed with normal guess badge replacement
         const guessBadge = await gameManagerForConversion.replaceLoadingBadgeWithGuess(loadingBadge);
         if (guessBadge) {
           loadingBadge = guessBadge;
+          
+          // Debug logging: After guess badge conversion
+          if (tracker.logBadgeStateChange) {
+            const toState = tracker.getBadgeState ? tracker.getBadgeState(guessBadge) : null;
+            tracker.logBadgeStateChange(guessBadge, null, toState, 'after-guess-conversion');
+          }
         }
       }
     }
@@ -368,9 +406,20 @@
         const iq = Math.round(result.iq_estimate);
         const confidence = result.confidence ? Math.round(result.confidence) : null;
 
+        // Debug logging: Before badge update
+        if (tracker.logBadgeStateChange && loadingBadge) {
+          const fromState = tracker.getBadgeState ? tracker.getBadgeState(loadingBadge) : null;
+          tracker.logBadgeStateChange(loadingBadge, fromState, null, 'before-update-with-IQ');
+        }
+
         const { updateBadgeWithIQ } = getBadgeUpdate();
         if (updateBadgeWithIQ) {
           await updateBadgeWithIQ(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage, iq, result, confidence, finalTweetText, tweetId);
+          
+          // Debug logging: After badge update
+          if (tracker.logTweetBadgeState) {
+            await tracker.logTweetBadgeState(tweetElement, 'after-update-with-IQ');
+          }
         }
 
         // Mark as analyzed

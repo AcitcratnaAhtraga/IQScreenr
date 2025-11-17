@@ -113,6 +113,68 @@ class ComprehensiveIQEstimatorUltimate {
   }
 
   /**
+   * Safely parse JSON, handling cases where multiple JSON objects might be concatenated
+   * Returns the first valid JSON object parsed, or null if parsing fails
+   */
+  _safeParseJSON(text) {
+    if (!text || typeof text !== 'string') {
+      return null;
+    }
+    
+    try {
+      // Try parsing the entire text first
+      return JSON.parse(text);
+    } catch (e) {
+      // If that fails, try to find and parse the first valid JSON object
+      // Look for the first complete JSON object (starts with { and has matching braces)
+      let braceCount = 0;
+      let startIndex = -1;
+      
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === '{') {
+          if (startIndex === -1) {
+            startIndex = i;
+          }
+          braceCount++;
+        } else if (text[i] === '}') {
+          braceCount--;
+          if (braceCount === 0 && startIndex !== -1) {
+            // Found a complete JSON object
+            try {
+              const jsonStr = text.substring(startIndex, i + 1);
+              return JSON.parse(jsonStr);
+            } catch (parseError) {
+              // This object wasn't valid, continue searching
+              startIndex = -1;
+              braceCount = 0;
+            }
+          }
+        }
+      }
+      
+      // If no complete object found, try parsing up to the first error position
+      // This handles truncated JSON
+      const errorPos = e.message.match(/position (\d+)/);
+      if (errorPos) {
+        const pos = parseInt(errorPos[1], 10);
+        try {
+          // Try parsing up to the error position, then find the last complete object
+          const partialText = text.substring(0, pos);
+          const lastBrace = partialText.lastIndexOf('}');
+          if (lastBrace > 0) {
+            const jsonStr = partialText.substring(0, lastBrace + 1);
+            return JSON.parse(jsonStr);
+          }
+        } catch (e2) {
+          // Still failed
+        }
+      }
+      
+      return null;
+    }
+  }
+
+  /**
    * Load AoA dictionary and calibration data asynchronously
    * CRITICAL: This must complete before estimation to ensure accurate vocabulary scoring
    */
@@ -131,10 +193,17 @@ class ComprehensiveIQEstimatorUltimate {
           const aoaUrl = getResourceURL(this.aoaDictionaryPath);
           const response = await fetch(aoaUrl);
           if (response.ok) {
-            this.aoaDictionary = await response.json();
-            this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
-            this.aoaDictionaryLoaded = true;
-            console.debug('[IQEstimator] AoA dictionary loaded successfully', Object.keys(this.aoaDictionary).length, 'words');
+            const text = await response.text();
+            const parsed = this._safeParseJSON(text);
+            if (parsed && typeof parsed === 'object') {
+              this.aoaDictionary = parsed;
+              this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
+              this.aoaDictionaryLoaded = true;
+              console.debug('[IQEstimator] AoA dictionary loaded successfully', Object.keys(this.aoaDictionary).length, 'words');
+            } else {
+              console.error('[IQEstimator] Failed to parse AoA dictionary JSON');
+              this.aoaDictionaryLoadFailed = true;
+            }
           } else {
             console.error('[IQEstimator] Failed to load AoA dictionary:', response.status, aoaUrl);
             // Retry once after a short delay
@@ -142,10 +211,17 @@ class ComprehensiveIQEstimatorUltimate {
               try {
                 const retryResponse = await fetch(aoaUrl);
                 if (retryResponse.ok) {
-                  this.aoaDictionary = await retryResponse.json();
-                  this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
-                  this.aoaDictionaryLoaded = true;
-                  console.debug('[IQEstimator] AoA dictionary loaded successfully on retry', Object.keys(this.aoaDictionary).length, 'words');
+                  const text = await retryResponse.text();
+                  const parsed = this._safeParseJSON(text);
+                  if (parsed && typeof parsed === 'object') {
+                    this.aoaDictionary = parsed;
+                    this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
+                    this.aoaDictionaryLoaded = true;
+                    console.debug('[IQEstimator] AoA dictionary loaded successfully on retry', Object.keys(this.aoaDictionary).length, 'words');
+                  } else {
+                    this.aoaDictionaryLoadFailed = true;
+                    console.warn('[IQEstimator] Failed to parse AoA dictionary JSON on retry');
+                  }
                 } else {
                   // Retry failed - mark as failed
                   this.aoaDictionaryLoadFailed = true;
@@ -166,10 +242,22 @@ class ComprehensiveIQEstimatorUltimate {
             e.message.includes('Receiving end does not exist')
           );
 
+          // Check if it's a JSON parsing error
+          const isJSONError = e.message && (
+            e.message.includes('JSON') ||
+            e.message.includes('Unexpected') ||
+            e.message.includes('Unterminated') ||
+            e.message.includes('Expected')
+          );
+
           if (isContextInvalidated) {
             // This is expected during extension reload - don't mark as failed, will retry
             console.debug('[IQEstimator] Extension context invalidated - AoA dictionary not available (this is normal during extension reload)');
             // Don't mark as failed - will retry when context is valid again
+          } else if (isJSONError) {
+            // JSON parsing error - mark as failed immediately, don't retry
+            this.aoaDictionaryLoadFailed = true;
+            console.warn('[IQEstimator] JSON parsing error for AoA dictionary - marking as failed:', e.message, 'Path:', this.aoaDictionaryPath);
           } else {
             // Other errors - log with full details and retry
             console.error('[IQEstimator] Error loading AoA dictionary:', e.message, 'Path:', this.aoaDictionaryPath);
@@ -185,10 +273,17 @@ class ComprehensiveIQEstimatorUltimate {
                 const aoaUrl = getResourceURL(this.aoaDictionaryPath);
                 const retryResponse = await fetch(aoaUrl);
                 if (retryResponse.ok) {
-                  this.aoaDictionary = await retryResponse.json();
-                  this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
-                  this.aoaDictionaryLoaded = true;
-                  console.debug('[IQEstimator] AoA dictionary loaded successfully on retry', Object.keys(this.aoaDictionary).length, 'words');
+                  const text = await retryResponse.text();
+                  const parsed = this._safeParseJSON(text);
+                  if (parsed && typeof parsed === 'object') {
+                    this.aoaDictionary = parsed;
+                    this.aoaDictionaryKeys = Object.keys(this.aoaDictionary);
+                    this.aoaDictionaryLoaded = true;
+                    console.debug('[IQEstimator] AoA dictionary loaded successfully on retry', Object.keys(this.aoaDictionary).length, 'words');
+                  } else {
+                    this.aoaDictionaryLoadFailed = true;
+                    console.warn('[IQEstimator] Failed to parse AoA dictionary JSON on retry');
+                  }
                 } else {
                   // Retry failed - mark as failed
                   this.aoaDictionaryLoadFailed = true;
@@ -207,15 +302,20 @@ class ComprehensiveIQEstimatorUltimate {
           const calUrl = getResourceURL(this.calibrationPath);
           const response = await fetch(calUrl);
           if (response.ok) {
-            const calibration = await response.json();
-            this.depDepthCalibration = {
-              intercept: calibration.intercept || 1.795,
-              punctuation_coefficient: Math.abs(calibration.punctuation_coefficient) > 0.01
-                ? calibration.punctuation_coefficient : 0.3,
-              clause_coefficient: Math.abs(calibration.clause_coefficient) > 0.01
-                ? calibration.clause_coefficient : 0.2
-            };
-            console.debug('[IQEstimator] Dependency depth calibration loaded successfully');
+            const text = await response.text();
+            const calibration = this._safeParseJSON(text);
+            if (calibration && typeof calibration === 'object') {
+              this.depDepthCalibration = {
+                intercept: calibration.intercept || 1.795,
+                punctuation_coefficient: Math.abs(calibration.punctuation_coefficient) > 0.01
+                  ? calibration.punctuation_coefficient : 0.3,
+                clause_coefficient: Math.abs(calibration.clause_coefficient) > 0.01
+                  ? calibration.clause_coefficient : 0.2
+              };
+              console.debug('[IQEstimator] Dependency depth calibration loaded successfully');
+            } else {
+              console.warn('[IQEstimator] Failed to parse calibration JSON, using defaults');
+            }
           } else {
             console.warn('[IQEstimator] Failed to load calibration:', response.status, calUrl);
           }
@@ -242,9 +342,10 @@ class ComprehensiveIQEstimatorUltimate {
           const metaphorUrl = getResourceURL(this.metaphorPatternsPath);
           const response = await fetch(metaphorUrl);
           if (response.ok) {
-            const metaphorData = await response.json();
+            const text = await response.text();
+            const metaphorData = this._safeParseJSON(text);
             // Store the entire data structure (contains both metaphor_patterns and abstract_concept_patterns)
-            this.metaphorPatterns = metaphorData || {};
+            this.metaphorPatterns = (metaphorData && typeof metaphorData === 'object') ? metaphorData : {};
             this.metaphorPatternsLoaded = true;
             // Count total patterns across all categories
             let totalPatterns = 0;
@@ -276,10 +377,15 @@ class ComprehensiveIQEstimatorUltimate {
           const normsUrl = getResourceURL(this.populationNormsPath);
           const response = await fetch(normsUrl);
           if (response.ok) {
-            const normsData = await response.json();
-            this.populationNorms = normsData.population_norms || {};
-            this.populationNormsLoaded = true;
-            console.debug('[IQEstimator] Population norms loaded successfully');
+            const text = await response.text();
+            const normsData = this._safeParseJSON(text);
+            if (normsData && typeof normsData === 'object') {
+              this.populationNorms = normsData.population_norms || {};
+              this.populationNormsLoaded = true;
+              console.debug('[IQEstimator] Population norms loaded successfully');
+            } else {
+              console.warn('[IQEstimator] Failed to parse population norms JSON, using defaults');
+            }
           } else {
             console.warn('[IQEstimator] Failed to load population norms:', response.status, normsUrl);
           }
@@ -301,21 +407,26 @@ class ComprehensiveIQEstimatorUltimate {
           const casualUrl = getResourceURL(this.casualLanguagePatternsPath);
           const response = await fetch(casualUrl);
           if (response.ok) {
-            const casualData = await response.json();
-            this.casualLanguagePatterns = casualData.casual_language_patterns || {};
-            this.casualLanguagePatternsLoaded = true;
-            // Count total patterns
-            let totalPatterns = 0;
-            Object.values(this.casualLanguagePatterns).forEach(category => {
-              if (typeof category === 'object') {
-                Object.values(category).forEach(patterns => {
-                  if (Array.isArray(patterns)) {
-                    totalPatterns += patterns.length;
-                  }
-                });
-              }
-            });
-            console.debug('[IQEstimator] Casual language patterns database loaded successfully', totalPatterns, 'patterns');
+            const text = await response.text();
+            const casualData = this._safeParseJSON(text);
+            if (casualData && typeof casualData === 'object') {
+              this.casualLanguagePatterns = casualData.casual_language_patterns || {};
+              this.casualLanguagePatternsLoaded = true;
+              // Count total patterns
+              let totalPatterns = 0;
+              Object.values(this.casualLanguagePatterns).forEach(category => {
+                if (typeof category === 'object') {
+                  Object.values(category).forEach(patterns => {
+                    if (Array.isArray(patterns)) {
+                      totalPatterns += patterns.length;
+                    }
+                  });
+                }
+              });
+              console.debug('[IQEstimator] Casual language patterns database loaded successfully', totalPatterns, 'patterns');
+            } else {
+              console.warn('[IQEstimator] Failed to parse casual language patterns JSON, using defaults');
+            }
           } else {
             console.warn('[IQEstimator] Failed to load casual language patterns:', response.status, casualUrl);
           }
@@ -875,15 +986,20 @@ class ComprehensiveIQEstimatorUltimate {
    */
   async estimate(text) {
     // Ensure AoA dictionary is loaded before estimating
-    // Wait indefinitely until dictionary loads or fails to load (not just timeout)
+    // Wait up to 5 seconds for dictionary to load, then proceed even if it hasn't loaded
     if (!this.aoaDictionaryLoaded && !this.aoaDictionaryLoadFailed) {
-      // Wait until dictionary is loaded or loading has definitively failed
-      // Check every 50ms - only stop if loaded OR if loading failed
-      while (!this.aoaDictionaryLoaded && !this.aoaDictionaryLoadFailed) {
+      const maxWaitTime = 5000; // 5 seconds max wait
+      const startTime = Date.now();
+      // Wait until dictionary is loaded or loading has definitively failed, or timeout
+      while (!this.aoaDictionaryLoaded && !this.aoaDictionaryLoadFailed && (Date.now() - startTime) < maxWaitTime) {
         await new Promise(resolve => setTimeout(resolve, 50)); // Check every 50ms
       }
       if (this.aoaDictionaryLoadFailed) {
         console.warn('[IQEstimator] AoA dictionary failed to load - using approximation');
+      } else if (!this.aoaDictionaryLoaded && (Date.now() - startTime) >= maxWaitTime) {
+        // Timeout reached - mark as failed and proceed
+        this.aoaDictionaryLoadFailed = true;
+        console.warn('[IQEstimator] AoA dictionary loading timeout - proceeding with approximation');
       }
     }
     

@@ -25,6 +25,31 @@
   }
 
   /**
+   * Remove all loading badges for a tweet (helper function)
+   */
+  function removeAllLoadingBadges(tweetElement, actualTweetElement) {
+    // Find all loading badges in both outer and nested tweet elements
+    const allLoadingBadges = [
+      ...actualTweetElement.querySelectorAll('.iq-badge-loading'),
+      ...actualTweetElement.querySelectorAll('[data-iq-loading="true"]'),
+      ...(tweetElement !== actualTweetElement ? [
+        ...tweetElement.querySelectorAll('.iq-badge-loading'),
+        ...tweetElement.querySelectorAll('[data-iq-loading="true"]')
+      ] : [])
+    ].filter((badge, index, self) =>
+      // Remove duplicates from the array itself
+      index === self.findIndex(b => b === badge)
+    );
+
+    // Remove all loading badges
+    allLoadingBadges.forEach(badge => {
+      if (badge.parentElement) {
+        badge.remove();
+      }
+    });
+  }
+
+  /**
    * Replace a loading badge with a guess badge if game mode is enabled
    */
   async function replaceLoadingBadgeWithGuess(loadingBadge) {
@@ -54,6 +79,11 @@
       return null;
     }
 
+    // Find nested tweet structure (needed for removeAllLoadingBadges)
+    const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                       tweetElement.querySelector('article[role="article"]');
+    const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+
     // CRITICAL: Lock mechanism to prevent concurrent badge creation for the same tweet
     // If another call is already creating a badge for this tweet, wait and check again
     if (badges.hasBadgeCreationLock && badges.hasBadgeCreationLock(tweetId)) {
@@ -61,10 +91,8 @@
       await new Promise(resolve => setTimeout(resolve, 50));
       const existingBadge = badges.findExistingGuessBadge(tweetElement);
       if (existingBadge) {
-        // Another call created the badge, just remove this loading badge and return existing
-        if (loadingBadge.parentElement && loadingBadge !== existingBadge) {
-          loadingBadge.remove();
-        }
+        // Another call created the badge, remove ALL loading badges and return existing
+        removeAllLoadingBadges(tweetElement, actualTweetElement);
         return existingBadge;
       }
       // Still no badge, continue (but this shouldn't happen often)
@@ -76,19 +104,14 @@
       await new Promise(resolve => setTimeout(resolve, 50));
       const existingBadge = badges.findExistingGuessBadge(tweetElement);
       if (existingBadge) {
-        if (loadingBadge.parentElement && loadingBadge !== existingBadge) {
-          loadingBadge.remove();
-        }
+        removeAllLoadingBadges(tweetElement, actualTweetElement);
         return existingBadge;
       }
     }
 
     try {
       // CRITICAL: Check if there's already a badge on this tweet (guess or calculated)
-      // Check for nested tweet structure
-      const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
-                         tweetElement.querySelector('article[role="article"]');
-      const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+      // Note: nestedTweet and actualTweetElement are already defined above
 
       // First check for calculated badges (flip badges) - these take priority
       let existingCalculatedBadge = actualTweetElement.querySelector('.iq-badge-flip') ||
@@ -103,20 +126,16 @@
       }
 
       if (existingCalculatedBadge) {
-        // There's already a calculated badge - remove the loading badge and return the existing one
-        if (loadingBadge.parentElement && loadingBadge !== existingCalculatedBadge) {
-          loadingBadge.remove();
-        }
+        // There's already a calculated badge - remove ALL loading badges and return the existing one
+        removeAllLoadingBadges(tweetElement, actualTweetElement);
         return existingCalculatedBadge;
       }
 
       // Then check for guess badges
       const existingGuessBadge = badges.findExistingGuessBadge(tweetElement);
       if (existingGuessBadge) {
-        // There's already a guess badge - remove the loading badge and return the existing one
-        if (loadingBadge.parentElement && loadingBadge !== existingGuessBadge) {
-          loadingBadge.remove();
-        }
+        // There's already a guess badge - remove ALL loading badges and return the existing one
+        removeAllLoadingBadges(tweetElement, actualTweetElement);
         return existingGuessBadge;
       }
 
@@ -349,17 +368,33 @@
           const finalCheckBadge = badges.findExistingGuessBadge(tweetElement);
           if (finalCheckBadge && finalCheckBadge !== guessBadge) {
             // Another badge was inserted while we were creating this one - remove this one and return the existing
-            if (loadingBadge.parentElement) {
-              loadingBadge.remove();
-            }
+            // Remove ALL loading badges for this tweet, not just the one passed in
+            removeAllLoadingBadges(tweetElement, actualTweetElement);
             return finalCheckBadge;
           }
 
           // Insert it in the same position
           if (loadingBadge.parentElement) {
             loadingBadge.parentElement.insertBefore(guessBadge, loadingBadge);
-            loadingBadge.remove();
+          } else {
+            // Loading badge not in DOM, find engagement bar and insert there
+            const engagementBar = actualTweetElement.querySelector('[role="group"]');
+            if (engagementBar) {
+              const firstChild = engagementBar.firstElementChild;
+              if (firstChild) {
+                engagementBar.insertBefore(guessBadge, firstChild);
+              } else {
+                engagementBar.appendChild(guessBadge);
+              }
+            } else {
+              // Fallback: insert at beginning of tweet element
+              actualTweetElement.insertBefore(guessBadge, actualTweetElement.firstChild);
+            }
           }
+
+          // CRITICAL: Remove ALL loading badges for this tweet (not just the one passed in)
+          // This prevents duplicates when multiple loading badges exist
+          removeAllLoadingBadges(tweetElement, actualTweetElement);
 
           return guessBadge;
         }
@@ -401,10 +436,8 @@
       // Final check for existing guess badge before creating (race condition protection)
       const existingGuessBadgeFinal = badges.findExistingGuessBadge(tweetElement);
       if (existingGuessBadgeFinal) {
-        // Badge already exists, just remove loading badge and return existing
-        if (loadingBadge.parentElement && loadingBadge !== existingGuessBadgeFinal) {
-          loadingBadge.remove();
-        }
+        // Badge already exists, remove ALL loading badges and return existing
+        removeAllLoadingBadges(tweetElement, actualTweetElement);
         return existingGuessBadgeFinal;
       }
 
@@ -414,17 +447,33 @@
       const finalCheckBadge = badges.findExistingGuessBadge(tweetElement);
       if (finalCheckBadge && finalCheckBadge !== guessBadge) {
         // Another badge was inserted while we were creating this one - remove this one and return the existing
-        if (loadingBadge.parentElement) {
-          loadingBadge.remove();
-        }
+        // Remove ALL loading badges for this tweet, not just the one passed in
+        removeAllLoadingBadges(tweetElement, actualTweetElement);
         return finalCheckBadge;
       }
 
       // Insert it in the same position
       if (loadingBadge.parentElement) {
         loadingBadge.parentElement.insertBefore(guessBadge, loadingBadge);
-        loadingBadge.remove();
+      } else {
+        // Loading badge not in DOM, find engagement bar and insert there
+        const engagementBar = actualTweetElement.querySelector('[role="group"]');
+        if (engagementBar) {
+          const firstChild = engagementBar.firstElementChild;
+          if (firstChild) {
+            engagementBar.insertBefore(guessBadge, firstChild);
+          } else {
+            engagementBar.appendChild(guessBadge);
+          }
+        } else {
+          // Fallback: insert at beginning of tweet element
+          actualTweetElement.insertBefore(guessBadge, actualTweetElement.firstChild);
+        }
       }
+
+      // CRITICAL: Remove ALL loading badges for this tweet (not just the one passed in)
+      // This prevents duplicates when multiple loading badges exist
+      removeAllLoadingBadges(tweetElement, actualTweetElement);
 
       return guessBadge;
     } finally {

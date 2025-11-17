@@ -62,6 +62,7 @@
         "content/features/tweetProcessor/badgeManagement/badgeCleanup.js",
         "content/features/tweetProcessor/badgeManagement/badgeRestoration.js",
         "content/features/tweetProcessor/badgeManagement/badgeUpdate.js",
+        "content/features/tweetProcessor/debug/badgeStateTracker.js",
         "content/features/tweetProcessor/estimation/iqEstimation.js",
         "content/features/tweetProcessor/helpers/processVisibleTweets.js",
         "content/features/tweetProcessor/observers/tweetObserver.js",

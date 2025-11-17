@@ -421,14 +421,38 @@
       }
       
       // Try to restore from revealed IQ (tweet-ID-based cache)
+      const tracker = window.BadgeStateTracker || {};
+      if (tracker.logTweetBadgeState) {
+        const tweetElement = actualTweetElement.closest('article[data-testid="tweet"]') ||
+                             actualTweetElement.closest('article[role="article"]') ||
+                             actualTweetElement;
+        await tracker.logTweetBadgeState(tweetElement, 'restoreFromRevealedIQ-attempt');
+      }
+      
       const restored = await restoreFromRevealedIQ(actualTweetElement, outerElement, hasNestedStructure, tweetId, isNotificationsPage, processedTweets);
       if (restored) {
+        // Debug logging: Restoration successful
+        if (tracker.logTweetBadgeState) {
+          const tweetElement = actualTweetElement.closest('article[data-testid="tweet"]') ||
+                               actualTweetElement.closest('article[role="article"]') ||
+                               actualTweetElement;
+          await tracker.logTweetBadgeState(tweetElement, 'restoreFromRevealedIQ-success');
+        }
+        
         // Mark as analyzed and return early (skip calculation and all other processing)
         const { markAsAnalyzed } = getNestedTweetHandler();
         markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
         actualTweetElement.removeAttribute('data-iq-processing');
         actualTweetElement.removeAttribute('data-iq-processing-start');
         return true;
+      } else {
+        // Debug logging: Restoration failed
+        if (tracker.logTweetBadgeState) {
+          const tweetElement = actualTweetElement.closest('article[data-testid="tweet"]') ||
+                               actualTweetElement.closest('article[role="article"]') ||
+                               actualTweetElement;
+          await tracker.logTweetBadgeState(tweetElement, 'restoreFromRevealedIQ-failed');
+        }
       }
     }
 

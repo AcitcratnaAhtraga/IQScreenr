@@ -220,6 +220,14 @@
 
       if (!gameModeEnabled && badgeManager && badgeManager.createLoadingBadge) {
         // Game mode disabled: convert guess badges back to loading badges
+        
+        // Debug logging: Log mode change
+        const tracker = window.BadgeStateTracker || {};
+        if (tracker.logAllTweetsInViewport) {
+          console.log('[Content] Mode changed to Normal - logging all tweets before conversion');
+          tracker.logAllTweetsInViewport();
+        }
+
         const guessBadges = document.querySelectorAll('.iq-badge-guess, [data-iq-guess="true"]');
         guessBadges.forEach(guessBadge => {
           // Only convert badges that haven't been guessed yet
@@ -231,22 +239,39 @@
 
             const tweetId = tweetElement?.getAttribute('data-tweet-id');
 
+            // Debug logging: Log badge conversion
+            if (tracker.logBadgeStateChange && tweetElement) {
+              const fromState = tracker.getBadgeState ? tracker.getBadgeState(guessBadge) : null;
+              tracker.logBadgeStateChange(guessBadge, fromState, null, 'mode-switch-to-loading');
+            }
+
             const loadingBadge = badgeManager.createLoadingBadge();
             if (guessBadge.parentElement) {
               guessBadge.parentElement.insertBefore(loadingBadge, guessBadge);
               guessBadge.remove();
             }
 
+            // Debug logging: Log after conversion
+            if (tracker.logBadgeStateChange && loadingBadge && tweetElement) {
+              const toState = tracker.getBadgeState ? tracker.getBadgeState(loadingBadge) : null;
+              tracker.logBadgeStateChange(loadingBadge, null, toState, 'mode-switch-to-loading-complete');
+            }
+
             // Mark the tweet for reprocessing if it exists
             if (tweetElement) {
-              tweetElement.removeAttribute('data-iq-analyzed');
-              tweetElement.removeAttribute('data-iq-processing');
-              tweetElement.removeAttribute('data-iq-processing-start');
+              // Find nested tweet if it exists
+              const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                                 tweetElement.querySelector('article[role="article"]');
+              const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+              
+              actualTweetElement.removeAttribute('data-iq-analyzed');
+              actualTweetElement.removeAttribute('data-iq-processing');
+              actualTweetElement.removeAttribute('data-iq-processing-start');
 
               // Remove from processed tweets Set to allow reprocessing
               const tweetProcessorModule = getTweetProcessor();
               if (tweetProcessorModule && tweetProcessorModule.processedTweets) {
-                tweetProcessorModule.processedTweets.delete(tweetElement);
+                tweetProcessorModule.processedTweets.delete(actualTweetElement);
               }
             }
           }
@@ -255,36 +280,64 @@
         // Reprocess visible tweets to trigger IQ calculations for converted badges
         if (tweetProcessor && tweetProcessor.processVisibleTweets) {
           setTimeout(() => {
+            console.log('[Content] Reprocessing visible tweets after mode switch to Normal');
             tweetProcessor.processVisibleTweets();
-          }, 100);
+            
+            // Log all tweets after reprocessing
+            if (tracker.logAllTweetsInViewport) {
+              setTimeout(() => {
+                console.log('[Content] Logging all tweets after reprocessing');
+                tracker.logAllTweetsInViewport();
+              }, 500);
+            }
+          }, 200);
         }
       } else if (gameModeEnabled && gameManager && gameManager.replaceLoadingBadgeWithGuess && settings.showIQBadge) {
         // Game mode enabled: convert loading badges to guess badges
-        // BUT: don't convert badges that are already calculated (they should stay calculated)
-        const loadingBadges = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
-        const calculatedBadges = document.querySelectorAll('.iq-badge[data-iq-score]:not([data-iq-guess]):not([data-iq-loading="true"])');
+        // PERFORMANCE OPTIMIZED: Batch conversions, parallel processing, cached DOM queries
+        
+        const loadingBadges = Array.from(document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]'));
+        
+        // Debug logging: Defer to avoid blocking (only if enabled)
+        const tracker = window.BadgeStateTracker || {};
+        const debugEnabled = tracker.logAllTweetsInViewport;
+        const scheduleIdle = typeof requestIdleCallback !== 'undefined' 
+          ? requestIdleCallback 
+          : (fn, opts) => setTimeout(fn, opts?.timeout || 100);
+        
+        if (debugEnabled) {
+          scheduleIdle(() => {
+            console.log('[Content] Mode changed to IqGuessr - logging all tweets before conversion');
+            tracker.logAllTweetsInViewport();
+          }, { timeout: 1000 });
+        }
 
-        // First, clean up duplicate badges for each tweet
+        // OPTIMIZATION: Cache tweet element lookups and batch DOM operations
+        const badgeData = new Map(); // Map<badge, {tweetElement, actualTweetElement, tweetId}>
         const processedTweetsForDupes = new Set();
+        
+        // First pass: Cache all DOM queries and clean up duplicates
         for (const loadingBadge of loadingBadges) {
           const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
                               loadingBadge.closest('article[role="article"]') ||
                               loadingBadge.closest('article');
-          if (tweetElement && !processedTweetsForDupes.has(tweetElement)) {
+          
+          if (!tweetElement) continue;
+          
+          if (!processedTweetsForDupes.has(tweetElement)) {
             processedTweetsForDupes.add(tweetElement);
-            // Find nested tweet if it exists
+            
+            // Find nested tweet if it exists (cache this lookup)
             const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
                                tweetElement.querySelector('article[role="article"]');
             const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
 
-            // Find all badges in this tweet
-            const allBadges = [
-              ...actualTweetElement.querySelectorAll('.iq-badge'),
-              ...(nestedTweet && nestedTweet !== tweetElement ? tweetElement.querySelectorAll('.iq-badge') : [])
-            ];
-
+            // Find all badges in this tweet (single query)
+            const allBadges = actualTweetElement.querySelectorAll('.iq-badge');
+            
             // Remove duplicates (keep the first one)
             if (allBadges.length > 1) {
+              // Use DocumentFragment for batch removal
               for (let i = 1; i < allBadges.length; i++) {
                 if (allBadges[i].parentElement) {
                   allBadges[i].remove();
@@ -292,43 +345,91 @@
               }
             }
           }
+          
+          // Cache tweet element data for this badge
+          const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
+                             tweetElement.querySelector('article[role="article"]');
+          const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
+          const tweetId = actualTweetElement.getAttribute('data-tweet-id');
+          
+          badgeData.set(loadingBadge, {
+            tweetElement,
+            actualTweetElement,
+            tweetId
+          });
         }
 
-        // Get loading badges again after cleanup (in case some were removed)
-        const loadingBadgesAfterCleanup = document.querySelectorAll('.iq-badge-loading, [data-iq-loading="true"]');
-        for (const loadingBadge of loadingBadgesAfterCleanup) {
-          // Only convert badges that are still loading (not yet calculated)
-          if (loadingBadge.hasAttribute('data-iq-loading') || loadingBadge.classList.contains('iq-badge-loading')) {
-            const tweetElement = loadingBadge.closest('article[data-testid="tweet"]') ||
-                                loadingBadge.closest('article[role="article"]') ||
-                                loadingBadge.closest('article');
-            const tweetId = tweetElement?.getAttribute('data-tweet-id');
-
-            await gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
-
-            // replaceLoadingBadgeWithGuess handles the replacement, so we don't need to do anything else
+        // OPTIMIZATION: Batch badge conversions in parallel (process all at once)
+        const conversionPromises = [];
+        const tweetProcessorModule = getTweetProcessor();
+        
+        for (const loadingBadge of badgeData.keys()) {
+          // Only convert badges that are still loading
+          if (!loadingBadge.hasAttribute('data-iq-loading') && 
+              !loadingBadge.classList.contains('iq-badge-loading')) {
+            continue;
           }
-        }
-
-        // Check calculated badges - if they have cached guesses, they should stay as calculated
-        // (They're already calculated, so no action needed - just log it)
-        for (const calculatedBadge of calculatedBadges) {
-          const tweetElement = calculatedBadge.closest('article[data-testid="tweet"]') ||
-                              calculatedBadge.closest('article[role="article"]') ||
-                              calculatedBadge.closest('article');
-          if (tweetElement) {
-            const tweetId = tweetElement.getAttribute('data-tweet-id');
-            if (tweetId) {
-              const cachedGuess = await gameManager.getCachedGuess(tweetId);
-              if (cachedGuess && cachedGuess.guess !== undefined) {
-              } else {
+          
+          const { tweetElement, actualTweetElement, tweetId } = badgeData.get(loadingBadge);
+          
+          // Convert badge (don't await - process in parallel)
+          const conversionPromise = (async () => {
+            try {
+              // Debug logging: Only log if enabled (defer to avoid blocking)
+              if (debugEnabled && tracker.logBadgeStateChange) {
+                scheduleIdle(() => {
+                  const fromState = tracker.getBadgeState ? tracker.getBadgeState(loadingBadge) : null;
+                  tracker.logBadgeStateChange(loadingBadge, fromState, null, 'mode-switch-to-guess');
+                }, { timeout: 100 });
               }
+
+              const guessBadge = await gameManager.replaceLoadingBadgeWithGuess(loadingBadge);
+
+              // Mark tweet for reprocessing (synchronous DOM operations)
+              if (actualTweetElement) {
+                actualTweetElement.removeAttribute('data-iq-analyzed');
+                actualTweetElement.removeAttribute('data-iq-processing');
+                actualTweetElement.removeAttribute('data-iq-processing-start');
+
+                if (tweetProcessorModule && tweetProcessorModule.processedTweets) {
+                  tweetProcessorModule.processedTweets.delete(actualTweetElement);
+                }
+              }
+
+              // Debug logging: Defer
+              if (debugEnabled && tracker.logBadgeStateChange && guessBadge) {
+                scheduleIdle(() => {
+                  const toState = tracker.getBadgeState ? tracker.getBadgeState(guessBadge) : null;
+                  tracker.logBadgeStateChange(guessBadge, null, toState, 'mode-switch-to-guess-complete');
+                }, { timeout: 100 });
+              }
+            } catch (error) {
+              console.error('[Content] Error converting badge:', error);
             }
-          }
+          })();
+          
+          conversionPromises.push(conversionPromise);
         }
 
-        // No need to reprocess - conversion handles all visible badges
-        // Reprocessing would only create duplicates for tweets that already have calculated badges
+        // Wait for all conversions to complete (but don't block UI)
+        Promise.all(conversionPromises).then(() => {
+          // Reprocess visible tweets after all conversions complete
+          if (tweetProcessor && tweetProcessor.processVisibleTweets) {
+            requestAnimationFrame(() => {
+              tweetProcessor.processVisibleTweets();
+              
+              // Debug logging: Defer
+              if (debugEnabled && tracker.logAllTweetsInViewport) {
+                scheduleIdle(() => {
+                  console.log('[Content] Logging all tweets after reprocessing');
+                  tracker.logAllTweetsInViewport();
+                }, { timeout: 1000 });
+              }
+            });
+          }
+        }).catch(error => {
+          console.error('[Content] Error during badge conversion:', error);
+        });
       }
     }
   }

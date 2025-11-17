@@ -134,8 +134,17 @@ function setupSettingsListener(onChange) {
         relevantChanges.enableDebugLogging = changes.enableDebugLogging;
       }
       if (changes.enableIQGuessr) {
-        settings.enableIQGuessr = changes.enableIQGuessr.newValue;
+        const oldValue = settings.enableIQGuessr;
+        const newValue = changes.enableIQGuessr.newValue;
+        settings.enableIQGuessr = newValue;
         relevantChanges.enableIQGuessr = changes.enableIQGuessr;
+        
+        // Detect mode change and log it
+        if (oldValue !== newValue && window.BadgeStateTracker) {
+          const oldMode = oldValue ? 'IqGuessr' : 'Normal';
+          const newMode = newValue ? 'IqGuessr' : 'Normal';
+          window.BadgeStateTracker.logModeChange(oldMode, newMode);
+        }
       }
       if (changes.showProfileScoreBadge) {
         settings.showProfileScoreBadge = changes.showProfileScoreBadge.newValue;

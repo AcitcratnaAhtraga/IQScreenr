@@ -161,6 +161,15 @@
     const badgeManager = getBadgeManager();
     const gameManager = getGameManager();
     const { getIQColor, getConfidenceColor, animateCountUp, logDebugInfo } = badgeManager || {};
+    
+    // Debug logging: Track badge update
+    const tracker = window.BadgeStateTracker || {};
+    const tweetElement = actualTweetElement.closest('article[data-testid="tweet"]') ||
+                         actualTweetElement.closest('article[role="article"]') ||
+                         actualTweetElement;
+    if (tracker.logTweetBadgeState && tweetElement) {
+      await tracker.logTweetBadgeState(tweetElement, 'updateBadgeWithIQ-start');
+    }
 
     // CRITICAL: Check IqFiltr IMMEDIATELY after IQ calculation, before any animations or processing
     // This removes elements before they can be displayed or animated
