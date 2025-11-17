@@ -74,7 +74,16 @@
     }
     
     // Run cleanup periodically (every 2 seconds) to catch any double badges
-    setInterval(cleanupDoubleBadges, 2000);
+    // Use TimerManager for automatic cleanup
+    const timerManager = window.TimerManager || window;
+    const cleanupInterval = timerManager.setInterval ? 
+      timerManager.setInterval(cleanupDoubleBadges, 2000) :
+      setInterval(cleanupDoubleBadges, 2000);
+    
+    // Store interval ID for potential cleanup
+    if (typeof window !== 'undefined') {
+      window._tweetProcessorCleanupInterval = cleanupInterval;
+    }
 
     // Export for use in other modules
     if (typeof window !== 'undefined') {

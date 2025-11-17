@@ -24,6 +24,8 @@
 
     const badge = document.createElement('span');
     badge.className = 'iq-badge';
+    badge.setAttribute('role', 'img');
+    badge.setAttribute('aria-label', `Estimated IQ score: ${Math.round(iq)}`);
     // Round IQ to integer for display (never show decimals)
     const roundedIQ = Math.round(iq);
     badge.setAttribute('data-iq-score', roundedIQ);

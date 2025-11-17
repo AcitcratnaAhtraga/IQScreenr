@@ -473,8 +473,9 @@ document.addEventListener('DOMContentLoaded', () => {
     score = Number(score) || 0;
 
     // Debug logging
+    const Logger = window.Logger || console;
     if (score === 0 && (allSync.iqGuessrScore || allLocal.iqGuessrScore)) {
-      console.log('[IqScreenr Popup] Score found but was 0:', {
+      Logger.log('[IqScreenr Popup] Score found but was 0:', {
         syncResult: syncResult.iqGuessrScore,
         localResult: localResult.iqGuessrScore,
         allSync: allSync.iqGuessrScore,
@@ -753,7 +754,8 @@ document.addEventListener('DOMContentLoaded', () => {
   if (enableIQGuessrCheckbox) {
     enableIQGuessrCheckbox.addEventListener('change', (e) => {
       const isEnabled = e.target.checked;
-      console.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
+      const Logger = window.Logger || console;
+      Logger.log(`[IQGuessr Debug] IQGuessr ${isEnabled ? 'ENABLED' : 'DISABLED'} via popup checkbox`);
 
       // Update visibility immediately (before storage save)
       updateDependentCheckboxes();

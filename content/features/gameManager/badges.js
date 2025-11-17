@@ -45,6 +45,9 @@
 
     const badge = document.createElement('span');
     badge.className = 'iq-badge iq-badge-guess';
+    badge.setAttribute('role', 'button');
+    badge.setAttribute('aria-label', 'Click to guess IQ score');
+    badge.setAttribute('tabindex', '0');
     badge.setAttribute('data-iq-guess', 'true');
 
     // Store tweet ID on badge for debugging
@@ -139,65 +142,14 @@
   /**
    * Cleanup duplicate guess badges in a tweet, keeping only one
    * Prioritizes badges that have been interacted with (data-iq-guessed)
+   * Uses centralized BadgeCleanupUtils
    */
   function cleanupDuplicateGuessBadges(tweetElement) {
-    if (!tweetElement) {
-      return;
+    const cleanupUtils = window.BadgeCleanupUtils || {};
+    if (cleanupUtils.cleanupDuplicateGuessBadges) {
+      return cleanupUtils.cleanupDuplicateGuessBadges(tweetElement);
     }
-
-    // Check for nested tweet structure
-    const nestedTweet = tweetElement.querySelector('article[data-testid="tweet"]') ||
-                       tweetElement.querySelector('article[role="article"]');
-    const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
-
-    // Find all guess badges in both outer and nested tweet elements
-    // Also check within engagement bars specifically (where duplicates often appear)
-    // Use multiple selectors to catch all variations
-    const allGuessBadges = [
-      ...actualTweetElement.querySelectorAll('.iq-badge[data-iq-guess="true"]'),
-      ...actualTweetElement.querySelectorAll('.iq-badge-guess'),
-      ...actualTweetElement.querySelectorAll('[data-iq-guess="true"]'),
-      ...(nestedTweet && nestedTweet !== tweetElement ? [
-        ...tweetElement.querySelectorAll('.iq-badge[data-iq-guess="true"]'),
-        ...tweetElement.querySelectorAll('.iq-badge-guess'),
-        ...tweetElement.querySelectorAll('[data-iq-guess="true"]')
-      ] : [])
-    ].filter((badge, index, self) =>
-      // Remove duplicates from the array itself
-      index === self.findIndex(b => b === badge)
-    );
-
-    // If we have duplicates, keep only one
-    if (allGuessBadges.length > 1) {
-      // Prioritize badge that has been interacted with (user typed in a guess)
-      const interactedBadge = allGuessBadges.find(badge => badge.hasAttribute('data-iq-guessed'));
-
-      // If no interacted badge, prioritize the first one in DOM order
-      const badgeToKeep = interactedBadge || allGuessBadges[0];
-
-      // Remove all others
-      for (const badge of allGuessBadges) {
-        if (badge !== badgeToKeep) {
-          // Double-check it's actually a duplicate (same tweet)
-          const badgeTweet = badge.closest('article[data-testid="tweet"]') ||
-                            badge.closest('article[role="article"]') ||
-                            badge.closest('article');
-          const badgeTweetId = badgeTweet?.getAttribute('data-tweet-id');
-          const actualTweetId = actualTweetElement?.getAttribute('data-tweet-id');
-
-          // Only remove if it's on the same tweet
-          if (!badgeTweetId || !actualTweetId || badgeTweetId === actualTweetId) {
-            if (badge.parentElement) {
-              badge.remove();
-            }
-          }
-        }
-      }
-
-      return badgeToKeep;
-    }
-
-    return allGuessBadges.length > 0 ? allGuessBadges[0] : null;
+    return null;
   }
 
   /**
@@ -240,33 +192,61 @@
       });
     };
 
-    const observer = new MutationObserver((mutations) => {
-      let hasGuessBadgeChanges = false;
+    // Use ObserverManager for automatic cleanup
+    const observerManager = window.ObserverManager || window;
+    const observer = observerManager.createObserver ? 
+      observerManager.createObserver((mutations) => {
+        let hasGuessBadgeChanges = false;
 
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          // Check if the added node is a guess badge or contains guess badges
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const isGuessBadge = (node.classList && node.classList.contains('iq-badge-guess')) ||
-                                 (node.hasAttribute && node.hasAttribute('data-iq-guess'));
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            // Check if the added node is a guess badge or contains guess badges
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const isGuessBadge = (node.classList && node.classList.contains('iq-badge-guess')) ||
+                                   (node.hasAttribute && node.hasAttribute('data-iq-guess'));
 
-            if (isGuessBadge || (node.querySelector && node.querySelector('.iq-badge-guess, [data-iq-guess="true"]'))) {
-              hasGuessBadgeChanges = true;
+              if (isGuessBadge || (node.querySelector && node.querySelector('.iq-badge-guess, [data-iq-guess="true"]'))) {
+                hasGuessBadgeChanges = true;
+              }
             }
-          }
+          });
         });
-      });
 
-      if (hasGuessBadgeChanges) {
-        // Debounce cleanup to batch multiple mutations
-        if (cleanupTimeout) {
-          clearTimeout(cleanupTimeout);
+        if (hasGuessBadgeChanges) {
+          // Debounce cleanup to batch multiple mutations
+          if (cleanupTimeout) {
+            clearTimeout(cleanupTimeout);
+          }
+          cleanupTimeout = setTimeout(() => {
+            performCleanup();
+          }, 100);
         }
-        cleanupTimeout = setTimeout(() => {
-          performCleanup();
-        }, 100);
-      }
-    });
+      }) :
+      new MutationObserver((mutations) => {
+        let hasGuessBadgeChanges = false;
+
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const isGuessBadge = (node.classList && node.classList.contains('iq-badge-guess')) ||
+                                   (node.hasAttribute && node.hasAttribute('data-iq-guess'));
+
+              if (isGuessBadge || (node.querySelector && node.querySelector('.iq-badge-guess, [data-iq-guess="true"]'))) {
+                hasGuessBadgeChanges = true;
+              }
+            }
+          });
+        });
+
+        if (hasGuessBadgeChanges) {
+          if (cleanupTimeout) {
+            clearTimeout(cleanupTimeout);
+          }
+          cleanupTimeout = setTimeout(() => {
+            performCleanup();
+          }, 100);
+        }
+      });
 
     // Start observing the document for added nodes
     if (document.body) {
@@ -277,9 +257,20 @@
     }
 
     // Also run periodic cleanup every 2 seconds as a safety net
-    setInterval(() => {
-      performCleanup();
-    }, 2000);
+    // Use TimerManager for automatic cleanup
+    const timerManager = window.TimerManager || window;
+    const cleanupInterval = timerManager.setInterval ? 
+      timerManager.setInterval(() => {
+        performCleanup();
+      }, 2000) :
+      setInterval(() => {
+        performCleanup();
+      }, 2000);
+    
+    // Store interval ID for potential cleanup
+    if (typeof window !== 'undefined') {
+      window._gameManagerCleanupInterval = cleanupInterval;
+    }
 
     return observer;
   }

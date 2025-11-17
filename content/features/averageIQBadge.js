@@ -549,7 +549,16 @@
   }
 
   // Monitor URL changes
-  setInterval(checkUrlChange, 1000);
+  // Use TimerManager for automatic cleanup
+  const timerManager = window.TimerManager || window;
+  const urlCheckInterval = timerManager.setInterval ? 
+    timerManager.setInterval(checkUrlChange, 1000) :
+    setInterval(checkUrlChange, 1000);
+  
+  // Store interval ID for potential cleanup
+  if (typeof window !== 'undefined') {
+    window._averageIQBadgeUrlCheckInterval = urlCheckInterval;
+  }
 
   /**
    * Monitor storage changes to update the badge

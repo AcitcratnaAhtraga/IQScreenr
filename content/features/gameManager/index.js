@@ -26,27 +26,13 @@
 
   /**
    * Remove all loading badges for a tweet (helper function)
+   * Uses centralized BadgeCleanupUtils
    */
   function removeAllLoadingBadges(tweetElement, actualTweetElement) {
-    // Find all loading badges in both outer and nested tweet elements
-    const allLoadingBadges = [
-      ...actualTweetElement.querySelectorAll('.iq-badge-loading'),
-      ...actualTweetElement.querySelectorAll('[data-iq-loading="true"]'),
-      ...(tweetElement !== actualTweetElement ? [
-        ...tweetElement.querySelectorAll('.iq-badge-loading'),
-        ...tweetElement.querySelectorAll('[data-iq-loading="true"]')
-      ] : [])
-    ].filter((badge, index, self) =>
-      // Remove duplicates from the array itself
-      index === self.findIndex(b => b === badge)
-    );
-
-    // Remove all loading badges
-    allLoadingBadges.forEach(badge => {
-      if (badge.parentElement) {
-        badge.remove();
-      }
-    });
+    const cleanupUtils = window.BadgeCleanupUtils || {};
+    if (cleanupUtils.removeAllLoadingBadges) {
+      cleanupUtils.removeAllLoadingBadges(tweetElement, actualTweetElement);
+    }
   }
 
   /**

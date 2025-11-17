@@ -77,10 +77,6 @@
             badge.style.setProperty('display', 'none', 'important');
           }
         });
-        // Realtime feature is disabled - do not restart monitoring
-        // if (realtimeManager && realtimeManager.setupRealtimeComposeObserver) {
-        //   realtimeManager.setupRealtimeComposeObserver();
-        // }
       } else {
         // Hide all realtime badges
         realtimeBadges.forEach(badge => {
@@ -224,7 +220,8 @@
         // Debug logging: Log mode change
         const tracker = window.BadgeStateTracker || {};
         if (tracker.logAllTweetsInViewport) {
-          console.log('[Content] Mode changed to Normal - logging all tweets before conversion');
+            const Logger = window.Logger || console;
+            Logger.log('[Content] Mode changed to Normal - logging all tweets before conversion');
           tracker.logAllTweetsInViewport();
         }
 
@@ -258,21 +255,10 @@
             }
 
             // CRITICAL: Remove ALL guess badges for this tweet first (prevent duplicates)
-            const allGuessBadges = [
-              ...actualTweetElement.querySelectorAll('.iq-badge-guess'),
-              ...actualTweetElement.querySelectorAll('[data-iq-guess="true"]'),
-              ...(nestedTweet && nestedTweet !== tweetElement ? [
-                ...tweetElement.querySelectorAll('.iq-badge-guess'),
-                ...tweetElement.querySelectorAll('[data-iq-guess="true"]')
-              ] : [])
-            ].filter((badge, index, self) => index === self.findIndex(b => b === badge));
-
-            // Remove all guess badges
-            allGuessBadges.forEach(badge => {
-              if (badge.parentElement) {
-                badge.remove();
-              }
-            });
+            const cleanupUtils = window.BadgeCleanupUtils || {};
+            if (cleanupUtils.removeAllGuessBadges) {
+              cleanupUtils.removeAllGuessBadges(tweetElement, actualTweetElement);
+            }
 
             // Create loading badge only if one doesn't already exist
             const existingLoadingBadge = actualTweetElement.querySelector('.iq-badge-loading, [data-iq-loading="true"]') ||
@@ -323,7 +309,8 @@
         // Reprocess visible tweets to trigger IQ calculations for converted badges
         if (tweetProcessor && tweetProcessor.processVisibleTweets) {
           setTimeout(() => {
-            console.log('[Content] Reprocessing visible tweets after mode switch to Normal');
+            const Logger = window.Logger || console;
+            Logger.log('[Content] Reprocessing visible tweets after mode switch to Normal');
             tweetProcessor.processVisibleTweets();
             
             // Log all tweets after reprocessing
@@ -350,7 +337,8 @@
         
         if (debugEnabled) {
           scheduleIdle(() => {
-            console.log('[Content] Mode changed to IqGuessr - logging all tweets before conversion');
+            const Logger = window.Logger || console;
+            Logger.log('[Content] Mode changed to IqGuessr - logging all tweets before conversion');
             tracker.logAllTweetsInViewport();
           }, { timeout: 1000 });
         }
@@ -375,17 +363,10 @@
                                tweetElement.querySelector('article[role="article"]');
             const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
 
-            // Find all badges in this tweet (single query)
-            const allBadges = actualTweetElement.querySelectorAll('.iq-badge');
-            
-            // Remove duplicates (keep the first one)
-            if (allBadges.length > 1) {
-              // Use DocumentFragment for batch removal
-              for (let i = 1; i < allBadges.length; i++) {
-                if (allBadges[i].parentElement) {
-                  allBadges[i].remove();
-                }
-              }
+            // Remove duplicates using centralized utility
+            const cleanupUtils = window.BadgeCleanupUtils || {};
+            if (cleanupUtils.removeDuplicateBadges) {
+              cleanupUtils.removeDuplicateBadges(tweetElement, actualTweetElement, tweetElement, nestedTweet !== tweetElement);
             }
           }
           
@@ -585,19 +566,10 @@
                              tweetElement.querySelector('article[role="article"]');
           const actualTweetElement = nestedTweet && nestedTweet !== tweetElement ? nestedTweet : tweetElement;
 
-          // Find all badges in this tweet
-          const allBadges = [
-            ...actualTweetElement.querySelectorAll('.iq-badge'),
-            ...(nestedTweet && nestedTweet !== tweetElement ? tweetElement.querySelectorAll('.iq-badge') : [])
-          ];
-
-          // Remove duplicates (keep the first one)
-          if (allBadges.length > 1) {
-            for (let i = 1; i < allBadges.length; i++) {
-              if (allBadges[i].parentElement) {
-                allBadges[i].remove();
-              }
-            }
+          // Remove duplicates using centralized utility
+          const cleanupUtils = window.BadgeCleanupUtils || {};
+          if (cleanupUtils.removeDuplicateBadges) {
+            cleanupUtils.removeDuplicateBadges(tweetElement, actualTweetElement, tweetElement, nestedTweet !== tweetElement);
           }
         }
       }
@@ -689,24 +661,27 @@
     attachBadgeClickHandlers();
 
     // Set up observer to attach handlers to newly added badges
-    const badgeObserver = new MutationObserver(() => {
-      attachBadgeClickHandlers();
-    });
+    // Use ObserverManager for automatic cleanup
+    const observerManager = window.ObserverManager || window;
+    const badgeObserver = observerManager.createObserver ? 
+      observerManager.createObserver(() => {
+        attachBadgeClickHandlers();
+      }) :
+      new MutationObserver(() => {
+        attachBadgeClickHandlers();
+      });
 
     badgeObserver.observe(document.body, {
       childList: true,
       subtree: true
     });
-
-    // Realtime feature is disabled - no need to check for RealtimeManager
-    // if (!realtimeManager || !realtimeManager.setupRealtimeComposeObserver) {
-    //   console.error('RealtimeManager not available');
-    //   setTimeout(init, 100); // Retry after modules load
-    //   return;
-    // }
+    
+    // Store observer for potential manual cleanup
+    if (typeof window !== 'undefined') {
+      window._badgeClickObserver = badgeObserver;
+    }
 
     const { processVisibleTweets, setupObserver } = tweetProcessor;
-    // const { setupRealtimeComposeObserver } = realtimeManager; // Realtime feature disabled
     const settings = getSettings();
 
     // Set up settings listener to apply changes immediately
@@ -759,8 +734,6 @@
         }, 1500);
       }
       
-      // Realtime feature is disabled - do not initialize
-      // setupRealtimeComposeObserver();
 
       // Apply IQGuessr mode if enabled on page load
       applyIQGuessrModeOnLoad();

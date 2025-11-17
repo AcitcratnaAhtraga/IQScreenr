@@ -776,24 +776,43 @@ function setupRealtimeComposeObserver() {
   }, true);
 
   let lastUrl = window.location.href;
-  const urlCheckInterval = setInterval(() => {
-    const currentUrl = window.location.href;
-    if (currentUrl !== lastUrl) {
-      lastUrl = currentUrl;
-      if (currentUrl.includes('/compose/')) {
-        setTimeout(() => {
-          const inputs = findTextInputs();
-          inputs.forEach(input => {
-            setupRealtimeMonitoring(input);
-          });
-        }, 500);
+  // Use TimerManager for automatic cleanup
+  const timerManager = window.TimerManager || window;
+  const urlCheckInterval = timerManager.setInterval ? 
+    timerManager.setInterval(() => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        if (currentUrl.includes('/compose/')) {
+          setTimeout(() => {
+            const inputs = findTextInputs();
+            inputs.forEach(input => {
+              setupRealtimeMonitoring(input);
+            });
+          }, 500);
+        }
       }
-    }
-  }, 1000);
+    }, 1000) :
+    setInterval(() => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== lastUrl) {
+        lastUrl = currentUrl;
+        if (currentUrl.includes('/compose/')) {
+          setTimeout(() => {
+            const inputs = findTextInputs();
+            inputs.forEach(input => {
+              setupRealtimeMonitoring(input);
+            });
+          }, 500);
+        }
+      }
+    }, 1000);
 
-  window.addEventListener('beforeunload', () => {
-    clearInterval(urlCheckInterval);
-  });
+  // Cleanup handled by TimerManager automatically
+  // Store interval ID for reference
+  if (typeof window !== 'undefined') {
+    window._realtimeUrlCheckInterval = urlCheckInterval;
+  }
 
   return observer;
 }

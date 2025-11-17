@@ -6,9 +6,11 @@
 (function() {
   'use strict';
 
+  const Constants = typeof window !== 'undefined' && window.Constants ? window.Constants : {};
   const GUESS_CACHE_PREFIX = 'iq_guess_';
   const REVEALED_CACHE_PREFIX = 'iq_revealed_';
   const REVEALED_IQ_CACHE_PREFIX = 'iq_revealed_iq_'; // Store IQ result by tweet ID as fallback
+  const MAX_CACHE_SIZE = Constants.CACHE?.MAX_SIZE || 1000; // Limit to prevent excessive storage usage
 
   // In-memory cache
   const persistentGuessCache = new Map();
@@ -78,6 +80,16 @@
     // Store in memory
     persistentGuessCache.set(key, cacheEntry);
 
+    // Prune cache if it exceeds max size
+    if (persistentGuessCache.size > MAX_CACHE_SIZE) {
+      // Remove oldest 20% of entries
+      const entries = Array.from(persistentGuessCache.entries());
+      const toRemove = Math.floor(MAX_CACHE_SIZE * 0.2);
+      for (let i = 0; i < toRemove; i++) {
+        persistentGuessCache.delete(entries[i][0]);
+      }
+    }
+
     // Store in chrome storage
     const storage = window.GameManagerStorage;
     if (!storage || !storage.isExtensionContextValid()) {
@@ -90,6 +102,7 @@
 
   /**
    * Load all guesses from storage into memory
+   * Enforces size limits during loading
    */
   async function loadGuessCache() {
     const storage = window.GameManagerStorage;
@@ -99,17 +112,29 @@
 
     try {
       const items = await storage.getStorage(null);
+      const entries = [];
 
+      // Collect all cache entries
       for (const [key, value] of Object.entries(items)) {
         if (key.startsWith(GUESS_CACHE_PREFIX)) {
           const cacheKey = key.replace(GUESS_CACHE_PREFIX, '');
-          if (value && typeof value === 'object') {
-            persistentGuessCache.set(cacheKey, value);
+          if (value && typeof value === 'object' && value.timestamp) {
+            entries.push({ key: cacheKey, value, timestamp: new Date(value.timestamp).getTime() });
           }
         }
       }
+
+      // Sort by timestamp (newest first)
+      entries.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Load only up to MAX_CACHE_SIZE entries
+      const entriesToLoad = entries.slice(0, MAX_CACHE_SIZE);
+      for (const entry of entriesToLoad) {
+        persistentGuessCache.set(entry.key, entry.value);
+      }
     } catch (error) {
-      console.warn('[IQGuessr] Error loading guess cache:', error);
+      const Logger = window.Logger || console;
+      Logger.warn('[IQGuessr] Error loading guess cache:', error);
     }
   }
 
@@ -212,15 +237,48 @@
   } else {
     // Wait for storage to be available
     if (typeof window !== 'undefined') {
-      const checkStorage = setInterval(() => {
-        if (window.GameManagerStorage) {
-          clearInterval(checkStorage);
-          loadGuessCache();
-        }
+      const timerManager = window.TimerManager || window;
+      const checkStorage = timerManager.setInterval ? 
+        timerManager.setInterval(() => {
+          if (window.GameManagerStorage) {
+            timerManager.clearInterval(checkStorage);
+            loadGuessCache();
+          }
+        }, 100) :
+        setInterval(() => {
+          if (window.GameManagerStorage) {
+            clearInterval(checkStorage);
+            loadGuessCache();
+          }
       }, 100);
 
       // Timeout after 5 seconds
       setTimeout(() => clearInterval(checkStorage), 5000);
+    }
+  }
+
+  /**
+   * Clear all caches
+   */
+  function clearCache() {
+    persistentGuessCache.clear();
+    
+    const storage = window.GameManagerStorage;
+    if (storage && storage.isExtensionContextValid()) {
+      // Clear all game-related cache entries
+      storage.getStorage(null).then(items => {
+        const keysToRemove = [];
+        for (const key of Object.keys(items)) {
+          if (key.startsWith(GUESS_CACHE_PREFIX) ||
+              key.startsWith(REVEALED_CACHE_PREFIX) ||
+              key.startsWith(REVEALED_IQ_CACHE_PREFIX)) {
+            keysToRemove.push(key);
+          }
+        }
+        if (keysToRemove.length > 0) {
+          chrome.storage.local.remove(keysToRemove);
+        }
+      });
     }
   }
 
@@ -233,7 +291,8 @@
       cacheRevealedIQ,
       getCachedRevealedIQ,
       cacheRevealedIQResult,
-      getCachedRevealedIQResult
+      getCachedRevealedIQResult,
+      clearCache
     };
   }
 })();

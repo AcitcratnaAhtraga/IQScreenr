@@ -20,6 +20,9 @@
 
     const badge = document.createElement('span');
     badge.className = 'iq-badge iq-badge-loading';
+    badge.setAttribute('role', 'status');
+    badge.setAttribute('aria-label', 'Calculating IQ score');
+    badge.setAttribute('aria-live', 'polite');
     badge.setAttribute('data-iq-loading', 'true');
 
     const darkerRed = '#b71c1c';

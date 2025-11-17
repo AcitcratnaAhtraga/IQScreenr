@@ -18,6 +18,8 @@
 
     const badge = document.createElement('span');
     badge.className = 'iq-badge iq-badge-invalid iq-badge-flip';
+    badge.setAttribute('role', 'img');
+    badge.setAttribute('aria-label', 'Invalid tweet - cannot calculate IQ score');
     badge.setAttribute('data-iq-invalid', 'true');
 
     // Use CSS variable for background color - CSS handles styling

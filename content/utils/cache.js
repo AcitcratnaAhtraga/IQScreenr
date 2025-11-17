@@ -7,8 +7,9 @@
 (function() {
   'use strict';
 
+const Constants = typeof window !== 'undefined' && window.Constants ? window.Constants : {};
 const CACHE_KEY_PREFIX = 'iq_cache_';
-const MAX_CACHE_SIZE = 1000; // Limit to prevent excessive storage usage
+const MAX_CACHE_SIZE = Constants.CACHE?.MAX_SIZE || 1000; // Limit to prevent excessive storage usage
 
 // IQ cache for storing calculated scores with metadata
 const iqCache = new Map();
@@ -152,12 +153,16 @@ function cacheIQ(handle, result, metadata = {}) {
  * Old entries are loaded for backward compatibility but will be replaced as new entries are cached
  */
 function loadCache() {
+  const Constants = window.Constants || {};
+  const BATCH = Constants.BATCH || { CACHE_LOAD_SIZE: 50 };
+  const IDLE_CALLBACK = Constants.IDLE_CALLBACK || { CACHE_LOAD_TIMEOUT: 500 };
+  
   // Performance optimization: Use requestIdleCallback for non-critical cache loading
   const loadCacheAsync = () => {
     chrome.storage.local.get(null, (items) => {
       // Performance optimization: Process in batches to avoid blocking
       const entries = Object.entries(items).filter(([key]) => key.startsWith(CACHE_KEY_PREFIX));
-      const BATCH_SIZE = 50;
+      const BATCH_SIZE = BATCH.CACHE_LOAD_SIZE || 50;
       let index = 0;
 
       const processBatch = () => {
@@ -191,28 +196,36 @@ function loadCache() {
 
         index += BATCH_SIZE;
         
-        // Process next batch if available
+        // Process next batch if available - use requestIdleCallback more aggressively
         if (index < entries.length) {
           if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(processBatch, { timeout: 100 });
+            requestIdleCallback(processBatch, { timeout: IDLE_CALLBACK.CACHE_LOAD_TIMEOUT || 500 });
           } else {
+            // Fallback: use setTimeout with 0 delay for next tick
             setTimeout(processBatch, 0);
           }
         }
       };
 
-      // Start processing batches
+      // Start processing batches - use requestIdleCallback if available
       if (entries.length > 0) {
-        processBatch();
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(processBatch, { timeout: IDLE_CALLBACK.CACHE_LOAD_TIMEOUT || 500 });
+        } else {
+          // Fallback: start immediately but yield to browser
+          setTimeout(processBatch, 0);
+        }
       }
     });
   };
 
   // Load cache asynchronously to avoid blocking initialization
+  // Use requestIdleCallback with longer timeout for initial load
   if (typeof requestIdleCallback !== 'undefined') {
-    requestIdleCallback(loadCacheAsync, { timeout: 500 });
+    requestIdleCallback(loadCacheAsync, { timeout: IDLE_CALLBACK.CACHE_LOAD_TIMEOUT || 500 });
   } else {
-    setTimeout(loadCacheAsync, 0);
+    // Fallback: delay to avoid blocking initialization
+    setTimeout(loadCacheAsync, 100);
   }
 }
 

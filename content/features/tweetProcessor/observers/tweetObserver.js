@@ -58,7 +58,16 @@
       setTimeout(() => checkForStuckBadges(processedTweets), 2500); // Check after 2.5s
       setTimeout(() => checkForStuckBadges(processedTweets), 3500); // Check after 3.5s
       // Then check every 2 seconds thereafter (more frequent)
-      setInterval(() => checkForStuckBadges(processedTweets), 2000);
+      // Use TimerManager for automatic cleanup
+      const timerManager = window.TimerManager || window;
+      const stuckBadgeInterval = timerManager.setInterval ? 
+        timerManager.setInterval(() => checkForStuckBadges(processedTweets), 2000) :
+        setInterval(() => checkForStuckBadges(processedTweets), 2000);
+      
+      // Store interval ID for potential cleanup
+      if (typeof window !== 'undefined') {
+        window._stuckBadgeCheckInterval = stuckBadgeInterval;
+      }
     }
 
     // Performance optimization: Debounce and batch processing
@@ -141,7 +150,10 @@
       });
     };
 
-    const observer = new MutationObserver((mutations) => {
+    // Use ObserverManager for automatic cleanup
+    const observerManager = window.ObserverManager || window;
+    const observer = observerManager.createObserver ? 
+      observerManager.createObserver((mutations) => {
       // Performance optimization: Early exit if no relevant mutations
       let hasArticleNodes = false;
       for (let i = 0; i < mutations.length && !hasArticleNodes; i++) {
@@ -206,12 +218,76 @@
           }
         }, 16); // ~60fps debounce
       }
-    });
+      }) :
+      new MutationObserver((mutations) => {
+        // Performance optimization: Early exit if no relevant mutations
+        let hasArticleNodes = false;
+        for (let i = 0; i < mutations.length && !hasArticleNodes; i++) {
+          const mutation = mutations[i];
+          if (mutation.addedNodes.length === 0) continue;
+          
+          for (let j = 0; j < mutation.addedNodes.length; j++) {
+            const node = mutation.addedNodes[j];
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.tagName === 'ARTICLE' || (node.querySelector && node.querySelector('article'))) {
+                hasArticleNodes = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!hasArticleNodes) return;
+
+        // Collect potential tweets efficiently
+        const potentialTweets = [];
+        for (let i = 0; i < mutations.length; i++) {
+          const mutation = mutations[i];
+          for (let j = 0; j < mutation.addedNodes.length; j++) {
+            const node = mutation.addedNodes[j];
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.tagName === 'ARTICLE') {
+                potentialTweets.push(node);
+              } else if (node.querySelector) {
+                const firstArticle = node.querySelector('article');
+                if (firstArticle) {
+                  potentialTweets.push(firstArticle);
+                  const allArticles = node.querySelectorAll('article');
+                  if (allArticles.length > 1) {
+                    for (let k = 1; k < allArticles.length; k++) {
+                      potentialTweets.push(allArticles[k]);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        if (potentialTweets.length > 0) {
+          potentialTweets.forEach(tweet => pendingTweets.add(tweet));
+          if (processingTimeout) {
+            clearTimeout(processingTimeout);
+          }
+          processingTimeout = setTimeout(() => {
+            processingTimeout = null;
+            if (!rafScheduled) {
+              rafScheduled = true;
+              requestAnimationFrame(processPendingTweets);
+            }
+          }, 16);
+        }
+      });
 
     observer.observe(document.body, {
       childList: true,
       subtree: true
     });
+    
+    // Store observer for potential manual cleanup
+    if (typeof window !== 'undefined') {
+      window._tweetObserver = observer;
+    }
 
     return observer;
   }

@@ -319,32 +319,60 @@
 
       // Also wait a bit in case calculation is in progress
       let checkCount = 0;
-      const checkInterval = setInterval(() => {
-        checkCount++;
-        const currentResult = actualTweetElement._iqResult || tweetElement._iqResult;
+      const timerManager = window.TimerManager || window;
+      const checkInterval = timerManager.setInterval ? 
+        timerManager.setInterval(() => {
+          checkCount++;
+          const currentResult = actualTweetElement._iqResult || tweetElement._iqResult;
 
-        if (currentResult) {
-          clearInterval(checkInterval);
-          const newIqResult = currentResult;
-          if (newIqResult && newIqResult.iq !== null && newIqResult.iq !== undefined) {
-            const badgeManager = window.BadgeManager;
-            if (badgeManager && badgeManager.getIQColor) {
-              const settings = window.Settings || {};
-              const iqColor = settings.useConfidenceForColor && newIqResult.confidence
-                ? badgeManager.getConfidenceColor(newIqResult.confidence)
-                : badgeManager.getIQColor(newIqResult.iq);
+          if (currentResult) {
+            timerManager.clearInterval(checkInterval);
+            const newIqResult = currentResult;
+            if (newIqResult && newIqResult.iq !== null && newIqResult.iq !== undefined) {
+              const badgeManager = window.BadgeManager;
+              if (badgeManager && badgeManager.getIQColor) {
+                const settings = window.Settings || {};
+                const iqColor = settings.useConfidenceForColor && newIqResult.confidence
+                  ? badgeManager.getConfidenceColor(newIqResult.confidence)
+                  : badgeManager.getIQColor(newIqResult.iq);
 
-              const gameManager = window.GameManager;
-              if (gameManager && gameManager.revealActualScore) {
-                gameManager.revealActualScore(badge, newIqResult.iq, iqColor, newIqResult.confidence, newIqResult.result, newIqResult.text);
+                const gameManager = window.GameManager;
+                if (gameManager && gameManager.revealActualScore) {
+                  gameManager.revealActualScore(badge, newIqResult.iq, iqColor, newIqResult.confidence, newIqResult.result, newIqResult.text);
+                }
               }
             }
+          } else if (checkCount >= 30) {
+            // Timeout after 3 seconds (30 * 100ms)
+            timerManager.clearInterval(checkInterval);
           }
-        } else if (checkCount >= 30) {
-          // Timeout after 3 seconds (30 * 100ms)
-          clearInterval(checkInterval);
-        }
-      }, 100);
+        }, 100) :
+        setInterval(() => {
+          checkCount++;
+          const currentResult = actualTweetElement._iqResult || tweetElement._iqResult;
+
+          if (currentResult) {
+            clearInterval(checkInterval);
+            const newIqResult = currentResult;
+            if (newIqResult && newIqResult.iq !== null && newIqResult.iq !== undefined) {
+              const badgeManager = window.BadgeManager;
+              if (badgeManager && badgeManager.getIQColor) {
+                const settings = window.Settings || {};
+                const iqColor = settings.useConfidenceForColor && newIqResult.confidence
+                  ? badgeManager.getConfidenceColor(newIqResult.confidence)
+                  : badgeManager.getIQColor(newIqResult.iq);
+
+                const gameManager = window.GameManager;
+                if (gameManager && gameManager.revealActualScore) {
+                  gameManager.revealActualScore(badge, newIqResult.iq, iqColor, newIqResult.confidence, newIqResult.result, newIqResult.text);
+                }
+              }
+            }
+          } else if (checkCount >= 30) {
+            // Timeout after 3 seconds (30 * 100ms)
+            clearInterval(checkInterval);
+          }
+        }, 100);
     } else {
       // Not analyzed yet, trigger calculation
       const tweetProcessor = window.TweetProcessor;
