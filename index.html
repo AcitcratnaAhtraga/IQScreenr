@@ -122,7 +122,8 @@
         "browserRequirements": "Requires JavaScript. Requires Chrome, Edge, Brave, or other Chromium-based browsers.",
         "permissions": "storage, activeTab",
         "url": "https://iqscreenr.win/",
-        "downloadUrl": "https://iqscreenr.win/IqScreenr.zip"
+        "downloadUrl": "https://chromewebstore.google.com/detail/iqscreenr/hmfjkepgpiehaaiknihpncjbgfnpgohl",
+        "applicationUrl": "https://chromewebstore.google.com/detail/iqscreenr/hmfjkepgpiehaaiknihpncjbgfnpgohl"
       },
       {
         "@type": "WebPage",
@@ -238,16 +239,23 @@
 
           <!-- Download/Install Button -->
           <div class="download-section">
-            <button id="installButton" class="install-button">
+            <a href="https://chromewebstore.google.com/detail/iqscreenr/hmfjkepgpiehaaiknihpncjbgfnpgohl" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="install-button chrome-store-button">
               <span class="button-icon">⬇️</span>
-              <span class="button-text">Install Extension</span>
-            </button>
-            <p class="install-note">Works on Chrome, Edge, Brave, and other Chromium browsers</p>
+              <span class="button-text">Install from Chrome Web Store</span>
+            </a>
+            <p class="install-note">One-click install • Works on Chrome, Edge, Brave, and other Chromium browsers</p>
+            <p class="manual-install-note">
+              <a href="#manual-install" class="manual-install-link">Manual installation instructions</a>
+            </p>
           </div>
 
-          <!-- Installation Instructions (Hidden by default) -->
-          <div id="installInstructions" class="install-instructions" style="display: none;">
-            <h3>Installation Steps:</h3>
+          <!-- Manual Installation Instructions -->
+          <div id="manual-install" class="install-instructions">
+            <h3>Manual Installation (Alternative Method):</h3>
+            <p class="manual-install-intro">Prefer to install manually? Follow these steps:</p>
             <ol class="steps-list">
               <li>Click the "Download Extension" button below to download the extension</li>
               <li>Extract the ZIP's files into a folder on your computer</li>

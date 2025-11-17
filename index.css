@@ -132,6 +132,7 @@ body {
   align-items: center;
   gap: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  text-decoration: none;
 }
 
 .install-button:hover {
@@ -144,6 +145,18 @@ body {
   transform: translateY(0);
 }
 
+.chrome-store-button {
+  background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+  font-size: 20px;
+  padding: 18px 48px;
+  box-shadow: 0 6px 20px rgba(66, 133, 244, 0.3);
+}
+
+.chrome-store-button:hover {
+  background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+  box-shadow: 0 8px 24px rgba(66, 133, 244, 0.4);
+}
+
 .button-icon {
   font-size: 24px;
 }
@@ -154,8 +167,27 @@ body {
 
 .install-note {
   margin-top: 16px;
+  font-size: 15px;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.manual-install-note {
+  margin-top: 12px;
   font-size: 14px;
   color: #6b7280;
+}
+
+.manual-install-link {
+  color: #4285f4;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.manual-install-link:hover {
+  border-bottom-color: #4285f4;
+  text-decoration: none;
 }
 
 /* Mobile Notice Banner */
@@ -215,10 +247,16 @@ body {
   background: #f9fafb;
   border-radius: 12px;
   padding: 30px;
-  margin: 30px auto;
+  margin: 60px auto 30px;
   max-width: 700px;
   text-align: left;
   border: 1px solid #e5e7eb;
+}
+
+.manual-install-intro {
+  margin-bottom: 16px;
+  color: #4b5563;
+  font-size: 15px;
 }
 
 .install-instructions h3 {
@@ -842,6 +880,22 @@ body {
   .install-button {
     padding: 14px 32px;
     font-size: 16px;
+  }
+
+  .chrome-store-button {
+    background: linear-gradient(135deg, #4285f4 0%, #1a73e8 100%);
+  }
+
+  .chrome-store-button:hover {
+    background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+  }
+
+  .manual-install-link {
+    color: #60a5fa;
+  }
+
+  .manual-install-link:hover {
+    border-bottom-color: #60a5fa;
   }
 
   .related-project-features {
