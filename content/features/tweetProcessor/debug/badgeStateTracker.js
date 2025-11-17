@@ -7,7 +7,7 @@
   'use strict';
 
   const DEBUG_PREFIX = '[BadgeStateTracker]';
-  let isEnabled = true; // Set to false to disable all logging
+  let isEnabled = false; // Set to true to enable logging (disabled by default to prevent console crashes)
 
   /**
    * Get current mode (normal or IqGuessr)

@@ -35,6 +35,47 @@
       }
     };
 
+    // Periodic cleanup: Remove loading badges when guess badges exist (prevents double badges)
+    function cleanupDoubleBadges() {
+      const getGameManager = () => window.GameManager || {};
+      const gameManager = getGameManager();
+      const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+      
+      if (!isGameModeEnabled) {
+        return; // Only cleanup in IqGuessr mode
+      }
+      
+      // Find all tweets with badges
+      const tweets = document.querySelectorAll('article[data-testid="tweet"], article[role="article"]');
+      
+      tweets.forEach(tweet => {
+        const allBadges = tweet.querySelectorAll('.iq-badge');
+        if (allBadges.length <= 1) {
+          return; // No duplicates
+        }
+        
+        const guessBadges = Array.from(allBadges).filter(badge => 
+          badge.classList.contains('iq-badge-guess') || 
+          badge.hasAttribute('data-iq-guess')
+        );
+        
+        if (guessBadges.length > 0) {
+          // Remove all loading badges when guess badges exist
+          allBadges.forEach(badge => {
+            if ((badge.classList.contains('iq-badge-loading') || badge.hasAttribute('data-iq-loading')) &&
+                !guessBadges.includes(badge)) {
+              if (badge.parentElement) {
+                badge.remove();
+              }
+            }
+          });
+        }
+      });
+    }
+    
+    // Run cleanup periodically (every 2 seconds) to catch any double badges
+    setInterval(cleanupDoubleBadges, 2000);
+
     // Export for use in other modules
     if (typeof window !== 'undefined') {
       window.TweetProcessor = {
@@ -42,7 +83,8 @@
         processVisibleTweets: wrappedProcessVisibleTweets,
         addLoadingBadgeToTweet,
         setupObserver: () => setupObserver(processedTweets),
-        processedTweets
+        processedTweets,
+        cleanupDoubleBadges
       };
     }
   }

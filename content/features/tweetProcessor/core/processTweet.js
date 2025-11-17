@@ -145,6 +145,37 @@
 
     // Check for existing badges and handle duplicates
     const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
+    
+    // Get game mode status early (needed for cleanup logic)
+    const getGameManager = () => window.GameManager || {};
+    const gameManager = getGameManager();
+    const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+    
+    // CRITICAL: In IqGuessr mode, if we have both loading and guess badges, remove loading badges
+    // This prevents double badges from appearing
+    if (isGameModeEnabled && existingBadge) {
+      const allBadges = [
+        ...actualTweetElement.querySelectorAll('.iq-badge'),
+        ...(hasNestedStructure && outerElement ? outerElement.querySelectorAll('.iq-badge') : [])
+      ];
+      
+      const hasGuessBadge = allBadges.some(badge => 
+        badge.classList.contains('iq-badge-guess') || 
+        badge.hasAttribute('data-iq-guess')
+      );
+      
+      if (hasGuessBadge) {
+        // Remove all loading badges if guess badge exists
+        allBadges.forEach(badge => {
+          if ((badge.classList.contains('iq-badge-loading') || badge.hasAttribute('data-iq-loading')) &&
+              badge !== existingBadge) {
+            if (badge.parentElement) {
+              badge.remove();
+            }
+          }
+        });
+      }
+    }
 
     // Debug logging: Log existing badge state
     if (tracker.logBadgeStateChange && existingBadge) {
@@ -249,8 +280,7 @@
     // This happens AFTER text expansion, so we check cache with the full expanded text
     // PERFORMANCE: In IqGuessr mode, skip restoration check if there's no existing badge hinting at cache
     // This avoids slow cache lookups for tweets that definitely don't have cache
-    const gameManager = getGameManager();
-    const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+    // Note: isGameModeEnabled is already declared earlier in the function
     
     // Only check restoration if:
     // 1. Not in IqGuessr mode (always check in normal mode)
@@ -304,10 +334,10 @@
           } else {
             // There's a non-loading badge - check if IQ was revealed and should show calculated IQ
             // If so, verify the badge is showing calculated IQ, not guess
-            const gameManager = getGameManager();
-            const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+            // Note: isGameModeEnabled is already declared earlier in the function
             if (isGameModeEnabled && tweetId) {
-              const cachedRevealed = gameManager.getCachedRevealedIQ ? await gameManager.getCachedRevealedIQ(tweetId) : false;
+              const gameManagerForRevealed = getGameManager();
+              const cachedRevealed = gameManagerForRevealed.getCachedRevealedIQ ? await gameManagerForRevealed.getCachedRevealedIQ(tweetId) : false;
               if (cachedRevealed) {
                 // IQ was revealed - check if badge is showing guess instead of calculated
                 const isGuessBadgeCheck = anyExistingBadge.classList.contains('iq-badge-guess') ||
@@ -337,7 +367,7 @@
       // This avoids creating a loading badge that will immediately be replaced
       if (!loadingBadge && isGameModeEnabled && !shouldCheckRestoration) {
         // No cache, IqGuessr mode - create guess badge directly
-        const gameManagerForDirectGuess = getGameManager();
+        const gameManagerForDirectGuess = gameManager;
         const badges = window.GameManagerBadges;
         if (gameManagerForDirectGuess && badges && badges.createGuessBadge) {
           // Check for existing guess badge first (race condition protection)

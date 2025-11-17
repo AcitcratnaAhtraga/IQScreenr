@@ -22,11 +22,12 @@
     const { processTweet } = getTweetProcessor();
     const isNotificationsPage = window.location.href.includes('/notifications');
     
-    // Debug logging: Log all tweets in viewport
-    const tracker = window.BadgeStateTracker || {};
-    if (tracker.logAllTweetsInViewport) {
-      tracker.logAllTweetsInViewport();
-    }
+    // Debug logging: Log all tweets in viewport (DISABLED by default - too verbose)
+    // Only enable if explicitly needed for debugging
+    // const tracker = window.BadgeStateTracker || {};
+    // if (tracker.logAllTweetsInViewport) {
+    //   tracker.logAllTweetsInViewport();
+    // }
 
     // Performance optimization: Cache selector results
     // Use IntersectionObserver-friendly approach when possible

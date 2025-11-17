@@ -51,27 +51,68 @@
     // For nested structures, check for badge in both outer wrapper and nested tweet
     // This fixes the issue where badges are placed in outer wrapper but we only search nested tweet
     // Also check for and remove duplicate badges
-    let existingBadge = actualTweetElement.querySelector('.iq-badge');
     const allBadgesInActual = actualTweetElement.querySelectorAll('.iq-badge');
     const allBadgesInOuter = hasNestedStructure && outerElement ? outerElement.querySelectorAll('.iq-badge') : [];
 
-    // If multiple badges found, keep only the first one and remove duplicates
+    // Collect all badges
     const allBadges = [...allBadgesInActual, ...allBadgesInOuter];
-    if (allBadges.length > 1) {
-      // Keep the first badge, remove all others
-      for (let i = 1; i < allBadges.length; i++) {
-        if (allBadges[i].parentElement) {
-          allBadges[i].remove();
-        }
+    
+    if (allBadges.length === 0) {
+      return null;
+    }
+    
+    if (allBadges.length === 1) {
+      return allBadges[0];
+    }
+
+    // CRITICAL: If multiple badges found, prioritize guess badges over loading badges
+    // In IqGuessr mode, guess badges should always take precedence
+    const guessBadges = allBadges.filter(badge => 
+      badge.classList.contains('iq-badge-guess') || 
+      badge.hasAttribute('data-iq-guess')
+    );
+    
+    const calculatedBadges = allBadges.filter(badge => 
+      badge.hasAttribute('data-iq-score') && 
+      !badge.hasAttribute('data-iq-guessed')
+    );
+    
+    const loadingBadges = allBadges.filter(badge => 
+      badge.classList.contains('iq-badge-loading') || 
+      badge.hasAttribute('data-iq-loading')
+    );
+
+    // Priority: calculated > guess > loading > others
+    let badgeToKeep = null;
+    let badgesToRemove = [];
+    
+    if (calculatedBadges.length > 0) {
+      badgeToKeep = calculatedBadges[0];
+      badgesToRemove = [...calculatedBadges.slice(1), ...guessBadges, ...loadingBadges, ...allBadges.filter(b => 
+        !calculatedBadges.includes(b) && !guessBadges.includes(b) && !loadingBadges.includes(b)
+      )];
+    } else if (guessBadges.length > 0) {
+      badgeToKeep = guessBadges[0];
+      badgesToRemove = [...guessBadges.slice(1), ...loadingBadges, ...allBadges.filter(b => 
+        !guessBadges.includes(b) && !loadingBadges.includes(b)
+      )];
+    } else if (loadingBadges.length > 0) {
+      badgeToKeep = loadingBadges[0];
+      badgesToRemove = [...loadingBadges.slice(1), ...allBadges.filter(b => !loadingBadges.includes(b))];
+    } else {
+      // Fallback: keep first, remove others
+      badgeToKeep = allBadges[0];
+      badgesToRemove = allBadges.slice(1);
+    }
+
+    // Remove duplicate badges
+    badgesToRemove.forEach(badge => {
+      if (badge.parentElement && badge !== badgeToKeep) {
+        badge.remove();
       }
-      existingBadge = allBadges[0];
-    }
+    });
 
-    if (!existingBadge && hasNestedStructure && outerElement) {
-      existingBadge = outerElement.querySelector('.iq-badge');
-    }
-
-    return existingBadge;
+    return badgeToKeep;
   }
 
   /**
