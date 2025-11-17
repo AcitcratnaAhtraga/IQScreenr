@@ -108,7 +108,11 @@
         "content/data/population_norms.json",
         "content/data/casual_language_patterns.json",
         "icons/Variants/Fullsize/IqGuessrT.png",
-        "icons/Variants/Fullsize/IqGuessrTrspW.png"
+        "icons/Variants/Fullsize/IqGuessrTrspW.png",
+        "icons/fonts/chirp-regular-web.woff",
+        "icons/fonts/chirp-medium-web.woff",
+        "icons/fonts/chirp-bold-web.woff",
+        "icons/fonts/chirp-heavy-web.woff"
       ],
       "matches": [
         "https://*.twitter.com/*",
