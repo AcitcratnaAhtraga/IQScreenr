@@ -37,7 +37,8 @@ function triggerPulseAnimation(badge, iqColor) {
       }
       requestAnimationFrame(updateColor);
     } else {
-      scoreElement.style.color = '#000000';
+      // Remove inline color style to restore default CSS color (#71767A)
+      scoreElement.style.removeProperty('color');
       badge.classList.remove('iq-badge-pulse');
     }
   }
