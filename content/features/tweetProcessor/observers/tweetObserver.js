@@ -123,7 +123,12 @@
         }
 
         // Batch badge insertions
-        if (validTweets.length > 0 && addLoadingBadgeToTweet) {
+        // CRITICAL: In IqGuessr mode, don't add loading badges - processTweet will create guess badges directly
+        const getGameManager = () => window.GameManager || {};
+        const gameManager = getGameManager();
+        const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+        
+        if (validTweets.length > 0 && addLoadingBadgeToTweet && !isGameModeEnabled) {
           validTweets.forEach((tweet) => {
             addLoadingBadgeToTweet(tweet);
           });

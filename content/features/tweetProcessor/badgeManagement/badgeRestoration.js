@@ -92,89 +92,200 @@
 
     // CRITICAL: Prevent concurrent restoration attempts (race condition protection)
     const restorationKey = `_iq-restoring-${tweetId}`;
-    if (actualTweetElement[restorationKey]) {
-      // Restoration already in progress, skip to prevent duplicates
-      return true;
-    }
-    actualTweetElement[restorationKey] = true;
-
-    const gameManager = getGameManager();
-    if (!gameManager || !gameManager.getCachedRevealedIQResult) {
-      delete actualTweetElement[restorationKey];
-      return false;
-    }
-
-    // FIRST: Try to get IQ result directly by tweet ID (tweet-specific)
-    const cachedIQResult = await gameManager.getCachedRevealedIQResult(tweetId);
-    if (!cachedIQResult || !cachedIQResult.iq) {
-      delete actualTweetElement[restorationKey];
-      return false;
-    }
-
-    // Convert to expected format - merge result object if it exists
-    const cachedIQ = {
-      iq_estimate: cachedIQResult.iq,
-      confidence: cachedIQResult.confidence,
-      ...(cachedIQResult.result || {})
-    };
-
-    // CRITICAL: Do NOT fall back to handle-based cache when cachedRevealed is true
-    // Handle-based cache is shared across all tweets by the same user, which causes
-    // all tweets on a profile page to show the same IQ. If there's no tweet-ID-specific
-    // cache, we should not restore the badge (it will show as a guess badge instead).
-    // This prevents tweets that were calculated when IQGuessr was OFF from incorrectly
-    // showing the handle-based cache result when IQGuessr is re-enabled.
-
-    if (!cachedIQ || cachedIQ.iq_estimate === undefined) {
-      delete actualTweetElement[restorationKey];
-      return false;
-    }
-
-    // We have revealed IQ and cached IQ - restore calculated badge directly
-    const badgeManager = getBadgeManager();
-    if (!badgeManager || !badgeManager.createIQBadge) {
-      delete actualTweetElement[restorationKey];
-      return false;
-    }
-
-    const { extractTweetText } = getTextExtraction();
-    const { findExistingBadge } = getNestedTweetHandler();
-
-    const iq = Math.round(cachedIQ.iq_estimate);
-    const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
-    const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
-
-    // CRITICAL: Check IqFiltr IMMEDIATELY after getting IQ, before restoring badge
-    const getIqFiltr = () => window.IqFiltr || {};
-    const { checkAndFilter } = getIqFiltr();
-    if (checkAndFilter) {
-      const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
-      const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);
-      if (wasFiltered) {
-        // Element was removed, stop restoration
-        delete actualTweetElement[restorationKey];
-        return true;
-      }
-    }
-
-    // Check if there's already a badge to replace (including loading badges)
-    const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
+    const restorationPromiseKey = `_iq-restoring-promise-${tweetId}`;
     
-    // CRITICAL: If badge already exists, UPDATE it instead of skipping
-    // This ensures cached badges are actually restored, not just marked as "restored"
-    if (existingBadge) {
-      // Check if it's already a calculated badge with the correct score
-      const existingScore = existingBadge.getAttribute('data-iq-score');
-      const existingConfidence = existingBadge.getAttribute('data-confidence');
-      
-      if (existingScore && parseInt(existingScore, 10) === iq && 
-          existingConfidence && parseInt(existingConfidence, 10) === confidence) {
-        // Badge already shows correct IQ - just mark as restored
+    // Get findExistingBadge early for use in race condition check
+    const { findExistingBadge } = getNestedTweetHandler();
+    
+    // If restoration is already in progress, wait for it to complete
+    if (actualTweetElement[restorationKey]) {
+      const existingPromise = actualTweetElement[restorationPromiseKey];
+      if (existingPromise && existingPromise instanceof Promise) {
+        // Wait for existing restoration to complete and check result
+        const result = await existingPromise;
+        if (result) {
+          // Restoration succeeded
+          return true;
+        }
+        // Restoration failed, clear flag and proceed with new attempt
         delete actualTweetElement[restorationKey];
+        delete actualTweetElement[restorationPromiseKey];
+      } else {
+        // No promise stored, but flag is set - restoration might have completed
+        // Check if badge is already updated
+        if (findExistingBadge) {
+          const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
+          if (existingBadge && existingBadge.hasAttribute('data-iq-score')) {
+            // Badge already updated, restoration completed
+            return true;
+          }
+        }
+        // Badge not updated yet, but flag is set - might be stuck
+        // Clear flag and proceed with restoration
+        delete actualTweetElement[restorationKey];
+      }
+    }
+    
+    // Create a promise for this restoration attempt
+    const restorationPromise = (async () => {
+      try {
+        actualTweetElement[restorationKey] = true;
+        actualTweetElement[restorationPromiseKey] = restorationPromise;
+
+        const gameManager = getGameManager();
+        if (!gameManager || !gameManager.getCachedRevealedIQResult) {
+          delete actualTweetElement[restorationKey];
+          delete actualTweetElement[restorationPromiseKey];
+          return false;
+        }
+
+        // FIRST: Try to get IQ result directly by tweet ID (tweet-specific)
+        const cachedIQResult = await gameManager.getCachedRevealedIQResult(tweetId);
+        if (!cachedIQResult || !cachedIQResult.iq) {
+          delete actualTweetElement[restorationKey];
+          delete actualTweetElement[restorationPromiseKey];
+          return false;
+        }
+
+        // Convert to expected format - merge result object if it exists
+        const cachedIQ = {
+          iq_estimate: cachedIQResult.iq,
+          confidence: cachedIQResult.confidence,
+          ...(cachedIQResult.result || {})
+        };
+
+        // CRITICAL: Do NOT fall back to handle-based cache when cachedRevealed is true
+        // Handle-based cache is shared across all tweets by the same user, which causes
+        // all tweets on a profile page to show the same IQ. If there's no tweet-ID-specific
+        // cache, we should not restore the badge (it will show as a guess badge instead).
+        // This prevents tweets that were calculated when IQGuessr was OFF from incorrectly
+        // showing the handle-based cache result when IQGuessr is re-enabled.
+
+        if (!cachedIQ || cachedIQ.iq_estimate === undefined) {
+          delete actualTweetElement[restorationKey];
+          delete actualTweetElement[restorationPromiseKey];
+          return false;
+        }
+
+        // We have revealed IQ and cached IQ - restore calculated badge directly
+        const badgeManager = getBadgeManager();
+        if (!badgeManager || !badgeManager.createIQBadge) {
+          delete actualTweetElement[restorationKey];
+          delete actualTweetElement[restorationPromiseKey];
+          return false;
+        }
+
+        const { extractTweetText } = getTextExtraction();
+
+        const iq = Math.round(cachedIQ.iq_estimate);
+        const confidence = cachedIQ.confidence ? Math.round(cachedIQ.confidence) : null;
+        const tweetText = extractTweetText ? extractTweetText(actualTweetElement) : null;
+
+        // CRITICAL: Check IqFiltr IMMEDIATELY after getting IQ, before restoring badge
+        const getIqFiltr = () => window.IqFiltr || {};
+        const { checkAndFilter } = getIqFiltr();
+        if (checkAndFilter) {
+          const elementToCheck = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
+          const wasFiltered = await checkAndFilter(elementToCheck, iq, confidence);
+          if (wasFiltered) {
+            // Element was removed, stop restoration
+            delete actualTweetElement[restorationKey];
+            delete actualTweetElement[restorationPromiseKey];
+            return true;
+          }
+        }
+
+        // Check if there's already a badge to replace (including loading badges)
+        const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
+    
+        // CRITICAL: If badge already exists, UPDATE it instead of skipping
+        // This ensures cached badges are actually restored, not just marked as "restored"
+        if (existingBadge) {
+          // Check if it's already a calculated badge with the correct score
+          const existingScore = existingBadge.getAttribute('data-iq-score');
+          const existingConfidence = existingBadge.getAttribute('data-confidence');
+          
+          if (existingScore && parseInt(existingScore, 10) === iq && 
+              existingConfidence && parseInt(existingConfidence, 10) === confidence) {
+            // Badge already shows correct IQ - just mark as restored
+            delete actualTweetElement[restorationKey];
+            delete actualTweetElement[restorationPromiseKey];
+            return true;
+          }
+          
+          // Badge exists but is loading or has wrong score - UPDATE it
+          // Store IQ result on element for reference
+          actualTweetElement._iqResult = {
+            iq: iq,
+            result: cachedIQ,
+            confidence: confidence,
+            text: tweetText
+          };
+
+          // Use updateBadgeWithIQ to update the existing badge
+          const { updateBadgeWithIQ } = getBadgeUpdate();
+          if (updateBadgeWithIQ) {
+            // Update the existing badge (whether it's loading or already calculated)
+            // CRITICAL: Await the update to ensure it completes before clearing the flag
+            await updateBadgeWithIQ(
+              existingBadge,
+              actualTweetElement,
+              outerElement,
+              hasNestedStructure,
+              isNotificationsPage,
+              iq,
+              cachedIQ,
+              confidence,
+              tweetText,
+              tweetId
+            );
+            // Clear restoration flag AFTER update completes
+            delete actualTweetElement[restorationKey];
+            delete actualTweetElement[restorationPromiseKey];
+            return true;
+          } else {
+            // Fallback: replace badge directly
+            if (existingBadge.parentElement) {
+              existingBadge.remove();
+            }
+            const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+            const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
+            if (cachedGuess && cachedGuess.guess !== undefined) {
+              iqBadge.setAttribute('data-iq-compared', 'true');
+            }
+            placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+            delete actualTweetElement[restorationKey];
+            delete actualTweetElement[restorationPromiseKey];
+            return true;
+          }
+        }
+
+      // Create a loading badge first, then animate it (matches normal flow)
+      const { createLoadingBadge } = badgeManager;
+      if (!createLoadingBadge) {
+        // Fallback: create badge directly if loading badge creation not available
+        const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+        const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
+        if (cachedGuess && cachedGuess.guess !== undefined) {
+          iqBadge.setAttribute('data-iq-compared', 'true');
+        }
+        actualTweetElement._iqResult = {
+          iq: iq,
+          result: cachedIQ,
+          confidence: confidence,
+          text: tweetText
+        };
+        placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+        delete actualTweetElement[restorationKey];
+        delete actualTweetElement[restorationPromiseKey];
         return true;
       }
-      
-      // Badge exists but is loading or has wrong score - UPDATE it
+
+      const loadingBadge = createLoadingBadge();
+
+      // Place the loading badge first
+      placeRestoredBadge(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+
       // Store IQ result on element for reference
       actualTweetElement._iqResult = {
         iq: iq,
@@ -183,28 +294,34 @@
         text: tweetText
       };
 
-      // Use updateBadgeWithIQ to update the existing badge
+      // Use the same update flow as normal badges to trigger count-up animation
       const { updateBadgeWithIQ } = getBadgeUpdate();
       if (updateBadgeWithIQ) {
-        // Update the existing badge (whether it's loading or already calculated)
-        await updateBadgeWithIQ(
-          existingBadge,
-          actualTweetElement,
-          outerElement,
-          hasNestedStructure,
-          isNotificationsPage,
-          iq,
-          cachedIQ,
-          confidence,
-          tweetText,
-          tweetId
-        );
-        delete actualTweetElement[restorationKey];
-        return true;
+        // Wait a frame to ensure badge is in DOM, then await the update
+        await new Promise(resolve => {
+          requestAnimationFrame(async () => {
+            await updateBadgeWithIQ(
+              loadingBadge,
+              actualTweetElement,
+              outerElement,
+              hasNestedStructure,
+              isNotificationsPage,
+              iq,
+              cachedIQ,
+              confidence,
+              tweetText,
+              tweetId
+            );
+            // Clear restoration flag after update completes
+            delete actualTweetElement[restorationKey];
+            delete actualTweetElement[restorationPromiseKey];
+            resolve();
+          });
+        });
       } else {
-        // Fallback: replace badge directly
-        if (existingBadge.parentElement) {
-          existingBadge.remove();
+        // Fallback: create badge directly if updateBadgeWithIQ not available
+        if (loadingBadge.parentElement) {
+          loadingBadge.remove();
         }
         const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
         const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
@@ -213,78 +330,24 @@
         }
         placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
         delete actualTweetElement[restorationKey];
-        return true;
+        delete actualTweetElement[restorationPromiseKey];
       }
-    }
 
-    // Create a loading badge first, then animate it (matches normal flow)
-    const { createLoadingBadge } = badgeManager;
-    if (!createLoadingBadge) {
-      // Fallback: create badge directly if loading badge creation not available
-      const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
-      const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
-      if (cachedGuess && cachedGuess.guess !== undefined) {
-        iqBadge.setAttribute('data-iq-compared', 'true');
-      }
-      actualTweetElement._iqResult = {
-        iq: iq,
-        result: cachedIQ,
-        confidence: confidence,
-        text: tweetText
-      };
-      placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
-      delete actualTweetElement[restorationKey];
       return true;
-    }
-
-    const loadingBadge = createLoadingBadge();
-
-    // Place the loading badge first
-    placeRestoredBadge(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
-
-    // Store IQ result on element for reference
-    actualTweetElement._iqResult = {
-      iq: iq,
-      result: cachedIQ,
-      confidence: confidence,
-      text: tweetText
-    };
-
-    // Use the same update flow as normal badges to trigger count-up animation
-    const { updateBadgeWithIQ } = getBadgeUpdate();
-    if (updateBadgeWithIQ) {
-      // Wait a frame to ensure badge is in DOM
-      requestAnimationFrame(() => {
-        updateBadgeWithIQ(
-          loadingBadge,
-          actualTweetElement,
-          outerElement,
-          hasNestedStructure,
-          isNotificationsPage,
-          iq,
-          cachedIQ,
-          confidence,
-          tweetText,
-          tweetId
-        );
-        // Clear restoration flag after update completes
-        delete actualTweetElement[restorationKey];
-      });
-    } else {
-      // Fallback: create badge directly if updateBadgeWithIQ not available
-      if (loadingBadge.parentElement) {
-        loadingBadge.remove();
-      }
-      const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
-      const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
-      if (cachedGuess && cachedGuess.guess !== undefined) {
-        iqBadge.setAttribute('data-iq-compared', 'true');
-      }
-      placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+    } catch (error) {
+      // Clear flags on error
       delete actualTweetElement[restorationKey];
+      delete actualTweetElement[restorationPromiseKey];
+      console.error('[BadgeRestoration] Error restoring badge:', error);
+      return false;
+    } finally {
+      // Always clear promise reference
+      delete actualTweetElement[restorationPromiseKey];
     }
-
-    return true;
+    })();
+    
+    // Start the restoration and return the promise
+    return await restorationPromise;
   }
 
   /**

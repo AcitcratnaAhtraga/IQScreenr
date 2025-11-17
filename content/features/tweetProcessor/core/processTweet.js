@@ -247,8 +247,19 @@
 
     // NOW: Check if we should restore a calculated badge (cached guess + cached IQ)
     // This happens AFTER text expansion, so we check cache with the full expanded text
+    // PERFORMANCE: In IqGuessr mode, skip restoration check if there's no existing badge hinting at cache
+    // This avoids slow cache lookups for tweets that definitely don't have cache
+    const gameManager = getGameManager();
+    const isGameModeEnabled = gameManager && gameManager.isGameModeEnabled && gameManager.isGameModeEnabled();
+    
+    // Only check restoration if:
+    // 1. Not in IqGuessr mode (always check in normal mode)
+    // 2. OR in IqGuessr mode but there's an existing badge (might be from cache)
+    // 3. OR in IqGuessr mode but no existing badge (skip - will create guess badge immediately)
+    const shouldCheckRestoration = !isGameModeEnabled || existingBadge;
+    
     const { tryRestoreBadge } = getBadgeRestoration();
-    if (tryRestoreBadge) {
+    if (tryRestoreBadge && shouldCheckRestoration) {
       // Debug logging: Before restoration attempt
       if (tracker.logTweetBadgeState) {
         await tracker.logTweetBadgeState(tweetElement, 'before-restoration');
@@ -322,8 +333,69 @@
         }
       }
 
-      // Create loading badge if needed
-      if (!loadingBadge && addLoadingBadgeToTweet) {
+      // PERFORMANCE: In IqGuessr mode with no cache, create guess badge directly instead of loading badge
+      // This avoids creating a loading badge that will immediately be replaced
+      if (!loadingBadge && isGameModeEnabled && !shouldCheckRestoration) {
+        // No cache, IqGuessr mode - create guess badge directly
+        const gameManagerForDirectGuess = getGameManager();
+        const badges = window.GameManagerBadges;
+        if (gameManagerForDirectGuess && badges && badges.createGuessBadge) {
+          // Check for existing guess badge first (race condition protection)
+          const existingGuessBadge = badges.findExistingGuessBadge ? badges.findExistingGuessBadge(actualTweetElement) : null;
+          if (existingGuessBadge) {
+            // Badge already exists, mark as analyzed and return
+            markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
+            return;
+          }
+          
+          // Create guess badge directly
+          const guessBadge = badges.createGuessBadge(actualTweetElement);
+          
+          // CRITICAL: Remove any existing loading badges BEFORE placing the guess badge
+          // This prevents double badges if processVisibleTweets or tweetObserver added a loading badge
+          const allLoadingBadges = [
+            ...actualTweetElement.querySelectorAll('.iq-badge-loading'),
+            ...actualTweetElement.querySelectorAll('[data-iq-loading="true"]'),
+            ...(hasNestedStructure && outerElement ? [
+              ...outerElement.querySelectorAll('.iq-badge-loading'),
+              ...outerElement.querySelectorAll('[data-iq-loading="true"]')
+            ] : [])
+          ];
+          allLoadingBadges.forEach(badge => {
+            if (badge.parentElement) {
+              badge.remove();
+            }
+          });
+          
+          // Place it in the engagement bar (same logic as loading badge placement)
+          const engagementBar = actualTweetElement.querySelector('[role="group"]');
+          if (engagementBar) {
+            const firstChild = engagementBar.firstElementChild;
+            if (firstChild) {
+              engagementBar.insertBefore(guessBadge, firstChild);
+            } else {
+              engagementBar.appendChild(guessBadge);
+            }
+          } else {
+            // Fallback: insert at beginning of tweet element
+            actualTweetElement.insertBefore(guessBadge, actualTweetElement.firstChild);
+          }
+          
+          // Debug logging: After guess badge creation
+          if (tracker.logBadgeStateChange) {
+            const toState = tracker.getBadgeState ? tracker.getBadgeState(guessBadge) : null;
+            tracker.logBadgeStateChange(guessBadge, null, toState, 'after-guess-creation-direct');
+          }
+          
+          // Mark as analyzed and return early
+          markAsAnalyzed(actualTweetElement, outerElement, hasNestedStructure, processedTweets);
+          return;
+        }
+      }
+      
+      // Create loading badge if needed (for normal mode ONLY - IqGuessr mode creates guess badges directly)
+      // CRITICAL: Don't add loading badges in IqGuessr mode - they're created directly as guess badges above
+      if (!loadingBadge && addLoadingBadgeToTweet && !isGameModeEnabled) {
         // Use outer element for nested structures to ensure correct placement
         const targetForBadge = (hasNestedStructure && outerElement) ? outerElement : actualTweetElement;
         addLoadingBadgeToTweet(targetForBadge);
