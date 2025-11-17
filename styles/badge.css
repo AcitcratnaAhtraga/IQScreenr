@@ -602,6 +602,9 @@
   flex-shrink: 0;
   min-width: 20px;
   min-height: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
 }
 
 .iq-icon svg {

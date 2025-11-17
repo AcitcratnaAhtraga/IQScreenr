@@ -39,11 +39,7 @@
         <path d="M12 16v-4"/>
         <path d="M12 8h.01"/>
       </svg>`,
-      'fa-info': `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
-        <circle cx="12" cy="12" r="10"/>
-        <path d="M12 16v-4"/>
-        <path d="M12 8h.01"/>
-      </svg>`,
+      'fa-info': 'IQ',
       'fa-calculator': `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: inherit;">
         <rect x="4" y="2" width="16" height="20" rx="2"/>
         <path d="M8 6h8"/>
@@ -55,7 +51,7 @@
       </svg>`
     };
 
-    return icons[iconName] || icons['fa-info'];
+    return icons[iconName] || 'IQ';
   }
 
   // Export for use in other modules
