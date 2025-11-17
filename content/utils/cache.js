@@ -97,7 +97,18 @@ function cacheIQ(handle, result, metadata = {}) {
 
     keysToRemove.forEach(keyToRemove => {
       iqCache.delete(keyToRemove);
-      chrome.storage.local.remove(CACHE_KEY_PREFIX + keyToRemove, () => {});
+      // Safe storage remove with error handling
+      try {
+        if (chrome && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.remove(CACHE_KEY_PREFIX + keyToRemove, () => {
+            if (chrome.runtime.lastError) {
+              // Extension context invalidated, silently ignore
+            }
+          });
+        }
+      } catch (error) {
+        // Extension context invalidated, silently ignore
+      }
     });
   }
 
@@ -141,8 +152,18 @@ function cacheIQ(handle, result, metadata = {}) {
     cacheIQ._pendingWrites.clear();
     cacheIQ._writeTimeout = null;
     
-    // Batch write all pending entries
-    chrome.storage.local.set(cacheData, () => {});
+    // Batch write all pending entries with error handling
+    try {
+      if (chrome && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set(cacheData, () => {
+          if (chrome.runtime.lastError) {
+            // Extension context invalidated, silently ignore
+          }
+        });
+      }
+    } catch (error) {
+      // Extension context invalidated, silently ignore
+    }
   }, 100); // Batch writes within 100ms window
 }
 
@@ -159,64 +180,79 @@ function loadCache() {
   
   // Performance optimization: Use requestIdleCallback for non-critical cache loading
   const loadCacheAsync = () => {
-    chrome.storage.local.get(null, (items) => {
-      // Performance optimization: Process in batches to avoid blocking
-      const entries = Object.entries(items).filter(([key]) => key.startsWith(CACHE_KEY_PREFIX));
-      const BATCH_SIZE = BATCH.CACHE_LOAD_SIZE || 50;
-      let index = 0;
-
-      const processBatch = () => {
-        const batch = entries.slice(index, index + BATCH_SIZE);
-        
-        for (const [key, value] of batch) {
-          const cacheKey = key.replace(CACHE_KEY_PREFIX, '');
-
-          // Handle migration: old format used text hashes as keys
-          // New format uses handles as keys
-          // We'll load old entries but they'll be gradually replaced
-          if (value && typeof value === 'object' && value.result !== undefined) {
-            // New format or migrated format with metadata
-            const handle = value.metadata?.handle;
-            if (handle) {
-              // Already using handle-based key, store directly
-              const normalizedHandle = generateCacheKey(handle);
-              if (normalizedHandle) {
-                iqCache.set(normalizedHandle, value);
-              }
-            } else {
-              // Old format entry: try to extract handle from metadata if present
-              // Otherwise store with old key (will be migrated on next cache write)
-              iqCache.set(cacheKey, value);
-            }
-          } else {
-            // Old format: store as-is for backward compatibility
-            iqCache.set(cacheKey, value);
-          }
-        }
-
-        index += BATCH_SIZE;
-        
-        // Process next batch if available - use requestIdleCallback more aggressively
-        if (index < entries.length) {
-          if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(processBatch, { timeout: IDLE_CALLBACK.CACHE_LOAD_TIMEOUT || 500 });
-          } else {
-            // Fallback: use setTimeout with 0 delay for next tick
-            setTimeout(processBatch, 0);
-          }
-        }
-      };
-
-      // Start processing batches - use requestIdleCallback if available
-      if (entries.length > 0) {
-        if (typeof requestIdleCallback !== 'undefined') {
-          requestIdleCallback(processBatch, { timeout: IDLE_CALLBACK.CACHE_LOAD_TIMEOUT || 500 });
-        } else {
-          // Fallback: start immediately but yield to browser
-          setTimeout(processBatch, 0);
-        }
+    try {
+      if (!chrome || !chrome.storage || !chrome.storage.local) {
+        return; // Extension context invalidated
       }
-    });
+      chrome.storage.local.get(null, (items) => {
+        try {
+          if (chrome.runtime.lastError) {
+            // Extension context invalidated, silently ignore
+            return;
+          }
+          // Performance optimization: Process in batches to avoid blocking
+          const entries = Object.entries(items).filter(([key]) => key.startsWith(CACHE_KEY_PREFIX));
+          const BATCH_SIZE = BATCH.CACHE_LOAD_SIZE || 50;
+          let index = 0;
+
+          const processBatch = () => {
+            const batch = entries.slice(index, index + BATCH_SIZE);
+            
+            for (const [key, value] of batch) {
+              const cacheKey = key.replace(CACHE_KEY_PREFIX, '');
+
+              // Handle migration: old format used text hashes as keys
+              // New format uses handles as keys
+              // We'll load old entries but they'll be gradually replaced
+              if (value && typeof value === 'object' && value.result !== undefined) {
+                // New format or migrated format with metadata
+                const handle = value.metadata?.handle;
+                if (handle) {
+                  // Already using handle-based key, store directly
+                  const normalizedHandle = generateCacheKey(handle);
+                  if (normalizedHandle) {
+                    iqCache.set(normalizedHandle, value);
+                  }
+                } else {
+                  // Old format entry: try to extract handle from metadata if present
+                  // Otherwise store with old key (will be migrated on next cache write)
+                  iqCache.set(cacheKey, value);
+                }
+              } else {
+                // Old format: store as-is for backward compatibility
+                iqCache.set(cacheKey, value);
+              }
+            }
+
+            index += BATCH_SIZE;
+            
+            // Process next batch if available - use requestIdleCallback more aggressively
+            if (index < entries.length) {
+              if (typeof requestIdleCallback !== 'undefined') {
+                requestIdleCallback(processBatch, { timeout: IDLE_CALLBACK.CACHE_LOAD_TIMEOUT || 500 });
+              } else {
+                // Fallback: use setTimeout with 0 delay for next tick
+                setTimeout(processBatch, 0);
+              }
+            }
+          };
+
+          // Start processing batches - use requestIdleCallback if available
+          if (entries.length > 0) {
+            if (typeof requestIdleCallback !== 'undefined') {
+              requestIdleCallback(processBatch, { timeout: IDLE_CALLBACK.CACHE_LOAD_TIMEOUT || 500 });
+            } else {
+              // Fallback: start immediately but yield to browser
+              setTimeout(processBatch, 0);
+            }
+          }
+        } catch (error) {
+          // Extension context invalidated or other error in callback, silently ignore
+        }
+      });
+    } catch (error) {
+      // Extension context invalidated, silently ignore
+    }
   };
 
   // Load cache asynchronously to avoid blocking initialization
@@ -261,15 +297,31 @@ function getAllCachedEntries() {
  */
 function clearCache() {
   iqCache.clear();
-  chrome.storage.local.get(null, (items) => {
-    const keysToRemove = Object.keys(items)
-      .filter(key => key.startsWith(CACHE_KEY_PREFIX))
-      .map(key => key);
-
-    if (keysToRemove.length > 0) {
-      chrome.storage.local.remove(keysToRemove, () => {});
+  try {
+    if (!chrome || !chrome.storage || !chrome.storage.local) {
+      // Extension context invalidated, in-memory cache already cleared
+      return;
     }
-  });
+    chrome.storage.local.get(null, (items) => {
+      if (chrome.runtime.lastError) {
+        // Extension context invalidated, in-memory cache already cleared
+        return;
+      }
+      const keysToRemove = Object.keys(items)
+        .filter(key => key.startsWith(CACHE_KEY_PREFIX))
+        .map(key => key);
+
+      if (keysToRemove.length > 0) {
+        chrome.storage.local.remove(keysToRemove, () => {
+          if (chrome.runtime.lastError) {
+            // Extension context invalidated, silently ignore
+          }
+        });
+      }
+    });
+  } catch (error) {
+    // Extension context invalidated, in-memory cache already cleared
+  }
 }
 
 // Initialize cache on load

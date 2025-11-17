@@ -8,10 +8,25 @@
  * 4. Better tokenization and punctuation handling
  * 5. Enhanced coverage blending
  * 6. More sophisticated vocabulary scoring
+ *
+ * NOTE: This file is being refactored into smaller modules:
+ * - ResourceLoader: Handles loading AoA dictionary, metaphor patterns, population norms
+ * - VocabularyAnalyzer: Handles AoA features, word normalization, stemming
+ * Additional modules will be extracted for diversity, sentence complexity, and grammar analysis
  */
 
 class ComprehensiveIQEstimatorUltimate {
   constructor(options = {}) {
+    // Use ResourceLoader if available, otherwise fall back to inline loading
+    this.resourceLoader = typeof window !== 'undefined' && window.ResourceLoader ? 
+      new window.ResourceLoader(options) : 
+      null;
+    
+    // Use VocabularyAnalyzer if available
+    this.vocabularyAnalyzer = null;
+    if (this.resourceLoader && typeof window !== 'undefined' && window.VocabularyAnalyzer) {
+      this.vocabularyAnalyzer = new window.VocabularyAnalyzer(this.resourceLoader);
+    }
     // Trained weights
     this.dimensionWeights = {
       vocabulary_sophistication: 0.35,
@@ -93,7 +108,27 @@ class ComprehensiveIQEstimatorUltimate {
     // Stemming suffixes for better dictionary matching
     this.stemmingSuffixes = ['ing', 'ed', 'er', 'est', 'ly', 's', 'es', 'ies', 'ied', 'ying'];
 
-    this._loadResources();
+    // Load resources using ResourceLoader if available, otherwise use inline method
+    if (this.resourceLoader) {
+      this.resourceLoader.loadResources().then(() => {
+        // Copy loaded resources to this instance for backward compatibility
+        this.aoaDictionary = this.resourceLoader.aoaDictionary;
+        this.aoaDictionaryKeys = this.resourceLoader.aoaDictionaryKeys;
+        this.aoaDictionaryLoaded = this.resourceLoader.aoaDictionaryLoaded;
+        this.aoaDictionaryLoadFailed = this.resourceLoader.aoaDictionaryLoadFailed;
+        this.metaphorPatterns = this.resourceLoader.metaphorPatterns;
+        this.metaphorPatternsLoaded = this.resourceLoader.metaphorPatternsLoaded;
+        this.casualLanguagePatterns = this.resourceLoader.casualLanguagePatterns;
+        this.casualLanguagePatternsLoaded = this.resourceLoader.casualLanguagePatternsLoaded;
+        this.populationNorms = this.resourceLoader.populationNorms;
+        this.populationNormsLoaded = this.resourceLoader.populationNormsLoaded;
+        this.depDepthCalibration = this.resourceLoader.depDepthCalibration;
+        this.defaultNorms = this.resourceLoader.defaultNorms;
+      });
+    } else {
+      // Fallback to inline loading
+      this._loadResources();
+    }
 
     // Initialize enhanced dependency parser
     // Will be available after dependencyParser.js loads
@@ -592,8 +627,14 @@ class ComprehensiveIQEstimatorUltimate {
   /**
    * Look up AoA for a word with multiple fallback strategies
    * PERFORMANCE OPTIMIZED: Uses lookup cache to avoid repeated searches
+   * Uses VocabularyAnalyzer if available, otherwise falls back to inline implementation
    */
   _lookupAoA(word) {
+    if (this.vocabularyAnalyzer) {
+      return this.vocabularyAnalyzer.lookupAoA(word);
+    }
+    
+    // Fallback to inline implementation
     if (!this.aoaDictionary) return null;
 
     // Skip 1-letter words - they're not meaningful for AoA analysis
@@ -994,12 +1035,13 @@ class ComprehensiveIQEstimatorUltimate {
       while (!this.aoaDictionaryLoaded && !this.aoaDictionaryLoadFailed && (Date.now() - startTime) < maxWaitTime) {
         await new Promise(resolve => setTimeout(resolve, 50)); // Check every 50ms
       }
+      const Logger = typeof window !== 'undefined' && window.Logger ? window.Logger : console;
       if (this.aoaDictionaryLoadFailed) {
-        console.warn('[IQEstimator] AoA dictionary failed to load - using approximation');
+        Logger.warn('[IQEstimator] AoA dictionary failed to load - using approximation');
       } else if (!this.aoaDictionaryLoaded && (Date.now() - startTime) >= maxWaitTime) {
         // Timeout reached - mark as failed and proceed
         this.aoaDictionaryLoadFailed = true;
-        console.warn('[IQEstimator] AoA dictionary loading timeout - proceeding with approximation');
+        Logger.warn('[IQEstimator] AoA dictionary loading timeout - proceeding with approximation');
       }
     }
     

@@ -71,7 +71,7 @@
       return null;
     }
     
-    return allBadges[0];
+      return allBadges[0];
   }
 
   /**

@@ -78,7 +78,7 @@
     const timerManager = window.TimerManager || window;
     const cleanupInterval = timerManager.setInterval ? 
       timerManager.setInterval(cleanupDoubleBadges, 2000) :
-      setInterval(cleanupDoubleBadges, 2000);
+    setInterval(cleanupDoubleBadges, 2000);
     
     // Store interval ID for potential cleanup
     if (typeof window !== 'undefined') {

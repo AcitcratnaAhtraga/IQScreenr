@@ -794,19 +794,19 @@ function setupRealtimeComposeObserver() {
       }
     }, 1000) :
     setInterval(() => {
-      const currentUrl = window.location.href;
-      if (currentUrl !== lastUrl) {
-        lastUrl = currentUrl;
-        if (currentUrl.includes('/compose/')) {
-          setTimeout(() => {
-            const inputs = findTextInputs();
-            inputs.forEach(input => {
-              setupRealtimeMonitoring(input);
-            });
-          }, 500);
-        }
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+      lastUrl = currentUrl;
+      if (currentUrl.includes('/compose/')) {
+        setTimeout(() => {
+          const inputs = findTextInputs();
+          inputs.forEach(input => {
+            setupRealtimeMonitoring(input);
+          });
+        }, 500);
       }
-    }, 1000);
+    }
+  }, 1000);
 
   // Cleanup handled by TimerManager automatically
   // Store interval ID for reference

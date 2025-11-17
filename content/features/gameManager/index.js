@@ -32,7 +32,7 @@
     const cleanupUtils = window.BadgeCleanupUtils || {};
     if (cleanupUtils.removeAllLoadingBadges) {
       cleanupUtils.removeAllLoadingBadges(tweetElement, actualTweetElement);
-    }
+      }
   }
 
   /**

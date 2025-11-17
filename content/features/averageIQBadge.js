@@ -243,17 +243,40 @@
     // Get settings (may need to load from storage)
     let settings = getSettings();
     if (!settings || settings.showAverageIQ === undefined) {
-      // Try to get from storage directly
-      const storageResult = await new Promise((resolve) => {
-        chrome.storage.sync.get(['showAverageIQ'], resolve);
-      });
-      if (storageResult.showAverageIQ === false) {
-        // Setting is explicitly false, remove badge
-        const existingBadge = document.querySelector('.iq-badge-average[data-iq-average="true"]');
-        if (existingBadge) {
-          existingBadge.remove();
+      // Try to get from storage directly with proper error handling
+      try {
+        const storageResult = await new Promise((resolve, reject) => {
+          try {
+            // Check if extension context is valid
+            if (!chrome || !chrome.storage || !chrome.storage.sync) {
+              resolve({});
+              return;
+            }
+            chrome.storage.sync.get(['showAverageIQ'], (result) => {
+              if (chrome.runtime.lastError) {
+                // Extension context invalidated
+                resolve({});
+                return;
+              }
+              resolve(result || {});
+            });
+          } catch (error) {
+            // Extension context invalidated or other error
+            resolve({});
+          }
+        });
+        if (storageResult.showAverageIQ === false) {
+          // Setting is explicitly false, remove badge
+          const existingBadge = document.querySelector('.iq-badge-average[data-iq-average="true"]');
+          if (existingBadge) {
+            existingBadge.remove();
+          }
+          return;
         }
-        return;
+      } catch (error) {
+        // Silently handle errors - extension context may be invalidated
+        const Logger = window.Logger || console;
+        Logger.warn('[AverageIQBadge] Error accessing storage:', error);
       }
       // If not set, default to false but continue (might be first run)
     }
@@ -553,7 +576,7 @@
   const timerManager = window.TimerManager || window;
   const urlCheckInterval = timerManager.setInterval ? 
     timerManager.setInterval(checkUrlChange, 1000) :
-    setInterval(checkUrlChange, 1000);
+  setInterval(checkUrlChange, 1000);
   
   // Store interval ID for potential cleanup
   if (typeof window !== 'undefined') {

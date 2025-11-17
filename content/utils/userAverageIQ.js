@@ -11,34 +11,103 @@
   const MAX_HISTORY_SIZE = 1000; // Limit to prevent storage bloat
 
   /**
+   * Check if extension context is valid
+   */
+  function isExtensionContextValid() {
+    return chrome && chrome.storage && (chrome.storage.sync || chrome.storage.local);
+  }
+
+  /**
+   * Safe storage get wrapper
+   */
+  function safeStorageGet(keys, area = 'local') {
+    return new Promise((resolve) => {
+      try {
+        if (!isExtensionContextValid()) {
+          resolve({});
+          return;
+        }
+        const storage = area === 'sync' ? chrome.storage.sync : chrome.storage.local;
+        storage.get(keys, (result) => {
+          if (chrome.runtime.lastError) {
+            resolve({});
+            return;
+          }
+          resolve(result || {});
+        });
+      } catch (error) {
+        resolve({});
+      }
+    });
+  }
+
+  /**
+   * Safe storage set wrapper
+   */
+  function safeStorageSet(items, area = 'local') {
+    return new Promise((resolve) => {
+      try {
+        if (!isExtensionContextValid()) {
+          resolve();
+          return;
+        }
+        const storage = area === 'sync' ? chrome.storage.sync : chrome.storage.local;
+        storage.set(items, () => {
+          resolve();
+        });
+      } catch (error) {
+        resolve();
+      }
+    });
+  }
+
+  /**
+   * Safe storage remove wrapper
+   */
+  function safeStorageRemove(keys, area = 'local') {
+    return new Promise((resolve) => {
+      try {
+        if (!isExtensionContextValid()) {
+          resolve();
+          return;
+        }
+        const storage = area === 'sync' ? chrome.storage.sync : chrome.storage.local;
+        storage.remove(keys, () => {
+          resolve();
+        });
+      } catch (error) {
+        resolve();
+      }
+    });
+  }
+
+  /**
    * Get user's handle from storage or URL
    * @returns {Promise<string|null>} User's handle or null
    */
   async function getUserHandle() {
-    return new Promise((resolve) => {
-      // Try to get from storage first
-      chrome.storage.sync.get(['twitterHandle', 'userHandle', 'handle'], (result) => {
-        const storedHandle = result.twitterHandle || result.userHandle || result.handle;
-        if (storedHandle) {
-          resolve(storedHandle.toLowerCase());
-          return;
-        }
+    try {
+      const result = await safeStorageGet(['twitterHandle', 'userHandle', 'handle'], 'sync');
+      const storedHandle = result.twitterHandle || result.userHandle || result.handle;
+      if (storedHandle) {
+        return storedHandle.toLowerCase();
+      }
 
-        // Try to get from URL (if on own profile page)
-        const pathname = window.location.pathname;
-        const urlHandle = pathname.match(/^\/([a-zA-Z0-9_]+)/)?.[1];
-        if (urlHandle) {
-          // Check if Edit Profile button exists (indicates own profile)
-          const editProfileButton = document.querySelector('a[data-testid="editProfileButton"]');
-          if (editProfileButton) {
-            resolve(urlHandle.toLowerCase());
-            return;
-          }
+      // Try to get from URL (if on own profile page)
+      const pathname = window.location.pathname;
+      const urlHandle = pathname.match(/^\/([a-zA-Z0-9_]+)/)?.[1];
+      if (urlHandle) {
+        // Check if Edit Profile button exists (indicates own profile)
+        const editProfileButton = document.querySelector('a[data-testid="editProfileButton"]');
+        if (editProfileButton) {
+          return urlHandle.toLowerCase();
         }
+      }
 
-        resolve(null);
-      });
-    });
+      return null;
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
@@ -64,9 +133,7 @@
 
     try {
       // Get existing history
-      const result = await new Promise((resolve) => {
-        chrome.storage.local.get([USER_IQ_HISTORY_KEY], resolve);
-      });
+      const result = await safeStorageGet([USER_IQ_HISTORY_KEY], 'local');
 
       let history = result[USER_IQ_HISTORY_KEY] || [];
 
@@ -102,9 +169,7 @@
       }
 
       // Save history
-      await new Promise((resolve) => {
-        chrome.storage.local.set({ [USER_IQ_HISTORY_KEY]: history }, resolve);
-      });
+      await safeStorageSet({ [USER_IQ_HISTORY_KEY]: history }, 'local');
 
       // Recalculate average
       await calculateAndStoreAverage(history);
@@ -225,9 +290,7 @@
     try {
       // Load history if not provided
       if (!history) {
-        const result = await new Promise((resolve) => {
-          chrome.storage.local.get([USER_IQ_HISTORY_KEY], resolve);
-        });
+        const result = await safeStorageGet([USER_IQ_HISTORY_KEY], 'local');
         history = result[USER_IQ_HISTORY_KEY] || [];
       }
 
@@ -243,9 +306,7 @@
         lastUpdated: new Date().toISOString()
       };
 
-      await new Promise((resolve) => {
-        chrome.storage.local.set({ [STORAGE_KEY]: averageData }, resolve);
-      });
+      await safeStorageSet({ [STORAGE_KEY]: averageData }, 'local');
 
       return averageData;
     } catch (error) {
@@ -263,9 +324,7 @@
       // First, recalculate to ensure it's up to date
       await calculateAndStoreAverage();
 
-      const result = await new Promise((resolve) => {
-        chrome.storage.local.get([STORAGE_KEY], resolve);
-      });
+      const result = await safeStorageGet([STORAGE_KEY], 'local');
 
       return result[STORAGE_KEY] || {
         averageIQ: null,
@@ -290,9 +349,7 @@
    */
   async function getIQHistory() {
     try {
-      const result = await new Promise((resolve) => {
-        chrome.storage.local.get([USER_IQ_HISTORY_KEY], resolve);
-      });
+      const result = await safeStorageGet([USER_IQ_HISTORY_KEY], 'local');
 
       return result[USER_IQ_HISTORY_KEY] || [];
     } catch (error) {
@@ -306,9 +363,7 @@
    */
   async function clearHistory() {
     try {
-      await new Promise((resolve) => {
-        chrome.storage.local.remove([STORAGE_KEY, USER_IQ_HISTORY_KEY], resolve);
-      });
+      await safeStorageRemove([STORAGE_KEY, USER_IQ_HISTORY_KEY], 'local');
     } catch (error) {
       console.warn('[UserAverageIQ] Error clearing history:', error);
     }

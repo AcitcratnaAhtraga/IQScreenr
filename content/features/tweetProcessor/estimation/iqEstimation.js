@@ -131,7 +131,7 @@
     }
 
     // Fallback to handle-based cache if tweet-ID cache not found
-    if (!result && handle) {
+    if (!result && handle && getCachedIQ) {
       result = getCachedIQ(handle);
       if (result) {
         fromCache = true;

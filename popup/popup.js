@@ -17,8 +17,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Use PopupUI module if available
+  const PopupUI = window.PopupUI || {};
+  const PopupSettings = window.PopupSettings || {};
+  const PopupStats = window.PopupStats || {};
+
   // Helper function to update dependent checkboxes enabled/disabled state
   function updateDependentCheckboxes() {
+    if (PopupUI.updateDependentCheckboxes) {
+      PopupUI.updateDependentCheckboxes();
+      return;
+    }
+    
+    // Fallback to inline implementation
     const showIQBadge = document.getElementById('showIQBadge');
     const showRealtimeBadge = document.getElementById('showRealtimeBadge'); // Hidden/disabled
     const enableIQGuessr = document.getElementById('enableIQGuessr');
@@ -101,6 +112,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to update legend display
   function updateLegendDisplay() {
+    if (PopupUI.updateLegendDisplay) {
+      PopupUI.updateLegendDisplay();
+      return;
+    }
+    
+    // Fallback to inline implementation
     const showIQBadge = document.getElementById('showIQBadge');
     const iqLegend = document.getElementById('iqLegend');
     const confidenceLegend = document.getElementById('confidenceLegend');
@@ -117,6 +134,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to update IqGuessr score display
   function updateIQGuessrScore(score) {
+    if (PopupStats.updateIQGuessrScore) {
+      PopupStats.updateIQGuessrScore(score);
+      // Also handle display logic
+      const scoreElement = document.getElementById('iqGuessrScore');
+      const scoreValue = document.getElementById('iqGuessrScoreValue');
+      const enableCheckbox = document.getElementById('enableIQGuessr');
+      
+      if (!scoreElement || !scoreValue) return;
+      
+      let isEnabled = false;
+      if (enableCheckbox) {
+        isEnabled = enableCheckbox.checked;
+      }
+      
+      if (isEnabled) {
+        const gameModeContent = document.getElementById('gameModeContent');
+        if (gameModeContent) {
+          const isCollapsed = gameModeContent.classList.contains('collapsed') ||
+                             gameModeContent.style.maxHeight === '0px' ||
+                             gameModeContent.style.maxHeight === '0';
+          if (isCollapsed) {
+            gameModeContent.classList.remove('collapsed');
+            gameModeContent.style.maxHeight = gameModeContent.scrollHeight + 'px';
+          }
+        }
+        scoreElement.style.display = 'flex';
+        scoreElement.style.visibility = 'visible';
+        scoreElement.style.opacity = '1';
+        scoreValue.textContent = score;
+        attachStatsTooltipToScore();
+      } else {
+        scoreElement.style.display = 'none';
+      }
+      return;
+    }
+    
+    // Fallback to inline implementation
     const scoreElement = document.getElementById('iqGuessrScore');
     const scoreValue = document.getElementById('iqGuessrScoreValue');
     const enableCheckbox = document.getElementById('enableIQGuessr');
@@ -171,6 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Helper function to attach stats tooltip to score display in popup
   function attachStatsTooltipToScore() {
+    if (PopupStats.attachStatsTooltipToScore) {
+      PopupStats.attachStatsTooltipToScore();
+      return;
+    }
+    
+    // Fallback to inline implementation
     const scoreElement = document.getElementById('iqGuessrScore');
     if (!scoreElement) return;
 
@@ -211,7 +271,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const history = resultLocal.iqGuessrHistory || resultSync.iqGuessrHistory || [];
 
-        const stats = calculateStatsFromHistory(history);
+        const stats = PopupStats.calculateStatsFromHistory ? 
+          PopupStats.calculateStatsFromHistory(history) :
+          calculateStatsFromHistory(history);
 
         // Create tooltip element
         const tooltip = document.createElement('div');
@@ -280,7 +342,9 @@ document.addEventListener('DOMContentLoaded', () => {
             content += '<div class="stats-section">';
             content += '<div class="stats-section-title">Recent Guesses</div>';
             stats.recentGuesses.forEach((guess, index) => {
-              const timeStr = formatTimestamp(guess.timestamp);
+              const timeStr = PopupStats.formatTimestamp ? 
+                PopupStats.formatTimestamp(guess.timestamp) :
+                formatTimestamp(guess.timestamp);
               content += '<div class="stats-row stats-small">';
               content += `<span class="stats-label">${index + 1}.</span>`;
               content += `<span class="stats-value">${guess.guess} → ${guess.actual} (${guess.difference.toFixed(1)} off, ${guess.score} pts) <span class="stats-time">${timeStr}</span></span>`;

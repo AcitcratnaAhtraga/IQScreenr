@@ -403,6 +403,10 @@
       return false;
     }
 
+    if (!getCachedIQ) {
+      return false;
+    }
+
     const cachedIQ = getCachedIQ(tweetHandle);
     if (!cachedIQ || cachedIQ.iq_estimate === undefined) {
       return false;

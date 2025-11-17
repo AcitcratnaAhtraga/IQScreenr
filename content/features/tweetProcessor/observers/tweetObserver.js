@@ -62,7 +62,7 @@
       const timerManager = window.TimerManager || window;
       const stuckBadgeInterval = timerManager.setInterval ? 
         timerManager.setInterval(() => checkForStuckBadges(processedTweets), 2000) :
-        setInterval(() => checkForStuckBadges(processedTweets), 2000);
+      setInterval(() => checkForStuckBadges(processedTweets), 2000);
       
       // Store interval ID for potential cleanup
       if (typeof window !== 'undefined') {
@@ -276,8 +276,8 @@
               requestAnimationFrame(processPendingTweets);
             }
           }, 16);
-        }
-      });
+      }
+    });
 
     observer.observe(document.body, {
       childList: true,

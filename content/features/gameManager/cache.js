@@ -246,10 +246,10 @@
           }
         }, 100) :
         setInterval(() => {
-          if (window.GameManagerStorage) {
-            clearInterval(checkStorage);
-            loadGuessCache();
-          }
+        if (window.GameManagerStorage) {
+          clearInterval(checkStorage);
+          loadGuessCache();
+        }
       }, 100);
 
       // Timeout after 5 seconds

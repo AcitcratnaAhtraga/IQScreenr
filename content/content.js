@@ -258,7 +258,7 @@
             const cleanupUtils = window.BadgeCleanupUtils || {};
             if (cleanupUtils.removeAllGuessBadges) {
               cleanupUtils.removeAllGuessBadges(tweetElement, actualTweetElement);
-            }
+              }
 
             // Create loading badge only if one doesn't already exist
             const existingLoadingBadge = actualTweetElement.querySelector('.iq-badge-loading, [data-iq-loading="true"]') ||
@@ -668,14 +668,14 @@
         attachBadgeClickHandlers();
       }) :
       new MutationObserver(() => {
-        attachBadgeClickHandlers();
-      });
+      attachBadgeClickHandlers();
+    });
 
     badgeObserver.observe(document.body, {
       childList: true,
       subtree: true
     });
-    
+
     // Store observer for potential manual cleanup
     if (typeof window !== 'undefined') {
       window._badgeClickObserver = badgeObserver;

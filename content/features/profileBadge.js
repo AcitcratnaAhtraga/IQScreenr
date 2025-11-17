@@ -583,7 +583,7 @@
   const timerManager = window.TimerManager || window;
   const urlCheckInterval = timerManager.setInterval ? 
     timerManager.setInterval(checkUrlChange, 1000) :
-    setInterval(checkUrlChange, 1000);
+  setInterval(checkUrlChange, 1000);
   
   // Store interval ID for potential cleanup
   if (typeof window !== 'undefined') {

@@ -23,6 +23,8 @@
       ],
       "js": [
         "content/core/dependencyParser.js",
+        "content/core/iqEstimator/resourceLoader.js",
+        "content/core/iqEstimator/vocabularyAnalyzer.js",
         "content/core/iqEstimator.js",
         "content/utils/constants.js",
         "content/utils/timerManager.js",

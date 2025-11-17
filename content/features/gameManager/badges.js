@@ -148,7 +148,7 @@
     const cleanupUtils = window.BadgeCleanupUtils || {};
     if (cleanupUtils.cleanupDuplicateGuessBadges) {
       return cleanupUtils.cleanupDuplicateGuessBadges(tweetElement);
-    }
+            }
     return null;
   }
 
@@ -196,31 +196,31 @@
     const observerManager = window.ObserverManager || window;
     const observer = observerManager.createObserver ? 
       observerManager.createObserver((mutations) => {
-        let hasGuessBadgeChanges = false;
+      let hasGuessBadgeChanges = false;
 
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            // Check if the added node is a guess badge or contains guess badges
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const isGuessBadge = (node.classList && node.classList.contains('iq-badge-guess')) ||
-                                   (node.hasAttribute && node.hasAttribute('data-iq-guess'));
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          // Check if the added node is a guess badge or contains guess badges
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const isGuessBadge = (node.classList && node.classList.contains('iq-badge-guess')) ||
+                                 (node.hasAttribute && node.hasAttribute('data-iq-guess'));
 
-              if (isGuessBadge || (node.querySelector && node.querySelector('.iq-badge-guess, [data-iq-guess="true"]'))) {
-                hasGuessBadgeChanges = true;
-              }
+            if (isGuessBadge || (node.querySelector && node.querySelector('.iq-badge-guess, [data-iq-guess="true"]'))) {
+              hasGuessBadgeChanges = true;
             }
-          });
-        });
-
-        if (hasGuessBadgeChanges) {
-          // Debounce cleanup to batch multiple mutations
-          if (cleanupTimeout) {
-            clearTimeout(cleanupTimeout);
           }
-          cleanupTimeout = setTimeout(() => {
-            performCleanup();
-          }, 100);
+        });
+      });
+
+      if (hasGuessBadgeChanges) {
+        // Debounce cleanup to batch multiple mutations
+        if (cleanupTimeout) {
+          clearTimeout(cleanupTimeout);
         }
+        cleanupTimeout = setTimeout(() => {
+          performCleanup();
+        }, 100);
+      }
       }) :
       new MutationObserver((mutations) => {
         let hasGuessBadgeChanges = false;
@@ -246,7 +246,7 @@
             performCleanup();
           }, 100);
         }
-      });
+    });
 
     // Start observing the document for added nodes
     if (document.body) {
@@ -263,9 +263,9 @@
       timerManager.setInterval(() => {
         performCleanup();
       }, 2000) :
-      setInterval(() => {
-        performCleanup();
-      }, 2000);
+    setInterval(() => {
+      performCleanup();
+    }, 2000);
     
     // Store interval ID for potential cleanup
     if (typeof window !== 'undefined') {

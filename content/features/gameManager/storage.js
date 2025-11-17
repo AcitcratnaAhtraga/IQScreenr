@@ -29,15 +29,20 @@
     return new Promise((resolve) => {
       try {
         const storage = area === 'sync' ? chrome.storage.sync : chrome.storage.local;
+        if (!storage) {
+          resolve({});
+          return;
+        }
         storage.get(keys, (result) => {
-          if (chrome.runtime.lastError) {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            // Extension context invalidated
             resolve({});
             return;
           }
           resolve(result || {});
         });
       } catch (error) {
-        console.warn('[IQGuessr] Extension context invalidated, cannot get storage');
+        // Extension context invalidated or other error
         resolve({});
       }
     });
@@ -57,11 +62,18 @@
     return new Promise((resolve) => {
       try {
         const storage = area === 'sync' ? chrome.storage.sync : chrome.storage.local;
+        if (!storage) {
+          resolve();
+          return;
+        }
         storage.set(items, () => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            // Extension context invalidated, silently ignore
+          }
           resolve();
         });
       } catch (error) {
-        console.warn('[IQGuessr] Extension context invalidated, cannot set storage');
+        // Extension context invalidated or other error
         resolve();
       }
     });
@@ -81,11 +93,18 @@
     return new Promise((resolve) => {
       try {
         const storage = area === 'sync' ? chrome.storage.sync : chrome.storage.local;
+        if (!storage) {
+          resolve();
+          return;
+        }
         storage.remove(keys, () => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            // Extension context invalidated, silently ignore
+          }
           resolve();
         });
       } catch (error) {
-        console.warn('[IQGuessr] Extension context invalidated, cannot remove storage');
+        // Extension context invalidated or other error
         resolve();
       }
     });
