@@ -35,6 +35,7 @@
         "content/utils/cache.js",
         "content/utils/badgeCleanup.js",
         "content/utils/badgePlacement.js",
+        "content/utils/badgeWrapper.js",
         "content/utils/domCache.js",
         "content/utils/domHelpers.js",
         "content/utils/textExtraction.js",

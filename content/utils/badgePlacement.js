@@ -99,11 +99,19 @@
       // Normal tweet page placement: use engagement bar
       const engagementBar = getEngagementBar(targetElement);
       if (engagementBar) {
+        // Wrap badge in a container div to match other engagement items structure
+        // This ensures the badge takes equal space like reply, repost, like buttons
+        const badgeContainer = document.createElement('div');
+        badgeContainer.className = 'css-175oi2r r-18u37iz r-1h0z5md r-13awgt0';
+        badgeContainer.setAttribute('data-iq-badge-container', 'true');
+        badgeContainer.style.cssText = 'display: flex; align-items: center; justify-content: center; flex: 1 1 0%; min-width: 0;';
+        badgeContainer.appendChild(badge);
+        
         const firstChild = engagementBar.firstElementChild;
         if (firstChild) {
-          engagementBar.insertBefore(badge, firstChild);
+          engagementBar.insertBefore(badgeContainer, firstChild);
         } else {
-          engagementBar.appendChild(badge);
+          engagementBar.appendChild(badgeContainer);
         }
         return true;
       }

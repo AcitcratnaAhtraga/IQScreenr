@@ -271,11 +271,19 @@
               // Find engagement bar for placement
               const engagementBar = actualTweetElement.querySelector('[role="group"]');
               if (engagementBar) {
+                // Wrap badge in a container div to match other engagement items structure
+                // This ensures the badge takes equal space like reply, repost, like buttons
+                const badgeContainer = document.createElement('div');
+                badgeContainer.className = 'css-175oi2r r-18u37iz r-1h0z5md r-13awgt0';
+                badgeContainer.setAttribute('data-iq-badge-container', 'true');
+                badgeContainer.style.cssText = 'display: flex; align-items: center; justify-content: center; flex: 1 1 0%; min-width: 0;';
+                badgeContainer.appendChild(loadingBadge);
+                
                 const firstChild = engagementBar.firstElementChild;
                 if (firstChild) {
-                  engagementBar.insertBefore(loadingBadge, firstChild);
+                  engagementBar.insertBefore(badgeContainer, firstChild);
                 } else {
-                  engagementBar.appendChild(loadingBadge);
+                  engagementBar.appendChild(badgeContainer);
                 }
               } else {
                 actualTweetElement.insertBefore(loadingBadge, actualTweetElement.firstChild);
@@ -660,22 +668,36 @@
     // Attach click handlers to existing badges
     attachBadgeClickHandlers();
 
-    // Set up observer to attach handlers to newly added badges
+    // Wrap existing badges in containers for equal spacing
+    const BadgeWrapper = window.BadgeWrapper || {};
+    if (BadgeWrapper.wrapExistingBadges) {
+      BadgeWrapper.wrapExistingBadges(document.body);
+    }
+
+    // Set up observer to attach handlers to newly added badges and wrap them
     // Use ObserverManager for automatic cleanup
     const observerManager = window.ObserverManager || window;
     const badgeObserver = observerManager.createObserver ? 
       observerManager.createObserver(() => {
         attachBadgeClickHandlers();
+        // Wrap any new badges that aren't wrapped
+        if (BadgeWrapper.wrapExistingBadges) {
+          BadgeWrapper.wrapExistingBadges(document.body);
+        }
       }) :
       new MutationObserver(() => {
-      attachBadgeClickHandlers();
-    });
+        attachBadgeClickHandlers();
+        // Wrap any new badges that aren't wrapped
+        if (BadgeWrapper.wrapExistingBadges) {
+          BadgeWrapper.wrapExistingBadges(document.body);
+        }
+      });
 
     badgeObserver.observe(document.body, {
       childList: true,
       subtree: true
     });
-
+    
     // Store observer for potential manual cleanup
     if (typeof window !== 'undefined') {
       window._badgeClickObserver = badgeObserver;

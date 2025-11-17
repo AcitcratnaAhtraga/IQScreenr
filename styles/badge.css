@@ -335,6 +335,8 @@
   height: auto;
   max-height: none;
   box-sizing: border-box;
+  /* When in engagement bar container, fill the container */
+  flex: 0 1 auto;
   perspective: 1000px;
   touch-action: manipulation;
   background: transparent;
@@ -756,6 +758,29 @@ article[data-iq-analyzed] {
   vertical-align: middle;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+/* Make IQ badge fill its container in engagement bars for equal spacing */
+/* Use attribute selector as fallback for browsers without :has() support */
+[role="group"] > div[data-iq-badge-container="true"],
+[role="group"] > div:has(.iq-badge) {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Make badge fill its container in engagement bars */
+[role="group"] > div[data-iq-badge-container="true"] .iq-badge:not(.iq-badge-realtime),
+[role="group"] > div:has(.iq-badge) .iq-badge:not(.iq-badge-realtime) {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 /* Adjust for dark mode compatibility */
