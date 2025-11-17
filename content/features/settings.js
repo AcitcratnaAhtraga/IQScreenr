@@ -12,6 +12,7 @@ const defaultSettings = {
   minIQ: 60,
   maxIQ: 145,
   useConfidenceForColor: true, // Always enabled - badge colors always reflect confidence
+  badgeIcon: 'fa-info', // Font Awesome icon class for badges (default: fa-info)
   enableDebugLogging: false,
   enableIQGuessr: false,
   enableIqFiltr: false,
@@ -32,7 +33,7 @@ const settings = { ...defaultSettings };
  * Load settings from storage
  */
 function loadSettings() {
-  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIqFiltr', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterUserPosts', 'filterMode'], (result) => {
+  chrome.storage.sync.get(['showIQBadge', 'showRealtimeBadge', 'minIQ', 'maxIQ', 'useConfidenceForColor', 'badgeIcon', 'enableDebugLogging', 'enableIQGuessr', 'showProfileScoreBadge', 'showAverageIQ', 'enableIqFiltr', 'filterIQThreshold', 'filterDirection', 'filterConfidenceThreshold', 'filterConfidenceDirection', 'useIQInFilter', 'useConfidenceInFilter', 'filterInvalidTweets', 'filterUserPosts', 'filterMode'], (result) => {
     if (result.showIQBadge !== undefined) {
       settings.showIQBadge = result.showIQBadge;
     }
@@ -49,6 +50,9 @@ function loadSettings() {
     settings.useConfidenceForColor = true;
     // Ensure it's set in storage
     chrome.storage.sync.set({ useConfidenceForColor: true });
+    if (result.badgeIcon !== undefined) {
+      settings.badgeIcon = result.badgeIcon;
+    }
     if (result.enableDebugLogging !== undefined) {
       settings.enableDebugLogging = result.enableDebugLogging;
     }

@@ -9,6 +9,7 @@
   // Get dependencies
   const getColorUtils = () => window.BadgeColorUtils || {};
   const getContext = () => window.BadgeCreationContext || {};
+  const getIconHelper = () => window.BadgeIconHelper || {};
 
   /**
    * Create loading badge while IQ is being calculated
@@ -33,8 +34,15 @@
     badge.style.setProperty('visibility', 'visible', 'important');
     badge.style.setProperty('opacity', '1', 'important');
 
+    // Get badge icon from settings (default: fa-info)
+    const getSettings = () => window.Settings || {};
+    const settings = getSettings();
+    const badgeIcon = settings.badgeIcon || 'fa-info';
+    const { getBadgeIconSVG } = getIconHelper();
+    const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+
     badge.innerHTML = `
-      <span class="iq-label">IQ</span>
+      <span class="iq-icon">${iconSVG}</span>
       <span class="iq-score">
         <span class="iq-loading-spinner">↻</span>
       </span>

@@ -90,22 +90,36 @@ function animateCountUp(badge, finalIQ, iqColor) {
       // Build final structure immediately to prevent size changes
       if (willHaveFlip) {
         const confidence = parseInt(confidenceAttr, 10);
+        // Get badge icon from settings
+        const getSettings = () => window.Settings || {};
+        const settings = getSettings();
+        const badgeIcon = settings.badgeIcon || 'fa-info';
+        const getIconHelper = () => window.BadgeIconHelper || {};
+        const { getBadgeIconSVG } = getIconHelper();
+        const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
         badge.innerHTML = `
           <div class="iq-badge-inner" style="transform: rotateY(0deg);">
             <div class="iq-badge-front">
-              <span class="iq-label">IQ</span>
+              <span class="iq-icon">${iconSVG}</span>
               <span class="iq-score">${finalIQ}</span>
             </div>
             <div class="iq-badge-back">
-              <span class="iq-label">%</span>
-              <span class="iq-score">${confidence}</span>
+              <span class="iq-icon">${iconSVG}</span>
+              <span class="iq-score">${confidence}%</span>
             </div>
           </div>
         `;
         badge.classList.add('iq-badge-flip');
       } else {
+        // Get badge icon from settings
+        const getSettings = () => window.Settings || {};
+        const settings = getSettings();
+        const badgeIcon = settings.badgeIcon || 'fa-info';
+        const getIconHelper = () => window.BadgeIconHelper || {};
+        const { getBadgeIconSVG } = getIconHelper();
+        const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
         badge.innerHTML = `
-          <span class="iq-label">IQ</span>
+          <span class="iq-icon">${iconSVG}</span>
           <span class="iq-score">${finalIQ}</span>
         `;
       }
@@ -135,15 +149,27 @@ function animateCountUp(badge, finalIQ, iqColor) {
     // build it NOW before animation starts to prevent size changes
     if (!hasFlipStructure && willHaveFlip) {
       const confidence = parseInt(confidenceAttr, 10);
+      // Get badge icon from settings
+      const getSettings = () => window.Settings || {};
+      const settings = getSettings();
+      const badgeIcon = settings.badgeIcon || 'fa-info';
+      const getIconHelper = () => window.BadgeIconHelper || {};
+      const { getBadgeIconSVG } = getIconHelper();
+      const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+      // Remove spinner before building flip structure
+      const spinner = badge.querySelector('.iq-loading-spinner');
+      if (spinner) {
+        spinner.remove();
+      }
       badge.innerHTML = `
         <div class="iq-badge-inner" style="transform: rotateY(0deg);">
           <div class="iq-badge-front">
-            <span class="iq-label">IQ</span>
+            <span class="iq-icon">${iconSVG}</span>
             <span class="iq-score">0</span>
           </div>
           <div class="iq-badge-back">
-            <span class="iq-label">%</span>
-            <span class="iq-score">${confidence}</span>
+            <span class="iq-icon">${iconSVG}</span>
+            <span class="iq-score">${confidence}%</span>
           </div>
         </div>
       `;
@@ -151,24 +177,43 @@ function animateCountUp(badge, finalIQ, iqColor) {
       scoreElement = badge.querySelector('.iq-badge-front .iq-score');
     } else if (hasFlipStructure) {
       scoreElement = badge.querySelector('.iq-badge-front .iq-score');
-      if (!scoreElement) {
-        const frontDiv = badge.querySelector('.iq-badge-front');
-        if (frontDiv) {
-          const label = frontDiv.querySelector('.iq-label') || document.createElement('span');
-          if (!label.classList.contains('iq-label')) {
-            label.className = 'iq-label';
-            label.textContent = 'IQ';
-          }
-          const score = document.createElement('span');
-          score.className = 'iq-score';
-          score.textContent = '0';
-          frontDiv.innerHTML = '';
-          frontDiv.appendChild(label);
-          frontDiv.appendChild(score);
-          scoreElement = score;
+      const frontDiv = badge.querySelector('.iq-badge-front');
+      if (!scoreElement && frontDiv) {
+        // Ensure icon exists, create score element if missing
+        let iconElement = frontDiv.querySelector('.iq-icon');
+        if (!iconElement) {
+          // Get badge icon from settings
+          const getSettings = () => window.Settings || {};
+          const settings = getSettings();
+          const badgeIcon = settings.badgeIcon || 'fa-info';
+          const getIconHelper = () => window.BadgeIconHelper || {};
+          const { getBadgeIconSVG } = getIconHelper();
+          const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+          iconElement = document.createElement('span');
+          iconElement.className = 'iq-icon';
+          iconElement.innerHTML = iconSVG;
+          frontDiv.insertBefore(iconElement, frontDiv.firstChild);
         }
-      } else {
+        scoreElement = document.createElement('span');
+        scoreElement.className = 'iq-score';
         scoreElement.textContent = '0';
+        frontDiv.appendChild(scoreElement);
+      } else if (scoreElement) {
+        scoreElement.textContent = '0';
+        // Ensure icon exists
+        const frontDiv = badge.querySelector('.iq-badge-front');
+        if (frontDiv && !frontDiv.querySelector('.iq-icon')) {
+          const getSettings = () => window.Settings || {};
+          const settings = getSettings();
+          const badgeIcon = settings.badgeIcon || 'fa-info';
+          const getIconHelper = () => window.BadgeIconHelper || {};
+          const { getBadgeIconSVG } = getIconHelper();
+          const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+          const iconElement = document.createElement('span');
+          iconElement.className = 'iq-icon';
+          iconElement.innerHTML = iconSVG;
+          frontDiv.insertBefore(iconElement, scoreElement);
+        }
       }
     } else {
       if (scoreContainer) {
@@ -180,8 +225,15 @@ function animateCountUp(badge, finalIQ, iqColor) {
         const preserveMinWidth = badge.style.minWidth;
         const preserveDisplay = window.getComputedStyle(badge).display === 'block' ? 'block' : null;
 
+        // Get badge icon from settings
+        const getSettings = () => window.Settings || {};
+        const settings = getSettings();
+        const badgeIcon = settings.badgeIcon || 'fa-info';
+        const getIconHelper = () => window.BadgeIconHelper || {};
+        const { getBadgeIconSVG } = getIconHelper();
+        const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
         badge.innerHTML = `
-          <span class="iq-label">IQ</span>
+          <span class="iq-icon">${iconSVG}</span>
           <span class="iq-score">0</span>
         `;
         scoreElement = badge.querySelector('.iq-score');
@@ -227,7 +279,9 @@ function animateCountUp(badge, finalIQ, iqColor) {
       if (isFrozen && !isShowingSpinner) {
         frozenAtIQ = lastDisplayedIQ;
         isShowingSpinner = true;
-        scoreElement.innerHTML = '<span class="iq-loading-spinner">↻</span>';
+        if (scoreElement) {
+          scoreElement.innerHTML = '<span class="iq-loading-spinner">↻</span>';
+        }
       }
 
       if (!isFrozen && isShowingSpinner) {
@@ -235,7 +289,9 @@ function animateCountUp(badge, finalIQ, iqColor) {
         const resumeIQ = Math.min(frozenAtIQ + 1, finalIQ);
         lastDisplayedIQ = resumeIQ;
         frozenAtIQ = -1;
-        scoreElement.textContent = resumeIQ;
+        if (scoreElement) {
+          scoreElement.textContent = resumeIQ;
+        }
         freezeDetectionTime = now;
       }
 
@@ -272,7 +328,7 @@ function animateCountUp(badge, finalIQ, iqColor) {
         }
 
         const willUpdate = currentIQ !== lastDisplayedIQ || shouldForceUpdate || progress >= 0.95;
-        if (willUpdate) {
+        if (willUpdate && scoreElement) {
           scoreElement.textContent = currentIQ;
           lastDisplayedIQ = currentIQ;
           lastUpdateTime = now;
@@ -284,9 +340,7 @@ function animateCountUp(badge, finalIQ, iqColor) {
           finalColorRgb,
           easedProgress
         );
-        // Set background color during animation (will be removed when animation completes)
-        badge.style.setProperty('background-color', currentColor, 'important');
-        // Also update CSS variable so hover can work if user hovers during animation
+        // Only update CSS variable - no background fill (transparent styling)
         badge.style.setProperty('--iq-badge-bg-color', currentColor);
       } else if (isShowingSpinner) {
         const currentColor = interpolateRgbColor(
@@ -294,9 +348,7 @@ function animateCountUp(badge, finalIQ, iqColor) {
           finalColorRgb,
           easedProgress
         );
-        // Set background color during animation (will be removed when animation completes)
-        badge.style.setProperty('background-color', currentColor, 'important');
-        // Also update CSS variable so hover can work if user hovers during animation
+        // Only update CSS variable - no background fill (transparent styling)
         badge.style.setProperty('--iq-badge-bg-color', currentColor);
       }
 
@@ -307,13 +359,29 @@ function animateCountUp(badge, finalIQ, iqColor) {
       } else {
         if (isShowingSpinner) {
           isShowingSpinner = false;
-          const spinner = scoreElement.querySelector('.iq-loading-spinner');
-          if (spinner) {
-            spinner.remove();
+          if (scoreElement) {
+            const spinner = scoreElement.querySelector('.iq-loading-spinner');
+            if (spinner) {
+              spinner.remove();
+            }
           }
         }
 
-        scoreElement.textContent = finalIQ;
+        // Ensure scoreElement exists and update it
+        if (scoreElement) {
+          scoreElement.textContent = finalIQ;
+        } else {
+          // Fallback: try to find score element again
+          const frontScore = badge.querySelector('.iq-badge-front .iq-score');
+          if (frontScore) {
+            frontScore.textContent = finalIQ;
+          } else {
+            const anyScore = badge.querySelector('.iq-score');
+            if (anyScore) {
+              anyScore.textContent = finalIQ;
+            }
+          }
+        }
         // Use CSS variable for final color - CSS handles styling
         badge.style.setProperty('--iq-badge-bg-color', iqColor);
         // Remove inline background-color style so CSS hover rules can work
@@ -321,6 +389,19 @@ function animateCountUp(badge, finalIQ, iqColor) {
         // Store original background color in CSS variable for hover inversion
         if (badge.classList.contains('iq-badge-flip')) {
           badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
+          // Set confidence color for hover (critical for flip badges)
+          const confidenceAttr = badge.getAttribute('data-confidence');
+          if (confidenceAttr !== null) {
+            const confidence = parseInt(confidenceAttr, 10);
+            if (!isNaN(confidence)) {
+              const getBadgeManager = () => window.BadgeManager || {};
+              const { getConfidenceColor } = getBadgeManager();
+              if (getConfidenceColor) {
+                const confidenceColor = getConfidenceColor(confidence);
+                badge.style.setProperty('--iq-badge-confidence-color', confidenceColor, 'important');
+              }
+            }
+          }
         }
 
         if (animationFrameId) {
@@ -678,12 +759,36 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
   if (badge.querySelector('.iq-badge-inner')) {
 
     const frontScore = badge.querySelector('.iq-badge-front .iq-score');
-    const backLabel = badge.querySelector('.iq-badge-back .iq-label');
     const backScore = badge.querySelector('.iq-badge-back .iq-score');
+    const frontIcon = badge.querySelector('.iq-badge-front .iq-icon');
+    const backIcon = badge.querySelector('.iq-badge-back .iq-icon');
 
     if (frontScore) frontScore.textContent = iq;
-    if (backLabel) backLabel.textContent = '%';
-    if (backScore) backScore.textContent = confidence;
+    if (backScore) backScore.textContent = `${confidence}%`;
+    // Ensure icons exist if they don't already
+    if (!frontIcon || !backIcon) {
+      // Get badge icon from settings
+      const getSettings = () => window.Settings || {};
+      const settings = getSettings();
+      const badgeIcon = settings.badgeIcon || 'fa-info';
+      const getIconHelper = () => window.BadgeIconHelper || {};
+      const { getBadgeIconSVG } = getIconHelper();
+      const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+      if (!frontIcon && badge.querySelector('.iq-badge-front')) {
+        const front = badge.querySelector('.iq-badge-front');
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'iq-icon';
+        iconSpan.innerHTML = iconSVG;
+        front.insertBefore(iconSpan, front.firstChild);
+      }
+      if (!backIcon && badge.querySelector('.iq-badge-back')) {
+        const back = badge.querySelector('.iq-badge-back');
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'iq-icon';
+        iconSpan.innerHTML = iconSVG;
+        back.insertBefore(iconSpan, back.firstChild);
+      }
+    }
 
     const inner = badge.querySelector('.iq-badge-inner');
     if (inner) {
@@ -714,12 +819,20 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
     // Also ensure CSS variable is set
     badge.style.setProperty('--iq-badge-bg-color', originalBgColor);
   }
+  // Set confidence color for hover (critical for flip badges)
+  if (badge.classList.contains('iq-badge-flip') && confidence !== null && confidence !== undefined) {
+    const getBadgeManager = () => window.BadgeManager || {};
+    const { getConfidenceColor } = getBadgeManager();
+    if (getConfidenceColor) {
+      const confidenceColor = getConfidenceColor(confidence);
+      badge.style.setProperty('--iq-badge-confidence-color', confidenceColor, 'important');
+    }
+  }
   return;
   }
 
-  const currentLabel = badge.querySelector('.iq-label');
+  const currentIcon = badge.querySelector('.iq-icon');
   const currentScore = badge.querySelector('.iq-score');
-  const labelText = currentLabel ? currentLabel.textContent : 'IQ';
   const scoreText = currentScore ? currentScore.textContent : String(iq);
 
   // Preserve styles before innerHTML replacement
@@ -749,15 +862,25 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
   // Remove inline background-color so CSS hover rules can work
   badge.style.removeProperty('background-color');
 
+  // Get badge icon from settings
+  const getSettings = () => window.Settings || {};
+  const settings = getSettings();
+  const badgeIcon = settings.badgeIcon || 'fa-info';
+  const getIconHelper = () => window.BadgeIconHelper || {};
+  const { getBadgeIconSVG } = getIconHelper();
+  const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+  // Preserve existing icon if available, otherwise use default
+  const iconToUse = currentIcon ? currentIcon.innerHTML : iconSVG;
+
   badge.innerHTML = `
     <div class="iq-badge-inner" style="transform: rotateY(0deg);">
       <div class="iq-badge-front">
-        <span class="iq-label">${labelText}</span>
+        <span class="iq-icon">${iconToUse}</span>
         <span class="iq-score">${scoreText}</span>
       </div>
       <div class="iq-badge-back">
-        <span class="iq-label">%</span>
-        <span class="iq-score">${confidence}</span>
+        <span class="iq-icon">${iconToUse}</span>
+        <span class="iq-score">${confidence}%</span>
       </div>
     </div>
   `;
@@ -811,6 +934,16 @@ function updateBadgeWithFlipStructure(badge, iq, confidence) {
   // Ensure CSS variable for original background color is preserved (for hover inversion)
   if (originalBgColor) {
     badge.style.setProperty('--iq-badge-original-bg', originalBgColor, 'important');
+  }
+
+  // Set confidence color for hover (critical for flip badges)
+  if (badge.classList.contains('iq-badge-flip') && confidence !== null && confidence !== undefined) {
+    const getBadgeManager = () => window.BadgeManager || {};
+    const { getConfidenceColor } = getBadgeManager();
+    if (getConfidenceColor) {
+      const confidenceColor = getConfidenceColor(confidence);
+      badge.style.setProperty('--iq-badge-confidence-color', confidenceColor, 'important');
+    }
   }
 
   // Add hover handlers for color inversion if not already added

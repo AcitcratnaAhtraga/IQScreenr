@@ -103,7 +103,9 @@ body {
   overflow: visible;
   padding-bottom: 12px;
   margin-bottom: 0;
-  transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease, margin 0.3s ease;
+  transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease, margin 0.3s ease, visibility 0s;
+  display: block;
+  visibility: visible;
 }
 
 .collapsible-content.collapsed {
@@ -112,6 +114,8 @@ body {
   padding: 0 !important;
   margin: 0 !important;
   overflow: hidden;
+  visibility: hidden;
+  transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease, margin 0.3s ease, visibility 0s 0.3s;
 }
 
 .setting-item {
@@ -511,6 +515,8 @@ input[type="range"]::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  visibility: visible;
+  opacity: 1;
 }
 
 .legend-item {

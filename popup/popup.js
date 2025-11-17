@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Always show confidence legend (confidence is always used for color)
     if (showIQBadge.checked) {
       iqLegend.style.display = 'none';
-      confidenceLegend.style.display = 'block';
+      confidenceLegend.style.display = 'flex';
     } else {
       iqLegend.style.display = 'none';
       confidenceLegend.style.display = 'none';
@@ -1350,6 +1350,9 @@ document.addEventListener('DOMContentLoaded', () => {
           // Expand
           content.classList.remove('collapsed');
           header.classList.remove('collapsed');
+          // Make sure content is visible for height calculation
+          content.style.visibility = 'visible';
+          content.style.opacity = '1';
           // Get actual height
           content.style.maxHeight = 'none';
           const height = content.scrollHeight;
@@ -1357,7 +1360,15 @@ document.addEventListener('DOMContentLoaded', () => {
           // Force reflow and animate
           setTimeout(() => {
             content.style.maxHeight = height + 'px';
+            content.style.visibility = 'visible';
+            content.style.opacity = '1';
             updateSectionSpacing();
+            // After animation completes, set to 'none' to allow content to grow naturally
+            setTimeout(() => {
+              if (!content.classList.contains('collapsed')) {
+                content.style.maxHeight = 'none';
+              }
+            }, 350); // Match transition duration (300ms + buffer)
           }, 10);
         } else {
           // Collapse

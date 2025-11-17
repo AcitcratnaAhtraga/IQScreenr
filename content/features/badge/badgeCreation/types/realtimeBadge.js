@@ -156,34 +156,38 @@
       // Attach creation context
       attachCreationContext(badge, 'realtime');
 
+      // Get badge icon from settings (default: fa-info)
+      const getSettings = () => window.Settings || {};
+      const settings = getSettings();
+      const badgeIcon = settings.badgeIcon || 'fa-info';
+      const getIconHelper = () => window.BadgeIconHelper || {};
+      const { getBadgeIconSVG } = getIconHelper();
+      const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+
+      // Set confidence color for hover
+      const confidenceColor = getConfidenceColor ? getConfidenceColor(0) : '#71767A';
+      badge.style.setProperty('--iq-badge-confidence-color', confidenceColor, 'important');
+
       // Create flip structure with 100 IQ and 0% confidence (starts at 0% and increases)
       badge.innerHTML = `
         <div class="iq-badge-inner" style="transform: rotateY(0deg); transform-style: preserve-3d;">
           <div class="iq-badge-front">
-            <span class="iq-label">IQ</span>
+            <span class="iq-icon">${iconSVG}</span>
             <span class="iq-score">100</span>
           </div>
           <div class="iq-badge-back">
-            <span class="iq-label">%</span>
-            <span class="iq-score">0</span>
+            <span class="iq-icon">${iconSVG}</span>
+            <span class="iq-score">0%</span>
           </div>
         </div>
       `;
 
-      // Ensure color is set on child elements after innerHTML
-      const labelElements = badge.querySelectorAll('.iq-label');
-      const scoreElements = badge.querySelectorAll('.iq-score');
-      labelElements.forEach(el => {
-        el.style.setProperty('color', '#000000', 'important');
-      });
-      scoreElements.forEach(el => {
-        el.style.setProperty('color', '#000000', 'important');
-      });
+      // Color is handled by CSS now - no need to set inline colors
 
       setTimeout(() => {
         const scoreElement = badge.querySelector('.iq-score');
-        const labelElement = badge.querySelector('.iq-label');
-        if (scoreElement && labelElement && !badge.getAttribute('data-natural-height')) {
+        const iconElement = badge.querySelector('.iq-icon');
+        if (scoreElement && iconElement && !badge.getAttribute('data-natural-height')) {
           const clone = badge.cloneNode(true);
           clone.style.position = 'absolute';
           clone.style.visibility = 'hidden';

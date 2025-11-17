@@ -19,6 +19,7 @@
   const getSettings = () => window.Settings || {};
   const getNotificationPlacement = () => window.NotificationBadgePlacement || {};
   const getNestedTweetHandler = () => window.NestedTweetHandler || {};
+  const getBadgeUpdate = () => window.BadgeUpdate || {};
 
   /**
    * Place a restored badge in the correct location
@@ -143,12 +144,39 @@
       }
     }
 
-    const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+    // Check if there's already a badge to replace
+    const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
 
-    // Check if there's a cached guess (since cachedRevealed=true means it was compared)
-    const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
-    if (cachedGuess && cachedGuess.guess !== undefined) {
-      iqBadge.setAttribute('data-iq-compared', 'true');
+    // Create a loading badge first, then animate it (matches normal flow)
+    const { createLoadingBadge } = badgeManager;
+    if (!createLoadingBadge) {
+      // Fallback: create badge directly if loading badge creation not available
+      const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+      const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
+      if (cachedGuess && cachedGuess.guess !== undefined) {
+        iqBadge.setAttribute('data-iq-compared', 'true');
+      }
+      actualTweetElement._iqResult = {
+        iq: iq,
+        result: cachedIQ,
+        confidence: confidence,
+        text: tweetText
+      };
+      placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+      if (existingBadge && existingBadge.parentElement) {
+        existingBadge.remove();
+      }
+      return true;
+    }
+
+    const loadingBadge = createLoadingBadge();
+
+    // Place the loading badge first
+    placeRestoredBadge(loadingBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
+
+    // Remove existing badge if it exists
+    if (existingBadge && existingBadge.parentElement) {
+      existingBadge.remove();
     }
 
     // Store IQ result on element for reference
@@ -159,15 +187,35 @@
       text: tweetText
     };
 
-    // Check if there's already a badge to replace
-    const existingBadge = findExistingBadge(actualTweetElement, outerElement, hasNestedStructure);
-
-    // Place the badge
-    placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
-
-    // Remove existing badge if it exists
-    if (existingBadge && existingBadge.parentElement) {
-      existingBadge.remove();
+    // Use the same update flow as normal badges to trigger count-up animation
+    const { updateBadgeWithIQ } = getBadgeUpdate();
+    if (updateBadgeWithIQ) {
+      // Wait a frame to ensure badge is in DOM
+      requestAnimationFrame(() => {
+        updateBadgeWithIQ(
+          loadingBadge,
+          actualTweetElement,
+          outerElement,
+          hasNestedStructure,
+          isNotificationsPage,
+          iq,
+          cachedIQ,
+          confidence,
+          tweetText,
+          tweetId
+        );
+      });
+    } else {
+      // Fallback: create badge directly if updateBadgeWithIQ not available
+      if (loadingBadge.parentElement) {
+        loadingBadge.remove();
+      }
+      const iqBadge = badgeManager.createIQBadge(iq, cachedIQ, tweetText);
+      const cachedGuess = gameManager.getCachedGuess ? await gameManager.getCachedGuess(tweetId) : null;
+      if (cachedGuess && cachedGuess.guess !== undefined) {
+        iqBadge.setAttribute('data-iq-compared', 'true');
+      }
+      placeRestoredBadge(iqBadge, actualTweetElement, outerElement, hasNestedStructure, isNotificationsPage);
     }
 
     return true;

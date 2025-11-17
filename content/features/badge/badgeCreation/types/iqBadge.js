@@ -10,6 +10,7 @@
   const getColorUtils = () => window.BadgeColorUtils || {};
   const getContext = () => window.BadgeCreationContext || {};
   const getHandlers = () => window.BadgeCreationHandlers || {};
+  const getIconHelper = () => window.BadgeIconHelper || {};
 
   /**
    * Create IQ badge element with debug data attached
@@ -42,6 +43,11 @@
     // Attach creation context
     attachCreationContext(badge, 'iq');
 
+    // Get badge icon from settings (default: fa-info)
+    const badgeIcon = settings.badgeIcon || 'fa-info';
+    const { getBadgeIconSVG } = getIconHelper();
+    const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+    
     // Use confidence color if setting is enabled, otherwise use IQ color
     const iqColor = (settings.useConfidenceForColor && confidence !== null)
       ? getConfidenceColor(confidence)
@@ -52,15 +58,19 @@
     badge.style.setProperty('cursor', 'help', 'important');
 
     if (confidence !== null) {
+      // Set confidence color for hover
+      const confidenceColor = getConfidenceColor(confidence);
+      badge.style.setProperty('--iq-badge-confidence-color', confidenceColor, 'important');
+      
       badge.innerHTML = `
         <div class="iq-badge-inner">
           <div class="iq-badge-front">
-            <span class="iq-label">IQ</span>
+            <span class="iq-icon">${iconSVG}</span>
             <span class="iq-score">${roundedIQ}</span>
           </div>
           <div class="iq-badge-back">
-            <span class="iq-label">%</span>
-            <span class="iq-score">${confidence}</span>
+            <span class="iq-icon">${iconSVG}</span>
+            <span class="iq-score">${confidence}%</span>
           </div>
         </div>
       `;
@@ -69,7 +79,7 @@
       badge.style.setProperty('--iq-badge-original-bg', iqColor, 'important');
     } else {
       badge.innerHTML = `
-        <span class="iq-label">IQ</span>
+        <span class="iq-icon">${iconSVG}</span>
         <span class="iq-score">${roundedIQ}</span>
       `;
     }

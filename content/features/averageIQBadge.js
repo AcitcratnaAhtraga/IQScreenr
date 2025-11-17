@@ -63,15 +63,25 @@
     badge.style.setProperty('opacity', '1', 'important');
     badge.style.setProperty('margin-left', '8px');
 
+    // Get badge icon from settings (default: fa-info)
+    const badgeIcon = settings.badgeIcon || 'fa-info';
+    const getIconHelper = () => window.BadgeIconHelper || {};
+    const { getBadgeIconSVG } = getIconHelper();
+    const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+    
+    // Set confidence color for hover (getConfidenceColor already declared above)
+    const confidenceColor = getConfidenceColor ? getConfidenceColor(overallConfidence) : '#71767A';
+    badge.style.setProperty('--iq-badge-confidence-color', confidenceColor, 'important');
+
     badge.innerHTML = `
       <div class="iq-badge-inner">
         <div class="iq-badge-front">
-          <span class="iq-label">IQ</span>
+          <span class="iq-icon">${iconSVG}</span>
           <span class="iq-score">${averageIQ}</span>
         </div>
         <div class="iq-badge-back">
-          <span class="iq-label">%</span>
-          <span class="iq-score">${Math.round(overallConfidence)}</span>
+          <span class="iq-icon">${iconSVG}</span>
+          <span class="iq-score">${Math.round(overallConfidence)}%</span>
         </div>
       </div>
     `;

@@ -12,6 +12,7 @@
 (function() {
   'use strict';
 
+
   // Get module references (all modules expose themselves via window global objects)
   const getSettings = () => window.Settings || {};
   const getTweetProcessor = () => window.TweetProcessor || {};

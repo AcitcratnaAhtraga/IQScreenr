@@ -8,6 +8,7 @@
 
   // Get dependencies
   const getContext = () => window.BadgeCreationContext || {};
+  const getIconHelper = () => window.BadgeIconHelper || {};
 
   /**
    * Create "X" badge for invalid tweets
@@ -27,15 +28,22 @@
     badge.style.setProperty('visibility', 'visible', 'important');
     badge.style.setProperty('opacity', '1', 'important');
 
+    // Get badge icon from settings (default: fa-info)
+    const getSettings = () => window.Settings || {};
+    const settings = getSettings();
+    const badgeIcon = settings.badgeIcon || 'fa-info';
+    const { getBadgeIconSVG } = getIconHelper();
+    const iconSVG = getBadgeIconSVG ? getBadgeIconSVG(badgeIcon) : '';
+
     badge.innerHTML = `
       <div class="iq-badge-inner">
         <div class="iq-badge-front">
-          <span class="iq-label">IQ</span>
+          <span class="iq-icon">${iconSVG}</span>
           <span class="iq-score">✕</span>
         </div>
         <div class="iq-badge-back">
-          <span class="iq-label">NO</span>
-          <span class="iq-score">text</span>
+          <span class="iq-icon">${iconSVG}</span>
+          <span class="iq-score">NO</span>
         </div>
       </div>
     `;
